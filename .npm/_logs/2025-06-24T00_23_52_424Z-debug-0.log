@@ -1,0 +1,206 @@
+0 verbose cli /home/mcsc/memoria/.nvm/versions/node/v22.16.0/bin/node /home/mcsc/memoria/.nvm/versions/node/v22.16.0/bin/npm
+1 info using npm@10.9.2
+2 info using node@v22.16.0
+3 silly config load:file:/home/mcsc/memoria/.nvm/versions/node/v22.16.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/mcsc/memoria/.cache/typescript/5.8/.npmrc
+5 silly config load:file:/home/mcsc/memoria/.npmrc
+6 silly config load:file:/home/mcsc/memoria/.nvm/versions/node/v22.16.0/etc/npmrc
+7 verbose title npm install types-registry@latest
+8 verbose argv "install" "--ignore-scripts" "types-registry@latest"
+9 verbose logfile logs-max:10 dir:/home/mcsc/memoria/.npm/_logs/2025-06-24T00_23_52_424Z-
+10 verbose logfile /home/mcsc/memoria/.npm/_logs/2025-06-24T00_23_52_424Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+14 silly packumentCache corgi:https://registry.npmjs.org/types-registry cache-miss
+15 http fetch GET 200 https://registry.npmjs.org/types-registry 143ms (cache revalidated)
+16 silly packumentCache corgi:https://registry.npmjs.org/types-registry set size:601442 disposed:false
+17 silly idealTree buildDeps
+18 silly fetch manifest types-registry@0.1.726
+19 silly packumentCache full:https://registry.npmjs.org/types-registry cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/types-registry 58ms (cache revalidated)
+21 silly packumentCache full:https://registry.npmjs.org/types-registry set size:1276747 disposed:false
+22 silly placeDep ROOT types-registry@0.1.726 REPLACE for:  want: 0.1.726
+23 silly reify moves {}
+24 silly audit bulk request {
+24 silly audit   '@babel/code-frame': [ '7.27.1' ],
+24 silly audit   picocolors: [ '1.1.1', '0.2.1' ],
+24 silly audit   '@babel/helper-string-parser': [ '7.27.1' ],
+24 silly audit   '@babel/helper-validator-identifier': [ '7.27.1' ],
+24 silly audit   '@babel/parser': [ '7.27.5' ],
+24 silly audit   '@babel/types': [ '7.27.6' ],
+24 silly audit   '@jest/diff-sequences': [ '30.0.1' ],
+24 silly audit   '@jest/expect-utils': [ '30.0.2' ],
+24 silly audit   '@jest/get-type': [ '30.0.1' ],
+24 silly audit   '@jest/pattern': [ '30.0.1' ],
+24 silly audit   '@jest/schemas': [ '30.0.1' ],
+24 silly audit   '@jest/types': [ '30.0.1' ],
+24 silly audit   '@sinclair/typebox': [ '0.34.36' ],
+24 silly audit   '@types/babel__code-frame': [ '7.0.6' ],
+24 silly audit   '@types/babel__core': [ '7.20.5' ],
+24 silly audit   '@types/babel__generator': [ '7.27.0' ],
+24 silly audit   '@types/babel__template': [ '7.4.4' ],
+24 silly audit   '@types/babel__traverse': [ '7.20.7' ],
+24 silly audit   '@types/body-parser': [ '1.19.6' ],
+24 silly audit   '@types/clean-css': [ '4.2.11' ],
+24 silly audit   '@types/connect': [ '3.4.38' ],
+24 silly audit   '@types/connect-history-api-fallback': [ '1.5.4' ],
+24 silly audit   '@types/cross-spawn': [ '6.0.6' ],
+24 silly audit   '@types/eslint': [ '9.6.1' ],
+24 silly audit   '@types/estree': [ '1.0.8' ],
+24 silly audit   '@types/express': [ '5.0.3' ],
+24 silly audit   '@types/express-serve-static-core': [ '5.0.6' ],
+24 silly audit   '@types/global-modules': [ '2.0.2' ],
+24 silly audit   '@types/global-prefix': [ '3.0.2' ],
+24 silly audit   '@types/html-minifier': [ '4.0.5' ],
+24 silly audit   '@types/html-webpack-plugin': [ '3.2.9' ],
+24 silly audit   '@types/http-errors': [ '2.0.5' ],
+24 silly audit   '@types/http-proxy': [ '1.17.16' ],
+24 silly audit   '@types/ini': [ '4.1.1' ],
+24 silly audit   '@types/istanbul-lib-coverage': [ '2.0.6' ],
+24 silly audit   '@types/istanbul-lib-report': [ '3.0.3' ],
+24 silly audit   '@types/istanbul-reports': [ '3.0.4' ],
+24 silly audit   '@types/jest': [ '30.0.0' ],
+24 silly audit   '@types/json-schema': [ '7.0.15' ],
+24 silly audit   '@types/linkify-it': [ '5.0.0' ],
+24 silly audit   '@types/loader-utils': [ '2.0.6' ],
+24 silly audit   '@types/markdown-it': [ '14.1.2' ],
+24 silly audit   '@types/mdurl': [ '2.0.0' ],
+24 silly audit   '@types/mime': [ '1.3.5' ],
+24 silly audit   '@types/node': [ '24.0.3' ],
+24 silly audit   '@types/object.omit': [ '3.0.3' ],
+24 silly audit   '@types/object.pick': [ '1.3.4' ],
+24 silly audit   '@types/postcss-normalize': [ '9.0.4' ],
+24 silly audit   '@types/prompts': [ '2.4.9' ],
+24 silly audit   '@types/qs': [ '6.14.0' ],
+24 silly audit   '@types/range-parser': [ '1.2.7' ],
+24 silly audit   '@types/react': [ '19.1.8' ],
+24 silly audit   '@types/react-beautiful-dnd': [ '13.1.8' ],
+24 silly audit   '@types/react-dev-utils': [ '9.0.15' ],
+24 silly audit   '@types/react-dom': [ '19.1.6' ],
+24 silly audit   '@types/recursive-readdir': [ '2.2.4' ],
+24 silly audit   '@types/relateurl': [ '0.2.33' ],
+24 silly audit   '@types/send': [ '0.17.5' ],
+24 silly audit   '@types/serve-static': [ '1.15.8' ],
+24 silly audit   '@types/shell-quote': [ '1.7.5' ],
+24 silly audit   '@types/source-list-map': [ '0.1.6' ],
+24 silly audit   '@types/stack-utils': [ '2.0.3' ],
+24 silly audit   '@types/tapable': [ '1.0.12' ],
+24 silly audit   '@types/text-table': [ '0.2.5' ],
+24 silly audit   '@types/throttle-debounce': [ '5.0.2' ],
+24 silly audit   '@types/trusted-types': [ '2.0.7' ],
+24 silly audit   '@types/uglify-js': [ '3.17.5' ],
+24 silly audit   '@types/webpack': [ '4.41.40' ],
+24 silly audit   '@types/webpack-dev-server': [ '3.11.6' ],
+24 silly audit   '@types/webpack-sources': [ '3.2.3' ],
+24 silly audit   'source-map': [ '0.7.4', '0.6.1' ],
+24 silly audit   '@types/which': [ '3.0.4' ],
+24 silly audit   '@types/yargs': [ '17.0.33' ],
+24 silly audit   '@types/yargs-parser': [ '21.0.3' ],
+24 silly audit   'ansi-styles': [ '4.3.0', '5.2.0' ],
+24 silly audit   anymatch: [ '3.1.3' ],
+24 silly audit   braces: [ '3.0.3' ],
+24 silly audit   chalk: [ '4.1.2' ],
+24 silly audit   'ci-info': [ '4.2.0' ],
+24 silly audit   'color-convert': [ '2.0.1' ],
+24 silly audit   'color-name': [ '1.1.4' ],
+24 silly audit   csstype: [ '3.1.3' ],
+24 silly audit   'escape-string-regexp': [ '2.0.0' ],
+24 silly audit   eventemitter3: [ '4.0.7' ],
+24 silly audit   expect: [ '30.0.2' ],
+24 silly audit   'fill-range': [ '7.1.1' ],
+24 silly audit   'follow-redirects': [ '1.15.9' ],
+24 silly audit   'graceful-fs': [ '4.2.11' ],
+24 silly audit   'has-flag': [ '4.0.0' ],
+24 silly audit   'http-proxy': [ '1.18.1' ],
+24 silly audit   'http-proxy-middleware': [ '1.3.1' ],
+24 silly audit   'is-extglob': [ '2.1.1' ],
+24 silly audit   'is-glob': [ '4.0.3' ],
+24 silly audit   'is-number': [ '7.0.0' ],
+24 silly audit   'is-plain-obj': [ '3.0.0' ],
+24 silly audit   'jest-diff': [ '30.0.2' ],
+24 silly audit   'jest-matcher-utils': [ '30.0.2' ],
+24 silly audit   'jest-message-util': [ '30.0.2' ],
+24 silly audit   'jest-mock': [ '30.0.2' ],
+24 silly audit   'jest-regex-util': [ '30.0.1' ],
+24 silly audit   'jest-util': [ '30.0.2' ],
+24 silly audit   picomatch: [ '4.0.2', '2.3.1' ],
+24 silly audit   'js-tokens': [ '4.0.0' ],
+24 silly audit   kleur: [ '3.0.3' ],
+24 silly audit   micromatch: [ '4.0.8' ],
+24 silly audit   'normalize-path': [ '3.0.0' ],
+24 silly audit   postcss: [ '7.0.39' ],
+24 silly audit   'pretty-format': [ '30.0.2' ],
+24 silly audit   'react-is': [ '18.3.1' ],
+24 silly audit   'requires-port': [ '1.0.0' ],
+24 silly audit   slash: [ '3.0.0' ],
+24 silly audit   'stack-utils': [ '2.0.6' ],
+24 silly audit   'supports-color': [ '7.2.0' ],
+24 silly audit   'to-regex-range': [ '5.0.1' ],
+24 silly audit   'undici-types': [ '7.8.0' ],
+24 silly audit   'types-registry': [ '0.1.726' ]
+24 silly audit }
+25 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 224ms
+26 silly audit report {
+26 silly audit report   'http-proxy-middleware': [
+26 silly audit report     {
+26 silly audit report       id: 1100223,
+26 silly audit report       url: 'https://github.com/advisories/GHSA-c7qv-q95q-8v27',
+26 silly audit report       title: 'Denial of service in http-proxy-middleware',
+26 silly audit report       severity: 'high',
+26 silly audit report       vulnerable_versions: '<2.0.7',
+26 silly audit report       cwe: [Array],
+26 silly audit report       cvss: [Object]
+26 silly audit report     },
+26 silly audit report     {
+26 silly audit report       id: 1104105,
+26 silly audit report       url: 'https://github.com/advisories/GHSA-9gqv-wp59-fq42',
+26 silly audit report       title: 'http-proxy-middleware allows fixRequestBody to proceed even if bodyParser has failed',
+26 silly audit report       severity: 'moderate',
+26 silly audit report       vulnerable_versions: '>=1.3.0 <2.0.9',
+26 silly audit report       cwe: [Array],
+26 silly audit report       cvss: [Object]
+26 silly audit report     },
+26 silly audit report     {
+26 silly audit report       id: 1104106,
+26 silly audit report       url: 'https://github.com/advisories/GHSA-4www-5p9h-95mh',
+26 silly audit report       title: 'http-proxy-middleware can call writeBody twice because "else if" is not used',
+26 silly audit report       severity: 'moderate',
+26 silly audit report       vulnerable_versions: '>=1.3.0 <2.0.8',
+26 silly audit report       cwe: [Array],
+26 silly audit report       cvss: [Object]
+26 silly audit report     }
+26 silly audit report   ],
+26 silly audit report   postcss: [
+26 silly audit report     {
+26 silly audit report       id: 1094544,
+26 silly audit report       url: 'https://github.com/advisories/GHSA-7fh5-64p2-3v2j',
+26 silly audit report       title: 'PostCSS line return parsing error',
+26 silly audit report       severity: 'moderate',
+26 silly audit report       vulnerable_versions: '<8.4.31',
+26 silly audit report       cwe: [Array],
+26 silly audit report       cvss: [Object]
+26 silly audit report     }
+26 silly audit report   ]
+26 silly audit report }
+27 silly packumentCache corgi:https://registry.npmjs.org/http-proxy-middleware cache-miss
+28 silly packumentCache corgi:https://registry.npmjs.org/postcss cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/postcss 54ms (cache revalidated)
+30 silly packumentCache corgi:https://registry.npmjs.org/postcss set size:337129 disposed:false
+31 http fetch GET 200 https://registry.npmjs.org/http-proxy-middleware 84ms (cache revalidated)
+32 silly packumentCache corgi:https://registry.npmjs.org/http-proxy-middleware set size:146277 disposed:false
+33 silly packumentCache corgi:https://registry.npmjs.org/@types%2fwebpack-dev-server cache-miss
+34 http fetch GET 200 https://registry.npmjs.org/@types%2fwebpack-dev-server 51ms (cache revalidated)
+35 silly packumentCache corgi:https://registry.npmjs.org/@types%2fwebpack-dev-server set size:61517 disposed:false
+36 silly packumentCache corgi:https://registry.npmjs.org/@types%2fpostcss-normalize cache-miss
+37 http fetch GET 200 https://registry.npmjs.org/@types%2fpostcss-normalize 46ms (cache revalidated)
+38 silly packumentCache corgi:https://registry.npmjs.org/@types%2fpostcss-normalize set size:5296 disposed:false
+39 silly packumentCache corgi:https://registry.npmjs.org/@types%2freact-dev-utils cache-miss
+40 http fetch GET 200 https://registry.npmjs.org/@types%2freact-dev-utils 73ms (cache revalidated)
+41 silly packumentCache corgi:https://registry.npmjs.org/@types%2freact-dev-utils set size:25959 disposed:false
+42 verbose cwd /home/mcsc/memoria/.cache/typescript/5.8
+43 verbose os Linux 6.8.0-60-generic
+44 verbose node v22.16.0
+45 verbose npm  v10.9.2
+46 verbose exit 0
+47 info ok

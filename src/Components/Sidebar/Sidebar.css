@@ -1,0 +1,105 @@
+.container {
+  display: flex;
+  height: 100vh;
+  font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+  background-color: #fcfcfa;
+}
+
+/* 사이드바 */
+.sidebar {
+  background-color: #ffffff;
+  color: #37352f;
+  transition: width 0.2s ease;
+  border-right: 1px solid #e3e3e3;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.sidebar.open {
+  width: 240px;
+}
+
+.sidebar.closed {
+  width: 56px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  height: 48px;
+  border-bottom: 1px solid #e3e3e3;
+  background-color: #f7f7f5;
+}
+
+.logo {
+  height: 70px;
+  object-fit: contain;
+  user-select: none;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #6b6b6b;
+  cursor: pointer;
+  padding: 4px 15px;
+  font-size: 30px;
+  border-radius: 4px;
+  transition: background-color 0.1s;
+  user-select: none;
+}
+
+.toggle-btn:hover {
+  background-color: #efefef;
+}
+
+/* 사이드바 내용 */
+.sidebar-content {
+  flex: 1;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.add-note-btn {
+  background-color: #ffffff;
+  color: #333;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background-color 0.1s ease;
+  user-select: none;
+}
+
+.add-note-btn:hover {
+  background-color: #f0f0f0;
+}
+
+/* 메인 콘텐츠 */
+.main-content {
+  flex: 1;
+  background-color: #fcfcfa;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* 사이드바 리사이저 */
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: ew-resize;
+  background-color: transparent;
+  user-select: none;
+}

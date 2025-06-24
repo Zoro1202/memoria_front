@@ -1,0 +1,85 @@
+/* Note.css */
+
+.note-editor {
+  max-width: 800px;
+  margin: 2rem auto;
+}
+
+/* 에디터 영역 전체 */
+.note-editor .ProseMirror {
+  min-height: 400px;
+  padding: 1.5rem;
+  background-color: #1e1e1e;
+  color: #f8f8f2;
+  font-family: "Fira Code", monospace;
+  border-radius: 8px;
+  outline: none;
+  overflow-y: auto;
+}
+
+/* 헤딩 스타일 */
+.note-editor .ProseMirror h1 {
+  font-size: 2em;
+  color: #ff79c6;
+  margin: 0.67em 0 0.3em;
+  border-bottom: 1px solid #44475a;
+  padding-bottom: 0.3em;
+}
+
+.note-editor .ProseMirror h2 {
+  font-size: 1.5em;
+  color: #bd93f9;
+  margin: 0.75em 0 0.25em;
+  border-bottom: 1px solid #44475a;
+  padding-bottom: 0.2em;
+}
+
+.note-editor .ProseMirror h3 {
+  font-size: 1.2em;
+  color: #8be9fd;
+  margin: 0.6em 0 0.2em;
+}
+
+/* 단락, 리스트, 인용구 */
+.note-editor .ProseMirror p {
+  margin: 0.5em 0;
+}
+.note-editor .ProseMirror ul,
+.note-editor .ProseMirror ol {
+  margin: 0.5em 0 0.5em 1.5em;
+}
+.note-editor .ProseMirror blockquote {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid #6272a4;
+  color: #bfbfbf;
+}
+
+/* 코드 */
+.note-editor .ProseMirror code {
+  background-color: #282a36;
+  color: #f1fa8c;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: "Fira Code", monospace;
+}
+.note-editor .ProseMirror pre {
+  background-color: #282a36;
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* 링크 */
+.note-editor .ProseMirror a {
+  color: #50fa7b;
+  text-decoration: underline;
+}
+
+.wikilink-node {
+  color: #1e90ff;
+  background-color: #e6f0ff;
+  padding: 2px 4px;
+  border-radius: 3px;
+  user-select: none;
+}

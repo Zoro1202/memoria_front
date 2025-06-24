@@ -1,0 +1,82 @@
+/* src/pages/Login.css */
+
+body.notion-body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #ffffff;
+  color: #222;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease;
+}
+
+body.notion-body.dark {
+  background-color: #1d1d1d;
+  color: #f5f5f5;
+}
+
+.login-wrapper {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.15);
+  width: 320px;
+  transition: background-color 0.3s ease;
+}
+
+body.dark .login-box {
+  background-color: #2a2a2a;
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 24px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-input {
+  padding: 12px;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+}
+
+body.dark .login-input {
+  background-color: #1f1f1f;
+  color: #f5f5f5;
+  border-color: #555;
+}
+
+.login-button {
+  padding: 12px;
+  background-color: #3f51b5;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: #303f9f;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: 15px;
+  scrollbar-color: #D3D1CB rgba(0, 0, 0, 0);
+}

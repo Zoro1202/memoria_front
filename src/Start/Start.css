@@ -1,0 +1,97 @@
+/* Reset top-level wrapper */
+.start-wrapper {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* 중앙 정렬된 콘텐츠 컨테이너 */
+.start-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  width: 100%;
+  gap: 4rem;
+  flex-wrap: wrap;
+}
+
+/* 텍스트 부분 */
+.start-left {
+  flex: 1;
+  min-width: 300px;
+  max-width: 600px;
+}
+
+.start-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1b1c1d;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.highlight {
+  color: #2f80ed;
+}
+
+.start-subtitle {
+  font-size: 1.125rem;
+  color: #4f4f4f;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.start-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* 버튼 스타일 */
+.btn {
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border: none;
+}
+
+.btn.primary {
+  background-color: #2f80ed;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #1366d6;
+}
+
+.btn.secondary {
+  background-color: #e8f1fd;
+  color: #2f80ed;
+}
+
+.btn.secondary:hover {
+  background-color: #d6e7fb;
+}
+
+/* 이미지 영역 */
+.start-right {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.start-image {
+  max-width: 100%;
+  height: auto;
+}

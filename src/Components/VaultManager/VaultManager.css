@@ -1,0 +1,151 @@
+.vaultmanager-wrapper {
+  flex: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background-color: #fff;
+  border-left: 1px solid #e3e3e3;
+  position: relative;
+  min-width: 320px;
+  user-select: none;
+  overflow: hidden;
+}
+
+.vaultmanager-wrapper.no-notes {
+  cursor: pointer;
+}
+
+.vaultmanager-wrapper.no-notes .add-new-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s ease;
+  font-size: 20px;
+  color: rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+
+.vaultmanager-wrapper.no-notes:hover .add-new-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.add-new-overlay .plus-icon {
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+}
+
+.tabs-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.tabs-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.tabs-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tabs-container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+.tab {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+  border: 1.5px solid transparent;
+}
+
+.tab.active {
+  background-color: #e0e0e0;
+  border-color: #a9a9a9;
+}
+
+.tab:hover {
+  background-color: #dedede;
+}
+
+.tab-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  color: #555;
+  padding: 0 2px;
+  user-select: none;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.close-button:hover {
+  color: #a00;
+}
+
+.add-tab-button {
+  border: none;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 6px;
+  color: #666;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.add-tab-button:hover {
+  color: #333;
+}
+
+.error-message {
+  color: #c00;
+  font-weight: 600;
+  margin-top: 8px;
+  font-size: 13px;
+}
