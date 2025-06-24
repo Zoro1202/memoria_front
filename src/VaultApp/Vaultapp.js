@@ -4,7 +4,12 @@ import NoteView from "../Components/Note/Note";
 import { useNotes } from "../Contexts/NotesContext"; // notes Context
 import { useTabs } from "../Contexts/TabsContext";
 import { toast, Toaster} from 'react-hot-toast';
-import { uploadSingleNote } from "../Components/Note/uploadNote";
+import {
+  summarizeMeeting,
+  generateMarkdown,
+  extractKeywords,
+  insertSummaryNote
+} from "../Components/Note/note_summary";
 
 
 export default function VaultApp() {
@@ -45,10 +50,21 @@ export default function VaultApp() {
               const currentNoteContent = notes[currentNoteId];
               if (!currentNoteContent) throw new Error("노트 내용 없음");
 
-              await uploadSingleNote(currentNoteId, currentNoteContent);
-              toast.success("전송 완료");
+              const summaryObj = await summarizeMeeting(currentNoteContent);
+              const markdown = await generateMarkdown(summaryObj.raw);
+
+              const newId = insertSummaryNote({
+                currentId: currentNoteId,
+                markdown,
+                notes,
+                setNotes,
+                openTab,
+                setActiveTabId
+              });
+
+              toast.success(`요약 탭 생성 완료: ${newId}`);
             } catch (err) {
-              toast.error("전송 실패: " + err.message);
+              toast.error("요약 실패: " + err.message);
             }
           }}
         >📤</button>

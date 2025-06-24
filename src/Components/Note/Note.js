@@ -3,13 +3,24 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { Remirror, useRemirror, EditorComponent } from '@remirror/react';
 import { MarkdownExtension } from '@remirror/extension-markdown';
 import { wysiwygPreset } from '@remirror/preset-wysiwyg';
+import {
+  Toolbar,
+  FormattingButtonGroup,    // ← 여기 링크 토글 포함
+  ListButtonGroup,
+  HeadingLevelButtonGroup,
+  ToggleCodeBlockButton,
+  InsertHorizontalRuleButton,
+  UndoButton,
+  RedoButton,
+  VerticalDivider,                // 버튼 사이 구분용
+} from '@remirror/react-ui';
 import { useNotes } from '../../Contexts/NotesContext'; // notes Context
 import { useTabs } from "../../Contexts/TabsContext";
 import { ObsidianLinkExtension } from '../Obsidian/Obsidian';
 import { createMarkdownSerializer } from '../Obsidian/MDSerializer';
 import {toast,} from 'react-hot-toast';
 import './Note.css';
-  
+  //id, markdown, onChange(callback), ToolberCmp(툴바) 프롭으로 전달
 export default function NoteView({ id, markdown, onChange }) {
   const markdownRef = useRef(markdown);
   const { updateNote ,createNoteFromTitle, updateGraphLinksFromContent  } = useNotes();
@@ -43,7 +54,7 @@ export default function NoteView({ id, markdown, onChange }) {
           toast.success(`${href} 클릭`);
         }
       }
-    },[markdown]);
+    },[createNoteFromTitle,openTab]);
 
   useEffect(() => {
     // 마운트 후 모든 링크에 클릭 이벤트 바인딩
@@ -51,7 +62,7 @@ export default function NoteView({ id, markdown, onChange }) {
     container?.addEventListener('click', handleClick);
 
     return () => container?.removeEventListener('click', handleClick);
-  }, [id]);
+  }, [handleClick, id]);
 
   const handleKeyDown = useCallback((e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -85,13 +96,13 @@ export default function NoteView({ id, markdown, onChange }) {
 
         toast.success('다운로드 완료');
       }
-    },[manager, id, activeTabId, markdown]);
+    },[closeTab, mdSerializer, noteIdFromTab, openTab, updateNote, manager, id, activeTabId]);
 
   // CTRL + S
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [manager, id, activeTabId]);
+  }, [manager, id, activeTabId, handleKeyDown]);
 
 
   // DOM
@@ -110,6 +121,18 @@ export default function NoteView({ id, markdown, onChange }) {
         }}
         autoFocus
       >
+        <Toolbar>
+          <FormattingButtonGroup />          {/* 링크 / 언더라인 등 */}
+          <VerticalDivider />
+          <HeadingLevelButtonGroup />
+          <ListButtonGroup />
+          <ToggleCodeBlockButton />
+          <InsertHorizontalRuleButton />
+          <VerticalDivider />
+          <UndoButton />
+          <RedoButton />
+          {/* Table 관련 버튼은 너무 복잡함 */}
+        </Toolbar>
         <EditorComponent />
       </Remirror>
       {/* <Toaster/> 이거 상위 프로퍼티에 넣음(VaultApp)*/}

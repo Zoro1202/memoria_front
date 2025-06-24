@@ -28,16 +28,16 @@ export function NotesProvider({ children }) {
     // ...
   ]);
 
-  const createNoteFromTitle = (title) => {
+  const createNoteFromTitle = useCallback((title) => {
     // content에서 첫 줄이 # 제목이 아니면 자동으로 붙이기
     const nt = new Set(Object.keys(notes));
     if(nt.has(title))
       return;
     const content = `# ${title}\n**${title} 노트 작성!**`;
-    toast.loading(`${title} 만드는 중...`, {duration:1000});
+    // toast.loading(`${title} 만드는 중...`, {duration:1000});
     // 새로운 notes 구성
     setNotes(prev=>({...prev, [title]:content}));
-  }
+  },[notes]);
 
   //함수 캐싱을 위해 useCallback
   //컨트롤 s 누르면 호출되기 때문에 개많이 호출될 예정이므로 useCallback으로 성능 개선
