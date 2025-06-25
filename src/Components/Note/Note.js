@@ -23,10 +23,10 @@ import {toast,} from 'react-hot-toast';
 import './Note.css';
   //id, markdown, onChange(callback), ToolberCmp(툴바) 프롭으로 전달
 export default function NoteView({ id, markdown, onChange }) {
-  const markdownRef = useRef(markdown);
-  const { updateNote ,createNoteFromTitle, updateGraphLinksFromContent  } = useNotes();
-  const { noteIdFromTab, activeTabId, closeTab, openTab } = useTabs();
-  const { manager, state } = useRemirror({
+  const markdownRef = useRef(markdown); // 마크다운 useRef 사용으로 DOM에서 변경한 변경사항 접근
+  const { updateNote ,createNoteFromTitle, updateGraphLinksFromContent  } = useNotes(); // 노트 콘텍스트에서 기능 가져오기
+  const { noteIdFromTab, activeTabId, closeTab, openTab } = useTabs(); // 탭스 콘텍스트에서 기능 가져오기
+  const { manager, state } = useRemirror({ 
     extensions: () => [
       ...wysiwygPreset(),
       new ObsidianLinkExtension(),
@@ -35,21 +35,21 @@ export default function NoteView({ id, markdown, onChange }) {
     stringHandler: 'markdown',
     content: markdown,
     selection: 'end',
-  });
+  });// Remirror 라이브러리에서 기능 가져오기, 여러 설정들
   
   /* 커스텀 serializer 준비 (schema 몰라도 됨) */
   const mdSerializer = createMarkdownSerializer();
 
-  const handleClick = useCallback((e) => {
-      const target = e.target.closest('.obsidian-link');
+  const handleClick = useCallback((e) => { // 클릭 처리 핸들러 - 구현한 옵시디언풍 링크 마크다운을 클릭 감지.(리미러에서 기능 제공을 하긴 하는데 onclick으로(!) 코드를 무조건(!!) 문자열로 받는 바람에(!!!) 브라우저에서 코드를 조작할 수 있는 이슈가(!!!!) 있어서 여기서 클릭 감지로 실행........)
+      const target = e.target.closest('.obsidian-link'); 
       console.log(`target : ${target}`);
       if (target) {
         const href = target.getAttribute('data-href');
         console.log(`href : ${href}`);
-        if (href) {
+        if (href) { // 클릭한 개체의 클래스가 obsidian-link이고 data-href 속성이면 실행
           createNoteFromTitle(href); // 그래프 뷰에서 클릭한 노트가 content에서 첫 줄이 # 제목이 아니면 자동으로 붙이기
           
-          openTab({ title: href, type: "note", noteId: href }); 
+          openTab({ title: href, type: "note", noteId: href }); //탭 열기
           // 원하는 함수 실행 (예: 새 창 열기)
           // window.open(`/wiki/${encodeURIComponent(href)}`, '_blank');
           toast.success(`${href} 클릭`);
@@ -58,53 +58,51 @@ export default function NoteView({ id, markdown, onChange }) {
     },[createNoteFromTitle,openTab]);
 
   useEffect(() => {
-    // 마운트 후 모든 링크에 클릭 이벤트 바인딩
+    // 마운트 시 클릭 이벤트 바인딩
     const container = document.getElementById(id);
     container?.addEventListener('click', handleClick);
 
     return () => container?.removeEventListener('click', handleClick);
   }, [handleClick, id]);
 
-  const handleKeyDown = useCallback((e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
+  const handleKeyDown = useCallback((e) => { // 컨트롤 s 구현 (클릭 이벤트와 비슷함)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { // 누른 키가 컨트롤(metakey ⌘) + s 키면 실행
+        e.preventDefault(); // html로 저장되는걸 막아줌. 다른 이벤트 실행을 막음.
 
-        /* 1. 최신 마크다운 직접 가져오기 */
+        // 1. 최신 마크다운 직접 가져오기
+        // 최신 doc → markdown
         const content = mdSerializer.serialize(manager.view.state.doc);   // [[링크]] 포함
 
-        /* 2. 노트 ID 계산 & 저장 */
+        // 2. 노트 ID 계산 & 저장
         const firstLine = content.split('\n')[0].replace(/^#\s*/, '').trim();
         const baseId    = firstLine || 'Untitled';
-        const noteId    = updateNote(id, baseId, content);
-
-        /* 3. 탭 갱신 */
-        if (noteId !== noteIdFromTab(activeTabId)) {
-          closeTab(activeTabId);
-          openTab({ title: noteId, type: 'note', noteId });
-        }
-        // 최신 doc → markdown
-        const md = mdSerializer.serialize(manager.view.state.doc); // [[링크]] 포함
-        toast.success('저장!');
-        // 다운로드
-        const blob = new Blob([md], { type: 'text/markdown' });
+        // const noteId    = updateNote(id, baseId, content); // 저장할때 이상하게 저장됨. 사용 X
+        
+        // if (noteId !== noteIdFromTab(activeTabId)) {
+        //   closeTab(activeTabId);
+        //   openTab({ title: noteId, type: 'note', noteId });
+        // }
+        //서버에 전송해야 함.(저장)
+        toast.success('저장!'); // 토스트 띄우기
+//#region 다운로드
+        const blob = new Blob([content], { type: 'text/markdown' });
         const url  = URL.createObjectURL(blob);
         const a    = Object.assign(document.createElement('a'), {
           href: url,
-          download: `${noteId}.md`,
+          download: `${baseId}.md`,
         });
         a.click();
         URL.revokeObjectURL(url);
-
         toast.success('다운로드 완료');
+//#endregion
       }
     },[closeTab, mdSerializer, noteIdFromTab, openTab, updateNote, manager, id, activeTabId]);
 
-  // CTRL + S
+  // CTRL + S 이벤트 등록
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [manager, id, activeTabId, handleKeyDown]);
-
 
   // DOM
   return (
@@ -112,7 +110,7 @@ export default function NoteView({ id, markdown, onChange }) {
       <Remirror
         manager={manager}
         initialContent={state}
-        onChange={({ helpers }) => {
+        onChange={({ helpers }) => { // helpers.getmarkdown을 쓰면 remirror에서 파싱하므로 이상한 값이 나옴. 직접 구현한 파싱 메서드 사용.
           const updateMarkdown = mdSerializer.serialize(manager.view.state.doc);
           markdownRef.current = updateMarkdown;
 

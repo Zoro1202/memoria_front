@@ -89,21 +89,21 @@ export default function GraphView({ data, onSelect }) {
       </div>
 
       <ForceGraph2D
-        ref={fgRef}
-        graphData={data}
-        backgroundColor="#0f0f0f"
-        nodeRelSize={nodeSize}
-        linkWidth={linkWidth}
-        linkColor={(link) => {
-          const sourceId = link.source.id || link.source;
-          const targetId = link.target.id || link.target;
+        ref={fgRef} // useref 를 사용해 forcegraph2d 값 변경
+        graphData={data} // 그래프 데이타를 부모로부터 data 프롭으로 받아옴
+        backgroundColor="#0f0f0f" // 백그라운드 컬러
+        nodeRelSize={nodeSize} // 노드의 실제 클릭 사이즈 (밑에nodePointerAreaPaint에서 다시 구성함)
+        linkWidth={linkWidth} // 링크 넓이
+        linkColor={(link) => { // 링크 색깔 : 포커스된 노드에 연결된 링크만 강조 표시
+          const sourceId = link.source.id || link.source; // 소스
+          const targetId = link.target.id || link.target; // 타겟
           const isConnected =
             hoverNode &&
             (hoverNode.id === sourceId || hoverNode.id === targetId);
 
-          return isConnected ? "#f59e0b" : "#52525b";
+          return isConnected ? "#f59e0b" : "#52525b";// 연결 노드만 밝게
         }}
-        onNodeClick={(node) => {
+        onNodeClick={(node) => { // 노드 클릭 시 해당 노드의 노트를 onSelect(콜백)으로 넘김 -> 부모쪽에서 opentab으로 노트 열기
           // fgRef.current.zoom(1, 300);
           fgRef.current.centerAt(node.x, node.y, 1000); // center at 으로 노드에 카메라 맞추기 1초
           fgRef.current.zoom(2, 1000); // // zoom하기 1.5초
@@ -113,36 +113,36 @@ export default function GraphView({ data, onSelect }) {
           // onSelect(node.id);
         }}
         // hovernode state로 어쩌고 저쩌고
-        nodeCanvasObject={(node, ctx, globalScale) => {
-          const r = getRadius(node, globalScale);
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r, 0,2*Math.PI, false); // 시작 각도 : 0, 끝 각도 2파이(360) -> 원 그리기
-          ctx.fillStyle = (hoverNode &&
-            (hoverNode.id === node.id ||
+        nodeCanvasObject={(node, ctx, globalScale) => { // 노드 그리기 설정
+          const r = getRadius(node, globalScale); // r : 반지름
+          ctx.beginPath(); // path 그리기 시작
+          ctx.arc(node.x, node.y, r, 0,2*Math.PI, false); // 노드 그리기 : 시작 각도 : 0, 끝 각도 2파이(360) -> 원 그리기, 화면 크기에 상관없이 일관된 크기를 유지
+          ctx.fillStyle = (hoverNode && // 노드 색깔 포커스된 노드와 연결된 노드 강조 표시
+            (hoverNode.id === node.id || 
             data.links.some(l => ((l.source.id || l.source) === hoverNode.id && (l.target.id || l.target) === node.id) ||
                                   ((l.target.id || l.target) === hoverNode.id && (l.source.id || l.source) === node.id))))
               ? '#f59e0b'             // 연결 노드만 밝게
               : (node.inactive ? '#52525b' : '#a1a1aa');
-          ctx.fill();
-          if (globalScale >= zoom) {
-            const fontSize = 12 / globalScale;
-            ctx.font = `${fontSize}px Sans-Serif`;
-            ctx.fillStyle = "#f4f4f5";
+          ctx.fill(); // fill 로 색칠
+          if (globalScale >= zoom) { // globalscale(현재 줌)이 zoom 값보다 커야 텍스트 표시 
+            const fontSize = 12 / globalScale; // 원 그리기처럼 화면 크기 상관없이 일관된 크기 유지
+            ctx.font = `${fontSize}px Sans-Serif`; //폰트 설정
+            ctx.fillStyle = "#f4f4f5"; // 폰트 색깔 설정
             // ctx.fillText(node.id, node.x + (10 + nodeSize) / globalScale, node.y + 4 / globalScale);
-            ctx.fillText(node.id, (node.x + (5/globalScale))+ r, node.y + 4 / globalScale);
+            ctx.fillText(node.id, (node.x + (5/globalScale))+ r, node.y + 4 / globalScale); // 텍스트 지정된 위치에 그리기 : 위치도 폰트 사이즈처럼 화면 크기에 상관없이 고정되게 함.
           }
         }}
-        nodePointerAreaPaint={(node, color, ctx, globalScale) => {
-          const r = getRadius(node, globalScale);// globalScale 이미 내부 변환에 포함됨
+        nodePointerAreaPaint={(node, color, ctx, globalScale) => { // 노드 실제 클릭되는 사이즈 그리기 위에 노드 그리는건 다름
+          const r = getRadius(node, globalScale); // r 구하기
           ctx.fillStyle = color;                 // 반드시 hit-color 사용!
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r, 0,2*Math.PI, false);
-          ctx.fill();
+          ctx.beginPath(); // 그리기
+          ctx.arc(node.x, node.y, r, 0,2*Math.PI, false); // 위랑 완전 같아야함.
+          ctx.fill(); // 색칠
         }}    
         //호버, 드래그 시 선택된 노드 변경 state로 관리 
-        onNodeHover={(setHoverNode)}
-        onNodeDrag={(setHoverNode)}
-        onNodeDragEnd={()=>setHoverNode(null)}
+        onNodeHover={(setHoverNode)} // 호버
+        onNodeDrag={(setHoverNode)} // 드래그
+        onNodeDragEnd={()=>setHoverNode(null)} // 드래그 끝날때 널값 안넣어주면 가끔 강조 계속 유지됨
       />
     </div>
   );
