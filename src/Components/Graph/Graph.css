@@ -64,3 +64,76 @@
 .value {
   font-variant-numeric: tabular-nums;
 }
+
+.floating-panel-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  width: 260px;
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  color: white;
+  font-family: sans-serif;
+  overflow: hidden;
+}
+
+.floating-panel {
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 12px;
+  width: 260px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease, opacity 0.3s ease, max-height 0.3s ease;
+}
+
+.floating-panel.closed {
+  transform: translateX(100%);
+  opacity: 0;
+  max-height: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.toggle-button {
+  background-color: #27272a;
+  color: #f4f4f5;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.toggle-button:hover {
+  background-color: #3f3f46;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px;
+  background: #27272a;
+  border-bottom: 1px solid #3f3f46;
+}
+
+/* 열리고 닫히는 본문 */
+.panel-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 1000px;
+  opacity: 1;
+  padding: 12px;
+}
+
+.panel-body.closed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 12px; /* 좌우 여백 유지, 상하는 없앰 */
+  pointer-events: none;
+}

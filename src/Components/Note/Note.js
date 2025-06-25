@@ -4,14 +4,15 @@ import { Remirror, useRemirror, EditorComponent } from '@remirror/react';
 import { MarkdownExtension } from '@remirror/extension-markdown';
 import { wysiwygPreset } from '@remirror/preset-wysiwyg';
 import {
-  Toolbar,
+  FloatingToolbar,//드래그 시 툴바
+  Toolbar, // 상단 툴바
   FormattingButtonGroup,    // ← 여기 링크 토글 포함
-  ListButtonGroup,
-  HeadingLevelButtonGroup,
-  ToggleCodeBlockButton,
-  InsertHorizontalRuleButton,
-  UndoButton,
-  RedoButton,
+  ListButtonGroup, // 리스트 버튼 그룹
+  HeadingLevelButtonGroup, // 헤딩 레벨 버튼 그룹
+  ToggleCodeBlockButton, // 코드 블록 토글 버튼
+  InsertHorizontalRuleButton, // 수평선 삽입 버튼
+  UndoButton, // 실행 취소 버튼
+  RedoButton, // 다시 실행 버튼
   VerticalDivider,                // 버튼 사이 구분용
 } from '@remirror/react-ui';
 import { useNotes } from '../../Contexts/NotesContext'; // notes Context
@@ -133,6 +134,9 @@ export default function NoteView({ id, markdown, onChange }) {
           <RedoButton />
           {/* Table 관련 버튼은 너무 복잡함 */}
         </Toolbar>
+        <FloatingToolbar>
+          <FormattingButtonGroup />
+        </FloatingToolbar>
         <EditorComponent />
       </Remirror>
       {/* <Toaster/> 이거 상위 프로퍼티에 넣음(VaultApp)*/}
