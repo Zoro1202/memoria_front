@@ -3,23 +3,24 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import "./Graph.css"; // Assuming you have a CSS file for styles
 import toast from "react-hot-toast";
-import { forceX, forceY, forceRadial } from 'd3-force-3d'; // 또는 'd3-force'
+import { forceRadial, } from 'd3-force-3d'; // ForceGraph2D 에서 쓰고있는거 뽀려옴. 프로젝트 의존성에는 없는데 사용 가능.
 export default function GraphView({ data, onSelect }) {
   const fgRef = useRef(); // useRef
 
-  //Slider에 들어가는 State들 관련
+  //#region Graph State들 관련
   //Display
-  const [nodeSize, setNodeSize] = useState(10);
-  const [linkWidth, setLinkWidth] = useState(1);
-  const [zoom, setZoom] = useState(1.5);
+  const [nodeSize, setNodeSize] = useState(10);//노드 사이즈
+  const [linkWidth, setLinkWidth] = useState(1); // 링크 두께
+  const [zoom, setZoom] = useState(1.5);  // 텍스트 표시 시작점임.
   const [hoverNode, setHoverNode] = useState(null); // 마우스 올려논 노드 표시
 
   //Physics
-  const [centerForce, setCenterForce] = useState(0.1);
-  const [linkStrength, setLinkStrength] = useState(1);
-  const [repulsion, setRepulsion] = useState(-50);
-  const [linkDistance, setLinkDistance] = useState(100);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [centerForce, setCenterForce] = useState(0.1); // 중심 장력(중력같은느낌?)
+  const [linkStrength, setLinkStrength] = useState(1); // 링크 거리가 유지되는 힘?
+  const [repulsion, setRepulsion] = useState(-50); // 노드 간 척력
+  const [linkDistance, setLinkDistance] = useState(100); // 링크 거리
+  const [panelOpen, setPanelOpen] = useState(true); // 판넬 오픈 state
+  //#endregion
 
   // 피직스 설정, 슬라이더(플로팅 판넬)에서 값 가져옴
   useEffect(() => {
@@ -55,7 +56,7 @@ export default function GraphView({ data, onSelect }) {
 
     return map; // 필요하면 maxDegree도 여기서 함께 반환
   }, [data.links]);
-  // 링크 수에 따라 크기
+  // 링크 수에 따라 크기 구하기(절대값 아님. 상대값임. 최소 크기 1, 링크 1마다 0.1씩 늘어남)
   const getRadius = (node, scale = 1) => {
     const deg = degreeMap[node.id] ?? 0;     // 연결 수
     return (nodeSize * (1+deg/10)) / scale; // 1 + (0.1 * n) 크기 0.1씩 증가
