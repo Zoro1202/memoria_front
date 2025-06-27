@@ -15,7 +15,7 @@ export async function uploadSingleNote(noteId, content) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("http://127.0.0.1:8000/upload", {
+  const res = await fetch("http://127.0.0.1:8000/summarize", {
     method: "POST",
     body: formData,
   });
