@@ -10,7 +10,7 @@ import {
   extractKeywords,
   insertSummaryNote
 } from "../Components/Note/note_summary";
-
+import {createMarkdownSerializer} from '../Components/Obsidian/MDSerializer'
 
 export default function VaultApp() {
   //노트 정보들 담고있는 context
@@ -49,10 +49,10 @@ export default function VaultApp() {
               const currentNoteId = noteIdFromTab(activeTabId);
               const currentNoteContent = notes[currentNoteId];
               if (!currentNoteContent) throw new Error("노트 내용 없음");
-
-              const summaryObj = await summarizeMeeting(currentNoteContent);
-              const markdown = await generateMarkdown(summaryObj.raw);
-
+              const mdSerializer = createMarkdownSerializer();
+              const serializedContent = mdSerializer.serialize(currentNoteContent);
+              const summaryObj = await summarizeMeeting(serializedContent);
+              const markdown = await generateMarkdown(summaryObj);
               const newId = insertSummaryNote({
                 currentId: currentNoteId,
                 markdown,

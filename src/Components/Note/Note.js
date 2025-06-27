@@ -26,6 +26,7 @@ export default function NoteView({ id, markdown, onChange }) {
   const markdownRef = useRef(markdown); // 마크다운 useRef 사용으로 DOM에서 변경한 변경사항 접근
   const { updateNote ,createNoteFromTitle, updateGraphLinksFromContent  } = useNotes(); // 노트 콘텍스트에서 기능 가져오기
   const { noteIdFromTab, activeTabId, closeTab, openTab } = useTabs(); // 탭스 콘텍스트에서 기능 가져오기
+  const mdSerializer = createMarkdownSerializer();
   const { manager, state } = useRemirror({ 
     extensions: () => [
       ...wysiwygPreset(),
@@ -38,7 +39,6 @@ export default function NoteView({ id, markdown, onChange }) {
   });// Remirror 라이브러리에서 기능 가져오기, 여러 설정들
   
   /* 커스텀 serializer 준비 (schema 몰라도 됨) */
-  const mdSerializer = createMarkdownSerializer();
 
   const handleClick = useCallback((e) => { // 클릭 처리 핸들러 - 구현한 옵시디언풍 링크 마크다운을 클릭 감지.(리미러에서 기능 제공을 하긴 하는데 onclick으로(!) 코드를 무조건(!!) 문자열로 받는 바람에(!!!) 브라우저에서 코드를 조작할 수 있는 이슈가(!!!!) 있어서 여기서 클릭 감지로 실행........)
       const target = e.target.closest('.obsidian-link'); 
@@ -76,13 +76,13 @@ export default function NoteView({ id, markdown, onChange }) {
         // 2. 노트 ID 계산 & 저장
         const firstLine = content.split('\n')[0].replace(/^#\s*/, '').trim();
         const baseId    = firstLine || 'Untitled';
-        // const noteId    = updateNote(id, baseId, content); // 저장할때 이상하게 저장됨. 사용 X
+        const noteId    = updateNote(id, baseId, content); // 저장할때 이상하게 저장됨. 사용 X
         
-        // if (noteId !== noteIdFromTab(activeTabId)) {
-        //   closeTab(activeTabId);
-        //   openTab({ title: noteId, type: 'note', noteId });
-        // }
-        //서버에 전송해야 함.(저장)
+        if (noteId !== noteIdFromTab(activeTabId)) {
+          closeTab(activeTabId);
+          openTab({ title: noteId, type: 'note', noteId });
+        }
+        // 서버에 전송해야 함.(저장)
         toast.success('저장!'); // 토스트 띄우기
 //#region 다운로드
         const blob = new Blob([content], { type: 'text/markdown' });

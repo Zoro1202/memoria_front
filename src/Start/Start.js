@@ -5,7 +5,7 @@ export default function Start() {
   const navigate = useNavigate();
   
   const handleLogin = () => {
-    navigate('/login'); // Uncomment this line to redirect to the login page
+    window.location.href = 'http://login.memoriatest.kro.kr';
   };
   const handleEnter = () => {
     navigate('/vault'); // Uncomment this line to redirect to the graph page

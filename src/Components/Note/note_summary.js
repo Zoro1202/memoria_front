@@ -1,85 +1,85 @@
-// note_summary.js (React 환경 전용)
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// note_summary.js
+const SERVER_URL = "http://127.0.0.1:8000"; // ← 여기를 실제 서버 IP로 바꿔줘
 
-const genAI = new GoogleGenerativeAI("AIzaSyD5wPXemmyluu3D4_UGmnnkNXUFoB5UvTk");
+/**
+ * 서버에 회의록 텍스트를 보내 요약 및 키워드를 받아오는 함수
+ * @param {string} text - 회의록 전체 텍스트
+ * @returns {Promise<{ markdown: string, summary: string, keywords: string[], filename: string, raw: string }>}
+ */
+export async function summarizeMeeting(text) {
+  try {
+    const response = await fetch(`${SERVER_URL}/summarize`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
 
-// [[키워드]] 추출
+    if (!response.ok) {
+      throw new Error(`서버 오류: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      ...data,
+      raw: text
+    };
+  } catch (error) {
+    console.error("요약 API 호출 오류:", error);
+    return { error: error.message };
+  }
+}
+
+/**
+ * 서버에 저장된 마크다운 파일을 다운로드하는 함수
+ * @param {string} filename - 서버에 저장된 파일 이름
+ */
+export function downloadMarkdownFile(filename) {
+  const link = document.createElement("a");
+  link.href = `${SERVER_URL}/download?filename=${encodeURIComponent(filename)}`;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * 서버 응답 객체에서 마크다운 텍스트만 추출
+ * @param {{ markdown: string }} summaryObj
+ * @returns {string}
+ */
+export function generateMarkdown(summaryObj) {
+  return summaryObj.markdown || "";
+}
+
+/**
+ * 마크다운 텍스트에서 [[키워드]] 형식으로 된 키워드만 배열로 추출
+ * @param {string} markdownText
+ * @returns {string[]} 키워드 배열
+ */
 export function extractKeywords(markdownText) {
   const regex = /\[\[([^\[\]]+?)\]\]/g;
-  return [...markdownText.matchAll(regex)].map(match => match[1]);
-}
-
-// 부정 문장 강조
-export function highlightNegativeSentences(text) {
-  const negativeKeywords = [
-    "문제", "어렵", "불가능", "실패", "불만", "지연", "손해", "실수", "불편", "부족", "무리", "비효율", "불확실", "혼란",
-    "리스크", "위험", "중단", "취소", "부정적", "해결되지", "이슈", "안 됨", "안됨", "안됐다", "불통"
-  ];
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  return sentences.map(sentence => {
-    if (negativeKeywords.some(k => sentence.includes(k))) {
-      return `<span style="background-color: #ffcccc; color: #990000;">${sentence}</span>`;
-    } else return sentence;
-  }).join(" ");
-}
-
-// 회의 요약
-export async function summarizeMeeting(text) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const dynamicTokens = Math.floor(text.length * 0.5);
-  const adjustedMax = Math.max(300, Math.min(1500, dynamicTokens, 700));
-
-  const prompt = `다음 회의록을 중요한 내용 위주로 요약해 주세요. 화자별 발언이 포함되어 있습니다.\n\n${text}`;
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.7, maxOutputTokens: adjustedMax }
-  });
-
-  const summary = result.response.candidates[0].content.parts[0].text;
-  const trimmed = summary.length > 4000 ? summary.slice(0, 4000) + "..." : summary;
-
-  return {
-    raw: trimmed,
-    highlighted: highlightNegativeSentences(trimmed)
-  };
-}
-
-// 요약 기반 마크다운 생성
-export async function generateMarkdown(summaryText) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-  const prompt = `You are an AI assistant that extracts key topics and keywords from meeting summaries. ...요약: ${summaryText} 예시: 핵심 키워드: [[친환경 사무실]], [[안성재]], [[신규 사업 전략]] ## 토픽 1: 안성재의 프랜차이즈 사업 - 내용은 여기에`;
-
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.5, maxOutputTokens: 1000 }
-  });
-
-  const markdown = result.response.candidates[0].content.parts[0].text;
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "_").slice(0, 19);
-
-  return `# 회의록 요약 및 키워드 (${timestamp})\n\n## 원문 요약\n${summaryText}\n\n---\n\n## 핵심 키워드 및 토픽\n${markdown}`;
-}
-
-// 👉 저장 대신 Context 사용 예시 함수
-export function insertSummaryNote({
-  currentId,
-  markdown,
-  notes,
-  setNotes,
-  openTab,
-  setActiveTabId
-}) {
-  // 제목 중복 방지
-  let newId = `요약_${currentId}`;
-  let i = 1;
-  while (notes.hasOwnProperty(newId)) {
-    newId = `요약_${currentId}(${i++})`;
+  const keywords = [];
+  let match;
+  while ((match = regex.exec(markdownText)) !== null) {
+    keywords.push(match[1]);
   }
+  return keywords;
+}
 
-  setNotes(prev => ({ ...prev, [newId]: markdown }));
+/**
+ * 생성된 요약 마크다운을 새 노트로 삽입하고 탭 열기
+ * @param {object} param0
+ * @returns {string} 새 노트 ID
+ */
+export function insertSummaryNote({ currentId, markdown, notes, setNotes, openTab, setActiveTabId }) {
+  const newId = `${currentId}_요약`;
+  setNotes({
+    ...notes, // 스프레드 연산자 : 기존 notes에 있는 데이터를 다 가져오기
+    [newId]: markdown // 여기다 새로운 데이터 추가
+  });
   openTab({ title: newId, type: "note", noteId: newId });
   setActiveTabId(newId);
-
   return newId;
 }
