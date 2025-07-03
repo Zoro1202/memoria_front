@@ -1,46 +1,43 @@
-//NotesContext.js
-//노트 관리 context
-//사용하려는 스코프 상위에 provider로 감싸줘야 사용 가능
-//나중에 백엔드와 통신해야 함
+// src/Contexts/NotesContext.js
+
 import React, { createContext, useContext, useMemo, useState, useCallback } from "react";
-import {toast} from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
+
 const NotesContext = createContext();
 
+export function useNotes() {
+  return useContext(NotesContext);
+}
+
 export function NotesProvider({ children }) {
-  //여기서 
+  // `notes`의 각 항목을 { content: "..." } 객체 형태로 통일합니다.
   const [notes, setNotes] = useState({
-    Welcome: "# Welcome\nThis is **your first note**!",
-    "test-embedding": "# test-embedding\n\n* write something …\n[[asdf]]\n",
-    "test-embedding2": "# test-embedding2\n\n* write something else …",
-    "test-embedding3": "# test-embedding3\n\n* write something more …",
-    "test-embedding4": "# test-embedding4\n\n* write something again …",
-    // ...
-    // "새 노트6":"# 새노트 6\n\n**새 노트!**\n\n[[asdf]]",
+    "Welcome": { content: "# Welcome\nThis is **your first note**!" },
+    "test-embedding": { content: "# test-embedding\n\n* write something …\n[[asdf]]\n" },
+    "test-embedding2": { content: "# test-embedding2\n\n* write something else …" },
+    "test-embedding3": { content: "# test-embedding3\n\n* write something more …" },
+    "test-embedding4": { content: "# test-embedding4\n\n* write something again …" },
   });
 
-  const [links, setLinks] =useState([
+  // AI 도우미가 사용할, 현재 활성화된 노트의 내용을 담을 상태
+  const [activeNoteContent, setActiveNoteContent] = useState('');
+
+  const [links, setLinks] = useState([
     { source: "Welcome", target: "test-embedding" },
     { source: "Welcome", target: "test-embedding2" },
     { source: "test-embedding", target: "test-embedding3" },
-    { source: "test-embedding3", target: "1"},
-    { source: "test-embedding3", target: "4"},
-    { source: "test-embedding3", target: "10"},
-    // ...
+    { source: "test-embedding3", target: "1" },
+    { source: "test-embedding3", target: "4" },
+    { source: "test-embedding3", target: "10" },
   ]);
 
   const createNoteFromTitle = useCallback((title) => {
-    // content에서 첫 줄이 # 제목이 아니면 자동으로 붙이기
     const nt = new Set(Object.keys(notes));
-    if(nt.has(title))
-      return;
+    if (nt.has(title)) return;
     const content = `# ${title}\n**${title} 노트 작성!**`;
-    // toast.loading(`${title} 만드는 중...`, {duration:1000});
-    // 새로운 notes 구성
-    setNotes(prev=>({...prev, [title]:content}));
-  },[notes]);
+    setNotes(prev => ({ ...prev, [title]: { content } }));
+  }, [notes]);
 
-  //함수 캐싱을 위해 useCallback
-  //컨트롤 s 누르면 호출되기 때문에 개많이 호출될 예정이므로 useCallback으로 성능 개선
   const updateNote = useCallback((oldId, newId, content) => {
     let id = newId?.trim() || "Untitled";
     const titleSets = new Set(Object.keys(notes));
@@ -64,20 +61,22 @@ export function NotesProvider({ children }) {
     }
 
     const newNotes = { ...notes };
-    delete newNotes[oldId];
-    newNotes[id] = content;
+    if(oldId !== id) {
+        delete newNotes[oldId];
+    }
+    
+    // content만 업데이트
+    newNotes[id] = { ...newNotes[id], content };
     setNotes(newNotes);
     return id;
-  }, [notes, setNotes]); // 의존성에 notes, setNotes 필요
-  
-  //useMemo useCallback과 동일함.
+  }, [notes]);
+
   const graphData = useMemo(() => {
     const noteNodeIds = Object.keys(notes);
     const realNodes = noteNodeIds.map(id => ({ id, inactive: false }));
 
     const linkNodeIds = new Set();
     const cleanedLinks = [];
-    //links state에서 linkNodeIds로 추출
     links.forEach(link => {
       const source = typeof link.source === "string" ? link.source : link.source.id;
       const target = typeof link.target === "string" ? link.target : link.target.id;
@@ -85,7 +84,6 @@ export function NotesProvider({ children }) {
       linkNodeIds.add(target);
       cleanedLinks.push({ source, target });
     });
-    // 비활성화 노드 적용
     const missingNodes = Array.from(linkNodeIds)
       .filter(id => !noteNodeIds.includes(id))
       .map(id => ({ id, inactive: true }));
@@ -115,18 +113,23 @@ export function NotesProvider({ children }) {
     });
   }, [setLinks, createNoteFromTitle]);
 
-
-  
+  // Provider에 전달할 모든 상태와 함수를 여기에 포함시킵니다.
+  const value = {
+    notes,
+    setNotes,
+    links,
+    setLinks,
+    graphData,
+    updateNote,
+    createNoteFromTitle,
+    updateGraphLinksFromContent,
+    activeNoteContent,     // AI 도우미용 상태
+    setActiveNoteContent,  // AI 도우미용 상태 업데이트 함수
+  };
 
   return (
-    <NotesContext.Provider value={{ notes, setNotes, setLinks, graphData, updateNote, createNoteFromTitle, updateGraphLinksFromContent}}>
+    <NotesContext.Provider value={value}>
       {children}
     </NotesContext.Provider>
   );
 }
-
-// Hook으로 편하게 사용
-export function useNotes() {
-  return useContext(NotesContext);
-}
-

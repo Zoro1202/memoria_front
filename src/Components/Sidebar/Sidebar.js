@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Network } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Network, Group } from 'lucide-react';
 import VaultManager from '../../Components/VaultManager/VaultManager';
 
 import './Sidebar.css';
@@ -60,6 +60,10 @@ export default function SidebarLayout() {
 
         {isOpen && (
           <div className="sidebar-content">
+            <button className='note-group-btn' onClick={()=>console.log("GROUP_CLICK")}>
+              <Group size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+              그룹
+            </button>
             <button className="add-note-btn" onClick={handleAddNote}>
               <Plus size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
               새 노트
@@ -68,6 +72,7 @@ export default function SidebarLayout() {
               <Network size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
               그래프 보기
             </button>
+            
           </div>
         )}
 
@@ -80,10 +85,6 @@ export default function SidebarLayout() {
       </div>
 
       <VaultManager ref={vaultRef} />
-
-      <div className="main-content">
-        메인 컨텐츠 영역 - 필요시 추가
-      </div>
     </div>
   );
 }

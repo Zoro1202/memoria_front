@@ -1,0 +1,176 @@
+/* src/Components/Util/AiActionsWidget.css */
+
+@keyframes slideUpFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 메인 컨테이너 --- */
+.ai-actions-widget {
+  width: 450px;
+  min-height: 280px;
+  background-color: #202123; /* 고급스러운 다크 그레이 */
+  color: #ECECEC;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px; /* 부드러운 프레임 */
+  box-shadow: 0px 10px 40px -5px rgba(0, 0, 0, 0.5); /* 입체적인 그림자 */
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUpFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- 헤더 --- */
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px 12px 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.widget-header h4 { margin: 0; font-size: 1rem; font-weight: 500; color: #FFFFFF; }
+.widget-close-button { background: none; border: none; font-size: 24px; cursor: pointer; color: #9E9E9E; transition: color 0.2s; }
+.widget-close-button:hover { color: #FFFFFF; }
+
+/* --- 컨텐츠 래퍼 --- */
+.widget-content-wrapper {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 내부 요소가 삐져나가는 것을 방지 */
+}
+.widget-view {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.widget-view p {
+  margin: 0 0 16px 0;
+  padding: 0 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+/* --- 채팅 입력창 --- */
+.chat-input {
+  width: 100%;
+  box-sizing: border-box; /* 패딩과 테두리를 너비에 포함시켜 튀어나옴 방지 */
+  background-color: #353740;
+  border: 1px solid #555;
+  border-radius: 10px;
+  color: #ECECEC;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+.chat-input:focus { outline: none; border-color: #4A90E2; }
+.chat-input::placeholder { color: #8E8E8E; }
+
+/* --- 액션 버튼 --- */
+.action-button { 
+  display: flex; 
+  align-items: center; 
+  width: 100%; 
+  padding: 12px; 
+  margin-top: 4px; 
+  border: none; 
+  background-color: transparent; 
+  border-radius: 8px; 
+  text-align: left; 
+  font-size: 0.9rem; 
+  color: #ECECEC; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+.action-button:hover { background-color: #353740; }
+.action-button .action-icon { 
+  margin-right: 16px; 
+  font-size: 1.2rem; 
+  width: 24px; 
+  text-align: center; 
+}
+
+/* --- 채팅 결과 뷰 --- */
+.chat-view { justify-content: space-between; }
+.chat-history { 
+  flex-grow: 1; 
+  overflow-y: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+  padding: 8px; 
+}
+.chat-message { 
+  max-width: 85%; 
+  padding: 10px 15px; 
+  border-radius: 18px; 
+  word-wrap: break-word; 
+  line-height: 1.5; 
+}
+.chat-message p { 
+  margin: 0; 
+  font-size: 0.9rem; 
+  white-space: pre-wrap; 
+  padding: 0; 
+}
+.chat-message.user { 
+  align-self: flex-end; 
+  background-color: #4A90E2; 
+  color: white; 
+  border-bottom-right-radius: 4px; 
+}
+.chat-message.ai { 
+  align-self: flex-start; 
+  background-color: #353740; 
+  color: #ECECEC; 
+  border-bottom-left-radius: 4px; 
+}
+
+/* --- 요약 결과 뷰 --- */
+.result-view { justify-content: space-between; }
+.result-view pre { 
+  background-color: rgba(0,0,0,0.2); 
+  border: 1px solid #3D3D3D; 
+  padding: 12px; 
+  border-radius: 8px; 
+  white-space: pre-wrap; 
+  max-height: 350px; 
+  overflow-y: auto; 
+  flex-grow: 1; 
+  font-size: 0.85rem; 
+  line-height: 1.6; 
+}
+
+/* --- 하단 버튼 영역 --- */
+.result-actions { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 10px; 
+  margin-top: 16px; 
+  padding: 0 8px; 
+}
+.widget-button-secondary { 
+  padding: 8px 16px; 
+  background: #4A4A4A; 
+  color: #FFFFFF; 
+  border: none; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+.widget-button-secondary:hover { background: #5A5A5A; }
+.widget-button-primary { 
+  padding: 8px 16px; 
+  background: #4A90E2; 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+.widget-button-primary:hover { background: #5a9eee; }

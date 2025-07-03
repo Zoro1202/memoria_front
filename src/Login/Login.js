@@ -1,4 +1,5 @@
 // src/pages/Login.js
+// 임시 로그인 페이지. (이제안씀)
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';

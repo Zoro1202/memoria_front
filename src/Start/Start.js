@@ -1,17 +1,24 @@
 import './Start.css';
 import { useNavigate } from 'react-router-dom';
-
+import { getValidAccessToken } from './Utils/auth'; // Import the function to check access token validity
 export default function Start() {
   const navigate = useNavigate();
   
   const handleLogin = () => {
-    window.location.href = 'http://login.memoriatest.kro.kr';
+    const token = getValidAccessToken();
+    if (token) {
+      // 이미 로그인돼 있으면 곧바로 서비스 페이지로
+      navigate('/main');        // or '/'
+    } else {
+      // 없거나 만료 → 로그인 서버로 리다이렉트
+      window.location.href = 'https://login.memoriatest.kro.kr';
+    }
   };
   const handleEnter = () => {
     navigate('/vault'); // Uncomment this line to redirect to the graph page
   };
   
-
+//DOM
   return (
     <div className="start-wrapper">
       <div className="start-container">

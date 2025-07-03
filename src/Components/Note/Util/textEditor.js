@@ -22,12 +22,11 @@ const HOTKEYS = {
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify']
 
-export const TextEditor = ({ initialValue, decorate, renderLeaf }) => {
+export const TextEditor = ({ editor, initialValue, decorate, renderLeaf, onchange }) => {
   const renderElement = useCallback(props => <Element {...props} />, [])
-  const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
   return (
-    <Slate editor={editor} initialValue={initialValue}>
+    <Slate editor={editor} initialValue={initialValue} onChange={onchange}>
       <HToolbar/>
       <Toolbar>
         <MarkButton format="bold" icon="format_bold" />

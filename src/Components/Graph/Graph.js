@@ -4,6 +4,7 @@ import ForceGraph2D from "react-force-graph-2d";
 import "./Graph.css"; // Assuming you have a CSS file for styles
 import toast from "react-hot-toast";
 import { forceRadial, } from 'd3-force-3d'; // ForceGraph2D 에서 쓰고있는거 뽀려옴. 프로젝트 의존성에는 없는데 사용 가능.
+import useWindowSize from "./Utils/Resize";
 export default function GraphView({ data, onSelect }) {
   const fgRef = useRef(); // useRef
 
@@ -13,7 +14,7 @@ export default function GraphView({ data, onSelect }) {
   const [linkWidth, setLinkWidth] = useState(1); // 링크 두께
   const [zoom, setZoom] = useState(1.5);  // 텍스트 표시 시작점임.
   const [hoverNode, setHoverNode] = useState(null); // 마우스 올려논 노드 표시
-
+  const [w, h] = useWindowSize();
   //Physics
   const [centerForce, setCenterForce] = useState(0.1); // 중심 장력(중력같은느낌?)
   const [linkStrength, setLinkStrength] = useState(1); // 링크 거리가 유지되는 힘?
@@ -29,7 +30,6 @@ export default function GraphView({ data, onSelect }) {
       const fg = fgRef.current.d3Force;
 
       // fgRef.current.d3Force('center').strength(centerForce); // 이거 안됨 값이 커지거나 작아지면, 그래프가 이상해짐 center force는 확실히 아닌듯
-      //d3를 사용해야하는데 라이브러리가 뭔지 모르겔므
       fgRef.current
         .d3Force('center', null)                 // 기본 forceCenter 제거
         .d3Force('radial', forceRadial(0, 0, 0)  // radius=0 → (0,0)로 수렴
@@ -91,6 +91,8 @@ export default function GraphView({ data, onSelect }) {
 
       <ForceGraph2D
         ref={fgRef} // useref 를 사용해 forcegraph2d 값 변경
+        width={w}
+        height={h}
         graphData={data} // 그래프 데이타를 부모로부터 data 프롭으로 받아옴
         backgroundColor="#0f0f0f" // 백그라운드 컬러
         nodeRelSize={nodeSize} // 노드의 실제 클릭 사이즈 (밑에nodePointerAreaPaint에서 다시 구성함)

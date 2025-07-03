@@ -1,0 +1,39 @@
+/* AiHelper 컴포넌트의 컨테이너 스타일 */
+.ai-helper-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000; /* 다른 요소들 위에 오도록 z-index 설정 */
+}
+
+/* 동그란 AI 아이콘 버튼 스타일 */
+.ai-trigger-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #333;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s, background-color 0.2s, opacity 0.2s;
+}
+
+.ai-trigger-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ✅ 비활성화된 버튼 스타일 추가 */
+.ai-trigger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.ai-trigger-button:disabled:hover {
+    background-color: white; /* 호버 효과 제거 */
+}

@@ -1,0 +1,19 @@
+{
+   "project_name": "memoria",
+   "description": "React.js를 사용한 웹 애플리케이션입니다.",
+   "ignore": [
+     "**/node_modules/**",
+     "**/.git/**",
+     "**/build/**",
+     "**/dist/**",
+     "**/coverage/**",
+     "**/*.log",
+     ".env",
+     ".env.local",
+     ".env.development",
+     ".env.production",
+     "npm-debug.log*",
+     "yarn-debug.log*",
+     "yarn-error.log*"
+   ]
+}

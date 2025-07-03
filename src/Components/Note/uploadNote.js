@@ -1,25 +1,31 @@
-// src/utils/uploadNotes.js
+import { saveNote } from "./RestAPI_Port";
 
-export async function uploadSingleNote(noteId, content) {
-  if (!noteId) throw new Error("노트 ID가 없습니다.");
-  if (!content) throw new Error("노트 내용이 없습니다.");
+async function handleSave() {
+  try {
+    const data = await saveNote({
+      title: "내 노트 제목",
+      content: "여기에 노트 원문",
+      owner_id: "test-user",
+      group_id: 1,
+    });
+    alert("저장 완료! 새 제목: " + data.title);
+    // 👉 Graph 갱신 필요하면 여기서 getNotes() 호출
+  } catch (err) {
+    alert(err.message);
+  }
+}
 
-  const blob = new Blob([`# ${noteId}\n\n${content}`], {
-    type: "text/plain",
-  });
+import { getNoteDetail } from "./RestAPI_Port";
 
-  const file = new File([blob], `${noteId}.txt`, {
-    type: "text/plain",
-  });
+async function handleNodeClick(noteId) {
+  const data = await getNoteDetail(noteId);
+  console.log("노트 상세:", data);
+  // 👉 에디터에 data.title, data.content 반영
+}
 
-  const formData = new FormData();
-  formData.append("file", file);
+import { getNotes } from "./RestAPI_Port";
 
-  const res = await fetch("http://127.0.0.1:8000/summarize", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!res.ok) throw new Error("서버 전송 실패");
-  return await res.json();
+async function loadGraph() {
+  const notes = await getNotes();
+  // 👉 그래프 라이브러리에 notes 전달해서 노드 생성
 }

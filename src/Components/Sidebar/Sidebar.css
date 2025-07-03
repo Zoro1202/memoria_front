@@ -84,6 +84,25 @@
   background-color: #f0f0f0;
 }
 
+.note-group-btn{
+  background-color: #ffffff;
+  color: #333;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background-color 0.1s ease;
+  user-select: none;
+}
+
+.note-group-btn:hover{
+  background-color: #f0f0f0;
+}
+
 /* 메인 콘텐츠 */
 .main-content {
   flex: 1;

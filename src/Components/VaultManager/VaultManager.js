@@ -3,34 +3,16 @@ import './VaultManager.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import Note from '../Note/Note';
 import GraphView from '../Graph/Graph';
+import { useNotes } from "../../Contexts/NotesContext";
+import { useTabs } from "../../Contexts/TabsContext";
 
 const VaultManager = forwardRef((props, ref) => {
   //state 관련
-  const [notes, setNotes] = useState({
-    "Welcome": "# Welcome\nThis is **your first note**!",
-    "test-embedding": "# test-embedding\n\n* write something …",
-    "test-embedding2": "# test-embedding2\n\n* write something else …",
-    "test-embedding3": "# test-embedding3\n\n* write something more …",
-    "test-embedding4": "# test-embedding4\n\n* write something again …",
-  });
-  
-  const [tabs, setTabs] = useState([]);
-  const [activeTabId, setActiveTabId] = useState(null);
   const [error, setError] = useState('');
-  // notes 가 바뀌면 호출, 아니면 호출되지 않고 그냥 notes의 값을 사용
-  const graphData = useMemo(
-    () => ({
-      nodes: Object.keys(notes).map((id) => ({ id })),
-      links: [
-        { source: "Welcome", target: "test-embedding" },
-        { source: "Welcome", target: "test-embedding2" },
-        { source: "test-embedding", target: "test-embedding3" },
-        { source: "test-embedding2", target: "test-embedding4" },
-        { source: "test-embedding3", target: "test-embedding4" },
-      ],
-    }),
-    [notes]
-  );
+
+  const {notes, setNotes, graphData, } = useNotes();
+  const {tabs, setTabs, activeTabId, setActiveTabId} = useTabs();
+  
   //tabs (의존성 배열)state가 바뀌면 호출
   const addTab = useCallback(() => {
     if (tabs.length >= 30) {
@@ -148,10 +130,10 @@ const VaultManager = forwardRef((props, ref) => {
                     }}
                   />
                 ) : (
-                  <Note 
-                    id={tab.noteId || 'Welcome'}
-                    markdown={notes[tab.noteId || 'Welcome'] ?? ""}
-                    onChange={(md) => setNotes({ ...notes, [tab.noteId || 'Welcome']: md })}
+                  <Note
+                    id={tab.noteId}
+                    markdown={notes[tab.noteId] ?? ""}
+                    onChange={(md) => setNotes({ ...notes, [tab.noteId]: md })}
                   />
                 )}
               </div>

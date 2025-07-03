@@ -43,6 +43,13 @@ export function TabsProvider({ children }) {
     const tab = tabs.find(t => t.id === tabId && t.type === 'note');
     return tab?.noteId ?? null;
   };
+
+  const updateTitle = (tabId, newTitle) => {
+      setTabs(prev =>
+        prev.map(tab => (tab.id === tabId ? {...tab, title: newTitle} : tab))
+      );
+    };
+
   return (
     <TabsContext.Provider value={{
       tabs,
@@ -52,6 +59,7 @@ export function TabsProvider({ children }) {
       openTab,
       closeTab,
       noteIdFromTab,
+      updateTitle
     }}>
       {children}
     </TabsContext.Provider>
