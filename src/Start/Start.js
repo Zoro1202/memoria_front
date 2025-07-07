@@ -1,3 +1,4 @@
+// start.js - 김형우
 import './Start.css';
 import { useNavigate } from 'react-router-dom';
 import { getValidAccessToken } from './Utils/auth'; // Import the function to check access token validity

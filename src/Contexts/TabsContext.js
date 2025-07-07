@@ -1,5 +1,5 @@
-//탭 관리 context
-//사용하려는 스코프 상위에 provider로 감싸줘야 사용 가능
+// 파일: src/Contexts/TabsContext.js
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 const TabsContext = createContext();
@@ -7,7 +7,7 @@ const TabsContext = createContext();
 export function TabsProvider({ children }) {
   const [tabs, setTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
-  //open tab : 탭 열고 탭 id 할당.
+
   const openTab = (tab) => {
     const exists = tabs.find(t => t.noteId === tab.noteId && t.type === tab.type);
     if (exists) {
@@ -21,34 +21,42 @@ export function TabsProvider({ children }) {
     return newId;
   };
 
-  // 탭 바뀔때 실행
   useEffect(() => {
     if (!tabs.find(tab => tab.id === activeTabId)) {
       if (tabs.length > 0) {
-        // console.log(`(before Closing...)current Active Tab : ${activeTabId}`);
         setActiveTabId(tabs[0].id);
-        // console.log(`first tab : ${tabs[0].id}`); // 이 탭 열림
-        //여기서 로그 찍어도 안나옴 usestate에 setstate가 비동기라서 그렇다넹
       } else {
         setActiveTabId(null);
       }
     }
-  }, [tabs, activeTabId]); // 탭 닫긴거 감지
+  }, [tabs, activeTabId]);
 
   const closeTab = (id) => {
-    setTabs(prev => prev.filter(t => t.id !== id)); // 탭 닫기 setTab으로 useEffect에서 tabs 감지
+    setTabs(prev => prev.filter(t => t.id !== id));
   };
   
   const noteIdFromTab = (tabId) => {
     const tab = tabs.find(t => t.id === tabId && t.type === 'note');
     return tab?.noteId ?? null;
   };
-
-  const updateTitle = (tabId, newTitle) => {
-      setTabs(prev =>
-        prev.map(tab => (tab.id === tabId ? {...tab, title: newTitle} : tab))
-      );
-    };
+  
+  // ✅ [수정] updateTitle 함수를 noteId 기준으로 동작하도록 변경합니다.
+  // 이제 이 함수는 "이전 노트 ID"와 "새로운 노트 ID(제목)"를 받습니다.
+  const updateTitle = (oldNoteId, newNoteId) => {
+    setTabs(prevTabs =>
+      prevTabs.map(tab => {
+        // 현재 탭이 변경하려는 노트(oldNoteId)를 열고 있는 경우
+        if (tab.noteId === oldNoteId) {
+          // 탭의 제목과 noteId를 모두 새로운 값으로 업데이트합니다.
+          return { ...tab, title: newNoteId, noteId: newNoteId };
+        }
+        return tab; // 그 외의 탭은 그대로 둡니다.
+      })
+    );
+  };
+  
+  // ❌ updateTabInfo 함수는 updateTitle과 기능이 중복되므로 삭제하거나 주석 처리해도 됩니다.
+  // const updateTabInfo = (tabId, newNoteId) => { ... }
 
   return (
     <TabsContext.Provider value={{
@@ -59,7 +67,7 @@ export function TabsProvider({ children }) {
       openTab,
       closeTab,
       noteIdFromTab,
-      updateTitle
+      updateTitle // 수정된 함수를 전달
     }}>
       {children}
     </TabsContext.Provider>

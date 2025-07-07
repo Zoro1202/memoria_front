@@ -1,7 +1,8 @@
-// src/Contexts/NotesContext.js
+// src/Contexts/NotesContext.js (최종 확인 버전)
 
 import React, { createContext, useContext, useMemo, useState, useCallback } from "react";
 import { toast } from 'react-hot-toast';
+import { deleteNoteFromDB } from '../Components/Note/note_summary';
 
 const NotesContext = createContext();
 
@@ -10,26 +11,15 @@ export function useNotes() {
 }
 
 export function NotesProvider({ children }) {
-  // `notes`의 각 항목을 { content: "..." } 객체 형태로 통일합니다.
   const [notes, setNotes] = useState({
     "Welcome": { content: "# Welcome\nThis is **your first note**!" },
-    "test-embedding": { content: "# test-embedding\n\n* write something …\n[[asdf]]\n" },
-    "test-embedding2": { content: "# test-embedding2\n\n* write something else …" },
-    "test-embedding3": { content: "# test-embedding3\n\n* write something more …" },
-    "test-embedding4": { content: "# test-embedding4\n\n* write something again …" },
   });
-
-  // AI 도우미가 사용할, 현재 활성화된 노트의 내용을 담을 상태
   const [activeNoteContent, setActiveNoteContent] = useState('');
+  const [links, setLinks] = useState([]);
 
-  const [links, setLinks] = useState([
-    { source: "Welcome", target: "test-embedding" },
-    { source: "Welcome", target: "test-embedding2" },
-    { source: "test-embedding", target: "test-embedding3" },
-    { source: "test-embedding3", target: "1" },
-    { source: "test-embedding3", target: "4" },
-    { source: "test-embedding3", target: "10" },
-  ]);
+  // ✅ [추가] AI가 생성한 제목을 임시로 저장할 상태
+  const [aiGeneratedTitle, setAiGeneratedTitle] = useState(null);
+
 
   const createNoteFromTitle = useCallback((title) => {
     const nt = new Set(Object.keys(notes));
@@ -54,44 +44,46 @@ export function NotesProvider({ children }) {
       }
     }
 
-    const lines = content.split('\n');
-    const firstLine = lines[0];
-    if (!/^# /.test(firstLine)) {
-      content = `# ${id}\n${content}`;
-    }
-
     const newNotes = { ...notes };
-    if(oldId !== id) {
+    if(oldId !== id && oldId in newNotes) {
+        // 제목이 변경되면 기존 노트를 복사하고 이전 것은 삭제합니다.
+        const oldNoteData = newNotes[oldId];
         delete newNotes[oldId];
+        newNotes[id] = { ...oldNoteData, content }; // note_id 등 기존 정보 유지
+    } else {
+        // 제목 변경 없이 내용만 업데이트합니다.
+        newNotes[id] = { ...newNotes[id], content };
     }
     
-    // content만 업데이트
-    newNotes[id] = { ...newNotes[id], content };
     setNotes(newNotes);
     return id;
   }, [notes]);
 
+  const deleteExistingNote = useCallback(async (noteTitle) => {
+    const noteToDelete = notes[noteTitle];
+    if (!noteToDelete || !noteToDelete.note_id) {
+        throw new Error("삭제할 노트의 DB ID를 찾을 수 없습니다.");
+    }
+    try {
+        await deleteNoteFromDB(noteToDelete.note_id);
+        setNotes(prevNotes => {
+            const newNotes = { ...prevNotes };
+            delete newNotes[noteTitle];
+            return newNotes;
+        });
+    } catch (error) {
+        console.error("Context에서 노트 삭제 중 오류:", error);
+        throw error;
+    }
+  }, [notes, setNotes]);
+
   const graphData = useMemo(() => {
     const noteNodeIds = Object.keys(notes);
     const realNodes = noteNodeIds.map(id => ({ id, inactive: false }));
-
-    const linkNodeIds = new Set();
-    const cleanedLinks = [];
-    links.forEach(link => {
-      const source = typeof link.source === "string" ? link.source : link.source.id;
-      const target = typeof link.target === "string" ? link.target : link.target.id;
-      linkNodeIds.add(source);
-      linkNodeIds.add(target);
-      cleanedLinks.push({ source, target });
-    });
-    const missingNodes = Array.from(linkNodeIds)
-      .filter(id => !noteNodeIds.includes(id))
-      .map(id => ({ id, inactive: true }));
-
-    return {
-      nodes: [...realNodes, ...missingNodes],
-      links: cleanedLinks,
-    };
+    const linkNodeIds = new Set(links.flatMap(l => [typeof l.source === 'string' ? l.source : l.source.id, typeof l.target === 'string' ? l.target : l.target.id]));
+    const cleanedLinks = links.map(link => ({ source: typeof link.source === 'string' ? link.source : link.source.id, target: typeof link.target === 'string' ? link.target : link.target.id }));
+    const missingNodes = Array.from(linkNodeIds).filter(id => !noteNodeIds.includes(id)).map(id => ({ id, inactive: true }));
+    return { nodes: [...realNodes, ...missingNodes], links: cleanedLinks };
   }, [notes, links]);
 
   const updateGraphLinksFromContent = useCallback((sourceId, markdownContent) => {
@@ -102,29 +94,28 @@ export function NotesProvider({ children }) {
     linkedTitles.forEach(targetId => {
       if (!targetId || sourceId === targetId.trim()) return;
       createNoteFromTitle(targetId.trim());
-
       setLinks(prev => {
-        const alreadyLinked = prev.some(
-          l => l.source === sourceId && l.target === targetId.trim()
-        );
+        const alreadyLinked = prev.some(l => l.source === sourceId && l.target === targetId.trim());
         if (alreadyLinked) return prev;
         return [...prev, { source: sourceId, target: targetId.trim() }];
       });
     });
   }, [setLinks, createNoteFromTitle]);
 
-  // Provider에 전달할 모든 상태와 함수를 여기에 포함시킵니다.
   const value = {
     notes,
     setNotes,
     links,
     setLinks,
     graphData,
-    updateNote,
+    updateNote, // ✅ 여기에 updateNote가 정상적으로 포함되어 있습니다.
     createNoteFromTitle,
     updateGraphLinksFromContent,
-    activeNoteContent,     // AI 도우미용 상태
-    setActiveNoteContent,  // AI 도우미용 상태 업데이트 함수
+    activeNoteContent,
+    setActiveNoteContent,
+    deleteExistingNote,
+    aiGeneratedTitle,
+    setAiGeneratedTitle,
   };
 
   return (

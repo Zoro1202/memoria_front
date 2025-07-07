@@ -1,176 +1,305 @@
-/* src/Components/Util/AiActionsWidget.css */
+/* src/Components/Util/AiActionsWidget.css (수정된 버전) */
 
-@keyframes slideUpFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* --- 메인 컨테이너 --- */
 .ai-actions-widget {
-  width: 450px;
-  min-height: 280px;
-  background-color: #202123; /* 고급스러운 다크 그레이 */
-  color: #ECECEC;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px; /* 부드러운 프레임 */
-  box-shadow: 0px 10px 40px -5px rgba(0, 0, 0, 0.5); /* 입체적인 그림자 */
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  animation: slideUpFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: fixed; right: 20px; bottom: 20px; width: 400px;
+  height: 600px; background-color: #191919; border: 1px solid #383838;
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; overflow: hidden;
+  color: #E3E3E3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* --- 헤더 --- */
+/* 헤더 */
 .widget-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 8px 12px 8px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex; align-items: center; padding: 8px 12px;
+  border-bottom: 1px solid #383838; flex-shrink: 0;
 }
-.widget-header h4 { margin: 0; font-size: 1rem; font-weight: 500; color: #FFFFFF; }
-.widget-close-button { background: none; border: none; font-size: 24px; cursor: pointer; color: #9E9E9E; transition: color 0.2s; }
-.widget-close-button:hover { color: #FFFFFF; }
+.widget-title { font-weight: 500; color: #e0e0e0; margin: 0; font-size: 14px; }
+.widget-header-right { margin-left: auto; }
+.widget-back-button, .widget-close-button {
+  background: none; border: none; color: #888; font-size: 20px;
+  cursor: pointer; line-height: 1; padding: 4px;
+}
+.widget-back-button:hover, .widget-close-button:hover { color: #fff; }
 
-/* --- 컨텐츠 래퍼 --- */
+/* 메인 컨텐츠 영역 */
 .widget-content-wrapper {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* 내부 요소가 삐져나가는 것을 방지 */
-}
-.widget-view {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-.widget-view p {
-  margin: 0 0 16px 0;
-  padding: 0 8px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #FFFFFF;
+  flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* --- 채팅 입력창 --- */
+/* ======================================== */
+/* ⭐⭐⭐ 1. 이 부분에 position: relative; 추가 ⭐⭐⭐ */
+/* ======================================== */
+.main-content-area {
+  flex-grow: 1; overflow-y: auto; padding: 16px 12px;
+  display: flex; flex-direction: column;
+  position: relative; /* 자식 요소의 absolute 포지셔닝 기준점이 됩니다. */
+}
+
+
+/* 페이드인/아웃 애니메이션 */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+.fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+.fade-out { animation: fadeOut 0.3s ease-in-out forwards; pointer-events: none; }
+
+/* 초기 화면 */
+.initial-view-container { padding-top: 40px; }
+.ai-greeting {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; margin-bottom: 24px;
+}
+.ai-icon-background {
+  width: 32px; height: 32px; background-color: #333;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.ai-icon-background svg { stroke: #aaa; stroke-width: 2.5; }
+.ai-greeting h2 { font-size: 18px; font-weight: 600; margin: 0; }
+.ai-service-title { font-size: 12px; color: #888; margin: 0; }
+
+/* 액션 버튼 그룹 */
+.action-button-group { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
+.action-button {
+  display: flex; align-items: center; gap: 12px; background: none;
+  border: none; color: #E0E0E0; padding: 10px 12px;
+  border-radius: 6px; text-align: left; cursor: pointer;
+  width: 100%; transition: background-color 0.15s ease;
+}
+.action-button:hover { background-color: #2a2b2f; }
+.action-button svg { stroke: #888; }
+.action-button span { flex-grow: 1; }
+
+/* 채팅 메시지 */
+.chat-history-wrapper { opacity: 0; }
+.chat-message {
+  padding: 10px 16px; border-radius: 20px; max-width: 80%;
+  word-wrap: break-word; line-height: 1.6; margin-bottom: 10px;
+  font-size: 14px;
+  width: fit-content;
+}
+.chat-message p { margin: 0; white-space: pre-wrap; }
+
+.chat-message.user {
+  align-self: flex-end; /* 오른쪽 정렬 */
+  background-color: #007AFF;
+  color: white;
+  border-bottom-right-radius: 6px;
+  margin-right: -12px; /* 오른쪽 패딩 무시하고 끝선 맞춤 */
+  text-align: right; /* ⭐ 말풍선 안의 텍스트를 오른쪽으로 정렬합니다. */
+}
+.chat-message.ai {
+  background-color: #37373D;
+  color: #E3E3E3;
+  align-self: flex-start; /* 왼쪽으로 붙이기 */
+  border-bottom-left-radius: 6px;
+}
+
+
+/* ======================================== */
+/* ⭐⭐⭐ 2. 이 부분을 수정하여 레이아웃 정상화 ⭐⭐⭐ */
+/* ======================================== */
+/* 요약/번역 결과 */
+.result-only-view, .translate-view {
+    /* position: absolute와 중앙 정렬 속성을 제거하여 일반적인 문서 흐름을 따르도록 합니다. */
+    width: 100%;
+    opacity: 0;
+}
+.result-only-view p {
+  background-color: #2F3035; border-radius: 12px;
+  padding: 16px; white-space: pre-wrap; line-height: 1.6;
+  text-align: left; /* 텍스트를 왼쪽 정렬합니다. */
+}
+.result-apply-button-container { margin-top: 16px; text-align: right; }
+
+/* 로딩 화면은 화면 중앙에 표시되어야 하므로 absolute 유지 */
+.loading-view-full {
+    position: absolute;
+    /* inset: 0은 top, right, bottom, left를 모두 0으로 설정합니다. */
+    /* 부모(.main-content-area) 영역에 꽉 차는 오버레이를 만듭니다. */
+    inset: 0;
+    
+    /* Flexbox를 사용해 오버레이 내부의 콘텐츠를 완벽하게 중앙 정렬합니다. */
+    display: flex;
+    flex-direction: column; /* "요약 중..." 텍스트와 애니메이션을 세로로 배치 */
+    justify-content: center; /* 수직 중앙 정렬 */
+    align-items: center;   /* 수평 중앙 정렬 */
+    
+    /* 로딩 중 뒷 배경을 살짝 어둡게 만들어 집중도를 높입니다. */
+    background-color: rgba(25, 25, 25, 0.7);
+    backdrop-filter: blur(2px);
+    
+    opacity: 0;
+    z-index: 10; /* 다른 요소들 위에 표시되도록 z-index 설정 */
+}
+
+
+.apply-to-note-button {
+  background-image: linear-gradient(to right, #4A5568, #2D3748);
+  color: #E2E8F0; border: 1px solid #4A5568; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.apply-to-note-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+/* 하단 입력창 */
+.chat-input-container-bottom {
+  padding: 8px 12px; border-top: 1px solid #383838; flex-shrink: 0;
+  background-color: #191919;
+}
 .chat-input {
-  width: 100%;
-  box-sizing: border-box; /* 패딩과 테두리를 너비에 포함시켜 튀어나옴 방지 */
-  background-color: #353740;
-  border: 1px solid #555;
-  border-radius: 10px;
-  color: #ECECEC;
-  padding: 12px;
-  margin-bottom: 12px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  resize: vertical;
-  transition: border-color 0.2s;
+  width: 100%; background-color: #2a2b2f; border: 1px solid #444;
+  border-radius: 8px; padding: 10px; color: #E0E0E0;
+  font-size: 14px; resize: none; box-sizing: border-box;
 }
-.chat-input:focus { outline: none; border-color: #4A90E2; }
-.chat-input::placeholder { color: #8E8E8E; }
+.chat-input:focus { outline: none; border-color: #007AFF; }
 
-/* --- 액션 버튼 --- */
-.action-button { 
-  display: flex; 
-  align-items: center; 
-  width: 100%; 
-  padding: 12px; 
-  margin-top: 4px; 
-  border: none; 
-  background-color: transparent; 
-  border-radius: 8px; 
-  text-align: left; 
-  font-size: 0.9rem; 
-  color: #ECECEC; 
-  cursor: pointer; 
-  transition: background-color 0.2s; 
+/* 번역 언어 선택 */
+.translate-guide { margin: 0 0 16px 0; text-align: center; color: #ccc; font-size: 15px; }
+.language-options { display: flex; flex-direction: column; gap: 10px; }
+.language-button {
+  width: 100%; padding: 12px; background-color: #2F3035; color: #f0f0f0;
+  border: 1px solid #444; border-radius: 8px; cursor: pointer; font-size: 14px;
+  transition: background-color 0.2s ease;
 }
-.action-button:hover { background-color: #353740; }
-.action-button .action-icon { 
-  margin-right: 16px; 
-  font-size: 1.2rem; 
-  width: 24px; 
-  text-align: center; 
+.language-button:hover { background-color: #3a3a42; }
+
+/* 로딩 애니메이션 공통 */
+.loader-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #a0a0a0;
+    margin-bottom: 20px;
 }
 
-/* --- 채팅 결과 뷰 --- */
-.chat-view { justify-content: space-between; }
-.chat-history { 
-  flex-grow: 1; 
-  overflow-y: auto; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 12px; 
-  padding: 8px; 
+/* 요약 로딩 애니메이션 */
+.summary-loader {
+    display: flex; flex-direction: column; align-items: center;
 }
-.chat-message { 
-  max-width: 85%; 
-  padding: 10px 15px; 
-  border-radius: 18px; 
-  word-wrap: break-word; 
-  line-height: 1.5; 
+.summary-loader .bar {
+    width: 80px; height: 6px; background-color: #444;
+    border-radius: 3px; margin: 4px 0;
+    animation: summary-pulse 1.5s ease-in-out infinite;
 }
-.chat-message p { 
-  margin: 0; 
-  font-size: 0.9rem; 
-  white-space: pre-wrap; 
-  padding: 0; 
-}
-.chat-message.user { 
-  align-self: flex-end; 
-  background-color: #4A90E2; 
-  color: white; 
-  border-bottom-right-radius: 4px; 
-}
-.chat-message.ai { 
-  align-self: flex-start; 
-  background-color: #353740; 
-  color: #ECECEC; 
-  border-bottom-left-radius: 4px; 
+.summary-loader .bar:nth-child(2) { animation-delay: 0.1s; }
+.summary-loader .bar:nth-child(3) { animation-delay: 0.2s; }
+.summary-loader .bar:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes summary-pulse {
+    0%, 100% { transform: scaleX(1); opacity: 1; }
+    50% { transform: scaleX(0.6); opacity: 0.6; }
 }
 
-/* --- 요약 결과 뷰 --- */
-.result-view { justify-content: space-between; }
-.result-view pre { 
-  background-color: rgba(0,0,0,0.2); 
-  border: 1px solid #3D3D3D; 
-  padding: 12px; 
-  border-radius: 8px; 
-  white-space: pre-wrap; 
-  max-height: 350px; 
-  overflow-y: auto; 
-  flex-grow: 1; 
-  font-size: 0.85rem; 
-  line-height: 1.6; 
+/* 번역 로딩 애니메이션 */
+.translate-loader-wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
 }
 
-/* --- 하단 버튼 영역 --- */
-.result-actions { 
-  display: flex; 
-  justify-content: flex-end; 
-  gap: 10px; 
-  margin-top: 16px; 
-  padding: 0 8px; 
+.translate-loader { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    min-height: 80px;
 }
-.widget-button-secondary { 
-  padding: 8px 16px; 
-  background: #4A4A4A; 
-  color: #FFFFFF; 
-  border: none; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  transition: background-color 0.2s; 
+
+.lang-icon-container {
+    position: relative;
+    width: 120px; /* 아이콘 간의 거리 확보 */
+    height: 50px;
 }
-.widget-button-secondary:hover { background: #5A5A5A; }
-.widget-button-primary { 
-  padding: 8px 16px; 
-  background: #4A90E2; 
-  color: white; 
-  border: none; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  transition: background-color 0.2s; 
+
+.lang-icon {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #333;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
+    transition: transform 0.8s ease-in-out;
 }
-.widget-button-primary:hover { background: #5a9eee; }
+
+#lang-icon-left {
+    left: 0;
+    animation: move-right 2s ease-in-out infinite;
+}
+
+#lang-icon-right {
+    right: 0;
+    animation: move-left 2s ease-in-out infinite;
+}
+
+
+@keyframes move-right {
+    0%, 100% {
+        transform: translateX(0);
+        z-index: 1; /* 처음에는 위에 있도록 설정 */
+    }
+    50% {
+        transform: translateX(70px); /* 오른쪽으로 이동 */
+        z-index: 0; /* 중앙을 지날 때 아래로 가도록 설정 */
+    }
+}
+
+@keyframes move-left {
+    0%, 100% {
+        transform: translateX(0);
+        z-index: 0; /* 처음에는 아래에 있도록 설정 */
+    }
+    50% {
+        transform: translateX(-70px); /* 왼쪽으로 이동 */
+        z-index: 1; /* 중앙을 지날 때 위로 가도록 설정 */
+    }
+}
+
+.action-button-group.vertical {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title-suggestions-view {
+  padding: 10px 15px;
+}
+
+/* ✅ [추가] 새로운 AI 제목 생성 로딩 애니메이션 스타일 */
+.title-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: #555;
+}
+
+.typing-effect {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 3px solid #777; /* 커서 효과 */
+  animation: typing 2.5s steps(30, end) infinite, 
+             blink-caret 0.75s step-end infinite;
+}
+
+/* 타이핑 효과 애니메이션 */
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+/* 커서 깜빡임 효과 애니메이션 */
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #777; }
+}

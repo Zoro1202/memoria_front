@@ -1,39 +1,40 @@
-/* AiHelper 컴포넌트의 컨테이너 스타일 */
 .ai-helper-container {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 1000; /* 다른 요소들 위에 오도록 z-index 설정 */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
 }
 
-/* 동그란 AI 아이콘 버튼 스타일 */
 .ai-trigger-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background-color: white;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #333;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s, background-color 0.2s, opacity 0.2s;
+    /* ======================================================= */
+    /* ⭐⭐⭐ 이 버튼 스타일을 아래와 같이 수정/확인합니다. ⭐⭐⭐ */
+    /* ======================================================= */
+    width: 56px;  /* 버튼 크기 */
+    height: 56px; /* 버튼 크기 */
+    border-radius: 50%; /* 버튼을 완벽한 원으로 만듭니다. */
+    background-color: #ffffff; /* 배경색을 흰색으로 설정 */
+    border: 1px solid #e0e0e0; /* 부드러운 테두리 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 그림자 효과 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 0; /* 내부 패딩 제거 */
 }
 
 .ai-trigger-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* ✅ 비활성화된 버튼 스타일 추가 */
 .ai-trigger-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+    opacity: 0.6;
 }
+
 .ai-trigger-button:disabled:hover {
-    background-color: white; /* 호버 효과 제거 */
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

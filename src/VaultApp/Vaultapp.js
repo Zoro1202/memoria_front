@@ -1,20 +1,24 @@
-// src/VaultApp/Vaultapp.js
+// src/VaultApp/Vaultapp.js (전체 코드)
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import GraphView from "../Components/Graph/Graph";
 import NoteView from "../Components/Note/Note";
 import { useNotes } from "../Contexts/NotesContext";
 import { useTabs } from "../Contexts/TabsContext";
 import { toast, Toaster } from "react-hot-toast";
 import AiHelper from "../Components/Util/AiHelper";
-
-// ✅ [수정] 더 이상 사용하지 않는 processMeetingAndSave 와 downloadMarkdownFile 을 import 목록에서 제거합니다.
-import { listAllNotesFromDB } from "../Components/Note/note_summary";
+// ✅ [수정] intelligentSaveNote 대신 saveNote를 사용합니다.
+import { listAllNotesFromDB, saveNote } from "../Components/Note/note_summary";
 
 export default function VaultApp() {
-  const { notes, setNotes, graphData, createNoteFromTitle, setActiveNoteContent } = useNotes();
+  const { 
+    notes, setNotes, graphData, createNoteFromTitle, setActiveNoteContent,
+    deleteExistingNote
+  } = useNotes();
+  
   const { tabs, activeTabId, setActiveTabId, openTab, closeTab, noteIdFromTab } = useTabs();
 
+  // DB에서 노트 불러오기 (변경 없음)
   useEffect(() => {
     const loadNotesFromDB = async () => {
         try {
@@ -25,14 +29,11 @@ export default function VaultApp() {
                     content: note.content,
                     update_at: note.update_at,
                     note_id: note.note_id,
-                    owner_id: note.owner_id,
+                    subject_id: note.subject_id,
                     group_id: note.group_id,
                 };
             });
-            setNotes((prevNotes) => ({
-                ...prevNotes,
-                ...newNotesFromDB,
-            }));
+            setNotes(prevNotes => ({ ...prevNotes, ...newNotesFromDB }));
         } catch (err) {
             console.error("DB에서 노트 불러오기 실패:", err);
         }
@@ -40,6 +41,7 @@ export default function VaultApp() {
     loadNotesFromDB();
   }, [setNotes]);
 
+  // 활성 탭 콘텐츠 설정 (변경 없음)
   useEffect(() => {
     if (activeTabId && tabs.length > 0) {
       const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -54,6 +56,7 @@ export default function VaultApp() {
     }
   }, [activeTabId, notes, tabs, setActiveNoteContent]);
 
+  // 로컬 '새 노트' 생성 (변경 없음)
   const createNote = () => {
     const newId = "새 노트 " + (Object.keys(notes).length + 1);
     const newContent = "# " + newId + "\n**새 노트!**";
@@ -68,22 +71,90 @@ export default function VaultApp() {
     return newId;
   };
 
-  const deleteNote = (tid) => {
-    if (!tid) return;
-    const noteToDeleteId = noteIdFromTab(tid);
-    if (!noteToDeleteId) return;
-    const newNotes = { ...notes };
-    toast.success(`"${noteToDeleteId}" 노트가 삭제되었습니다.`);
-    delete newNotes[noteToDeleteId];
-    setNotes(newNotes);
-    closeTab(tid);
-  };
+  // 노트 삭제 핸들러 (변경 없음)
+  const deleteNote = useCallback(async (tabId) => {
+    if (!tabId) return;
+    const noteTitle = noteIdFromTab(tabId);
+    if (!noteTitle) return;
+
+    if (!window.confirm(`정말로 "${noteTitle}" 노트를 삭제하시겠습니까?`)) {
+        return;
+    }
+    
+    const note = notes[noteTitle];
+    
+    if (note && note.note_id) {
+        try {
+            await deleteExistingNote(noteTitle);
+            toast.success(`"${noteTitle}" 노트가 DB에서 삭제되었습니다.`);
+            closeTab(tabId);
+        } catch (error) {
+            toast.error(`삭제 실패: ${error.message}`);
+        }
+    } 
+    else {
+        setNotes(prev => {
+            const newNotes = { ...prev };
+            delete newNotes[noteTitle];
+            return newNotes;
+        });
+        toast.success(`"${noteTitle}" 노트가 삭제되었습니다.`);
+        closeTab(tabId);
+    }
+  }, [notes, noteIdFromTab, closeTab, setNotes, deleteExistingNote]);
+
+
+  // ✅ [수정] 지능형 저장 핸들러를 'DB에 저장' 핸들러로 변경
+  const handleSaveToDB = useCallback(async () => {
+    const currentNoteId = noteIdFromTab(activeTabId);
+    if (!currentNoteId) {
+      toast.error("저장할 노트가 활성화되지 않았습니다.");
+      return;
+    }
+    const currentContent = notes[currentNoteId]?.content;
+    if (!currentContent || currentContent.trim() === '') {
+        toast.error("저장할 내용이 없습니다.");
+        return;
+    }
+
+    const toastId = toast.loading("노트를 DB에 저장 중...");
+    try {
+      // note_summary.js의 saveNote 함수를 호출합니다.
+      // 이 함수는 서버에서 노트를 생성하거나 업데이트합니다.
+      await saveNote({
+        title: currentNoteId,
+        content: currentContent,
+      });
+
+      // 저장이 성공하면, DB에서 전체 노트 목록을 다시 불러와 상태를 최신화합니다.
+      // 이렇게 하면 새로 생성된 노트의 note_id도 정상적으로 반영됩니다.
+      const allNotes = await listAllNotesFromDB();
+      const newNotes = {};
+      allNotes.forEach(note => {
+        newNotes[note.title] = {
+          content: note.content,
+          update_at: note.update_at,
+          note_id: note.note_id,
+          subject_id: note.subject_id,
+          group_id: note.group_id,
+        };
+      });
+      setNotes(newNotes);
+      
+      toast.success(`"${currentNoteId}" 노트가 DB에 저장되었습니다!`, { id: toastId });
+
+    } catch (error) {
+      toast.error(`저장 실패: ${error.message}`, { id: toastId });
+    }
+  }, [activeTabId, notes, noteIdFromTab, setNotes]);
 
   return (
     <div className="vault-container">
       <aside className="toolbar">
         <button onClick={() => openTab({ title: "Graph", type: "graph" })}>🕸️</button>
         <button onClick={createNote}>+📝</button>
+        {/* ✅ [수정] 로켓 버튼의 onClick과 title을 변경합니다. */}
+        <button onClick={handleSaveToDB} title="현재 노트를 DB에 저장">🚀</button>
         <button className="btn-del" onClick={() => deleteNote(activeTabId)}>🗑️</button>
       </aside>
       <div className="tab-bar">
@@ -95,10 +166,7 @@ export default function VaultApp() {
           >
             {tab.title}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                closeTab(tab.id);
-              }}
+              onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
             >
               ×
             </button>
@@ -125,11 +193,7 @@ export default function VaultApp() {
                     setActiveNoteContent(String(md));
                     setNotes((prevNotes) => ({
                       ...prevNotes,
-                      [tab.noteId]: {
-                        ...prevNotes[tab.noteId],
-                        content: String(md),
-                        update_at: new Date().toISOString(),
-                      },
+                      [tab.noteId]: { ...prevNotes[tab.noteId], content: String(md) },
                     }));
                   }}
                 />

@@ -1,4 +1,4 @@
-// useWindowSize.js
+// 윈도우 크기 바뀌면 호출되는 이벤트 리스너 사이즈 state 변경함.
 import { useState, useEffect } from 'react';
 
 export default function useWindowSize() {

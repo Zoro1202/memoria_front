@@ -1,3 +1,4 @@
+// src/Contexts/APIs/ResourceAPI.js - 이상영
 export function getResourceAPI() {
   const baseUrl = 'https://login.memoriatest.kro.kr/api';
 

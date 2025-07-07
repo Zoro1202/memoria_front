@@ -1,10 +1,11 @@
-// Graph.js
+// Graph.js - 이상영
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import "./Graph.css"; // Assuming you have a CSS file for styles
 import toast from "react-hot-toast";
 import { forceRadial, } from 'd3-force-3d'; // ForceGraph2D 에서 쓰고있는거 뽀려옴. 프로젝트 의존성에는 없는데 사용 가능.
 import useWindowSize from "./Utils/Resize";
+//data : graph data, onSelect : 노드 클릭시 부모 컴포넌트로 노트 열기 콜백 함수
 export default function GraphView({ data, onSelect }) {
   const fgRef = useRef(); // useRef
 
@@ -12,15 +13,15 @@ export default function GraphView({ data, onSelect }) {
   //Display
   const [nodeSize, setNodeSize] = useState(10);//노드 사이즈
   const [linkWidth, setLinkWidth] = useState(1); // 링크 두께
-  const [zoom, setZoom] = useState(1.5);  // 텍스트 표시 시작점임.
+  const [zoom, setZoom] = useState(0.5);  // 텍스트 표시 시작점임.
   const [hoverNode, setHoverNode] = useState(null); // 마우스 올려논 노드 표시
   const [w, h] = useWindowSize();
   //Physics
-  const [centerForce, setCenterForce] = useState(0.1); // 중심 장력(중력같은느낌?)
+  const [centerForce, setCenterForce] = useState(0.2); // 중심 장력(중력같은느낌?)
   const [linkStrength, setLinkStrength] = useState(1); // 링크 거리가 유지되는 힘?
-  const [repulsion, setRepulsion] = useState(-50); // 노드 간 척력
+  const [repulsion, setRepulsion] = useState(-150); // 노드 간 척력
   const [linkDistance, setLinkDistance] = useState(100); // 링크 거리
-  const [panelOpen, setPanelOpen] = useState(true); // 판넬 오픈 state
+  const [panelOpen, setPanelOpen] = useState(false); // 판넬 오픈 state
   //#endregion
 
   // 피직스 설정, 슬라이더(플로팅 판넬)에서 값 가져옴
@@ -71,7 +72,7 @@ export default function GraphView({ data, onSelect }) {
             className="toggle-button"
             onClick={() => setPanelOpen(prev => !prev)}
           >
-            {panelOpen ? '⮟ 닫기' : '⮝ 열기'}
+            {panelOpen ? '⮝ 닫기' : '⮟ 열기'}
           </button>
         </div>
 
@@ -122,8 +123,8 @@ export default function GraphView({ data, onSelect }) {
           ctx.arc(node.x, node.y, r, 0,2*Math.PI, false); // 노드 그리기 : 시작 각도 : 0, 끝 각도 2파이(360) -> 원 그리기, 화면 크기에 상관없이 일관된 크기를 유지
           ctx.fillStyle = (hoverNode && // 노드 색깔 포커스된 노드와 연결된 노드 강조 표시
             (hoverNode.id === node.id || 
-            data.links.some(l => ((l.source.id || l.source) === hoverNode.id && (l.target.id || l.target) === node.id) ||
-                                  ((l.target.id || l.target) === hoverNode.id && (l.source.id || l.source) === node.id))))
+            data.links.some(l => (l.source.id === hoverNode.id && l.target.id === node.id) || //some :함수 인자로 넣어서 요소중에 하나라도 참이면 참 반환 함.
+                                  (l.target.id === hoverNode.id && l.source.id === node.id))))
               ? '#f59e0b'             // 연결 노드만 밝게
               : (node.inactive ? '#52525b' : '#a1a1aa');
           ctx.fill(); // fill 로 색칠
@@ -135,11 +136,11 @@ export default function GraphView({ data, onSelect }) {
             ctx.fillText(node.id, (node.x + (5/globalScale))+ r, node.y + 4 / globalScale); // 텍스트 지정된 위치에 그리기 : 위치도 폰트 사이즈처럼 화면 크기에 상관없이 고정되게 함.
           }
         }}
-        nodePointerAreaPaint={(node, color, ctx, globalScale) => { // 노드 실제 클릭되는 사이즈 그리기 위에 노드 그리는건 다름
+        nodePointerAreaPaint={(node, color, ctx, globalScale) => { // 노드 실제 클릭되는 사이즈(히트박스?) 그리기 위에 노드 그리는건 다름
           const r = getRadius(node, globalScale); // r 구하기
-          ctx.fillStyle = color;                 // 반드시 hit-color 사용!
+          ctx.fillStyle = color;                 // 노드 색깔 위랑 같아야함.
           ctx.beginPath(); // 그리기
-          ctx.arc(node.x, node.y, r, 0,2*Math.PI, false); // 위랑 완전 같아야함.
+          ctx.arc(node.x, node.y, r, 0,2*Math.PI, false); // 노드 동그라미 그리기 위랑 완전 같아야함.
           ctx.fill(); // 색칠
         }}    
         //호버, 드래그 시 선택된 노드 변경 state로 관리 

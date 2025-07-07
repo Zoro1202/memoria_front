@@ -37,7 +37,7 @@ export const Decorations = () => {
           const matchStart = offset + match.index
           const matchEnd = matchStart + match[0].length
           ranges.push({
-            syntaxToken: match[1],
+            syntaxToken: true,
             anchor: { path, offset: matchStart },
             focus: { path, offset: matchStart + match[1].length },
           })
@@ -47,7 +47,7 @@ export const Decorations = () => {
             focus: { path, offset: matchEnd - match[1].length },
           })
           ranges.push({
-            syntaxToken: match[1],
+            syntaxToken: true,
             anchor: { path, offset: matchEnd - match[1].length },
             focus: { path, offset: matchEnd },
           })
@@ -63,7 +63,7 @@ export const Decorations = () => {
           const matchStart = offset + match.index
           const matchEnd = matchStart + match[0].length
           ranges.push({
-            syntaxToken: match[1],
+            syntaxToken: true,
             anchor: { path, offset: matchStart },
             focus: { path, offset: matchStart + 1 },
           })
@@ -73,7 +73,7 @@ export const Decorations = () => {
             focus: { path, offset: matchEnd - 1 },
           })
           ranges.push({
-            syntaxToken: match[1],
+            syntaxToken: true,
             anchor: { path, offset: matchEnd - 1 },
             focus: { path, offset: matchEnd },
           })
@@ -89,7 +89,7 @@ export const Decorations = () => {
           const matchStart = offset + match.index
           const matchEnd = matchStart + match[0].length
           ranges.push({
-            syntaxToken: '~~',
+            syntaxToken: true,
             anchor: { path, offset: matchStart },
             focus: { path, offset: matchStart + 2 },
           })
@@ -99,7 +99,7 @@ export const Decorations = () => {
             focus: { path, offset: matchEnd - 2 },
           })
           ranges.push({
-            syntaxToken: '~~',
+            syntaxToken: true,
             anchor: { path, offset: matchEnd - 2 },
             focus: { path, offset: matchEnd },
           })
@@ -115,7 +115,7 @@ export const Decorations = () => {
           const matchStart = offset + match.index
           const matchEnd = matchStart + match[0].length
           ranges.push({
-            syntaxToken: '==',
+            syntaxToken: true,
             anchor: { path, offset: matchStart },
             focus: { path, offset: matchStart + 2 },
           })
@@ -125,7 +125,7 @@ export const Decorations = () => {
             focus: { path, offset: matchEnd - 2 },
           })
           ranges.push({
-            syntaxToken: '==',
+            syntaxToken: true,
             anchor: { path, offset: matchEnd - 2 },
             focus: { path, offset: matchEnd },
           })
@@ -146,14 +146,14 @@ export const Decorations = () => {
           const start = offset
 
           ranges.push({
-            syntaxToken: hashes,
+            syntaxToken: true,
             anchor: { path, offset: start },
             focus: { path, offset: start + hashLen },
           })
 
           if (spaceLen > 0) {
             ranges.push({
-              syntaxToken: ' ',
+              syntaxToken: true,
               anchor: { path, offset: start + hashLen },
               focus: { path, offset: start + hashLen + spaceLen },
             })
@@ -172,7 +172,7 @@ export const Decorations = () => {
       // ✅ Horizontal rule (--- or ***)
       if (type === 'hr' || text.trim() === '---' || text.trim() === '***') {
         ranges.push({
-          hr: true,
+          syntaxToken: true,
           anchor: { path, offset },
           focus: { path, offset: end },
         })

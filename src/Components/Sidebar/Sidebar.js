@@ -1,6 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+// sidebar.js - 김형우
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Network, Group } from 'lucide-react';
 import VaultManager from '../../Components/VaultManager/VaultManager';
+import { getResourceAPI } from '../../Contexts/APIs/ResourceAPI'; // API 임포트
 
 import './Sidebar.css';
 
@@ -10,6 +12,22 @@ export default function SidebarLayout() {
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const vaultRef = useRef(null);
   const isResizing = useRef(false);
+  const [user, setUser] = useState(null); // 사용자 정보 상태
+
+  // 컴포넌트 마운트 시 사용자 정보 가져오기
+  useEffect(() => {
+    const resourceAPI = getResourceAPI();
+    const fetchUser = async () => {
+      try {
+        const userData = await resourceAPI.get_user();
+        setUser(userData);
+      } catch (error) {
+        console.error("사용자 정보를 가져오는데 실패했습니다:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
 //#region 사이드 바 숨기기 관련 함수들
   const handleMouseDown = () => {
@@ -36,7 +54,7 @@ export default function SidebarLayout() {
   const handleAddGraph = useCallback(() => {
     vaultRef.current?.addGraphTab();
   }, []);
-  //#endregion
+//#endregion
   
   //DOM
   return (
@@ -72,7 +90,16 @@ export default function SidebarLayout() {
               <Network size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
               그래프 보기
             </button>
-            
+          </div>
+        )}
+
+        {/* 사용자 정보 표시를 위한 사이드바 푸터 */}
+        {isOpen && user && (
+          <div className="sidebar-footer">
+            <div className="user-profile">
+              <img src={user.profileImageUrl || '/default-avatar.png'} alt="User Avatar" className="user-avatar" />
+              <span className="user-name">{user.nickname}</span>
+            </div>
           </div>
         )}
 

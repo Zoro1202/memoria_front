@@ -1,4 +1,4 @@
-//NotesContext.js
+//groupcontext.js - 이상영
 //노트 관리 context
 //사용하려는 스코프 상위에 provider로 감싸줘야 사용 가능
 //나중에 백엔드와 통신해야 함

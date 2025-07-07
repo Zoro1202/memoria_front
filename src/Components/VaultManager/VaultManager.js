@@ -1,29 +1,45 @@
-import React, { useState, useMemo, forwardRef, useImperativeHandle, useCallback } from "react";
+// vaultmanager.js - 김형우, 이상영
+import React, { useState, useMemo, forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
 import './VaultManager.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import Note from '../Note/Note';
 import GraphView from '../Graph/Graph';
 import { useNotes } from "../../Contexts/NotesContext";
 import { useTabs } from "../../Contexts/TabsContext";
+import { getResourceAPI } from "../../Contexts/APIs/ResourceAPI";
 
 const VaultManager = forwardRef((props, ref) => {
   //state 관련
   const [error, setError] = useState('');
 
-  const {notes, setNotes, graphData, } = useNotes();
-  const {tabs, setTabs, activeTabId, setActiveTabId} = useTabs();
+  const {notes, setNotes, graphData, setActiveNoteContent, } = useNotes();
+  const {tabs, setTabs, activeTabId, setActiveTabId, openTab} = useTabs();
   
+  const resourceAPI = useMemo(() => getResourceAPI(), []);
+
+  // DOM 렌더링 시에 사용자 정보를 API로부터 가져와야 함. (로그인 화면에서 리다이렉트->쿠키에 엑세스 토큰 있어야 함.)
+  useEffect(() => {
+    // resourceAPI.
+  }, []);
+
   //tabs (의존성 배열)state가 바뀌면 호출
   const addTab = useCallback(() => {
     if (tabs.length >= 30) {
       setError('탭 한도가 초과되었습니다');
       return;
     }
-    const newId = (tabs.length ? Math.max(tabs.map(t => parseInt(t.id))) + 1 : 1).toString();
-    const newTab = { id: newId, title: `빈 노트 ${newId}`, type: 'note' };
-    setTabs(prevTabs => [...prevTabs, newTab]);
-    setActiveTabId(newId);
+    const newId = "새 노트 " + (Object.keys(notes).length + 1);
+    const newContent = "# " + newId + "\n**새 노트!**";
+    setNotes(prev => ({
+      ...prev,
+      [newId]: {
+        content: newContent,
+        update_at: new Date().toISOString(),
+      },
+    }));
+    openTab({ title: newId, type: "note", noteId: newId });
     setError('');
+    return newId;
   }, [tabs]);
 
   const addGraphTab = useCallback(() => {
@@ -132,8 +148,18 @@ const VaultManager = forwardRef((props, ref) => {
                 ) : (
                   <Note
                     id={tab.noteId}
-                    markdown={notes[tab.noteId] ?? ""}
-                    onChange={(md) => setNotes({ ...notes, [tab.noteId]: md })}
+                    markdown={notes[tab.noteId]?.content || ""}
+                    onChange={(md) => {
+                      setActiveNoteContent(String(md));
+                      setNotes((prevNotes) => ({
+                        ...prevNotes,
+                        [tab.noteId]: {
+                          ...prevNotes[tab.noteId],
+                          content: String(md),
+                          update_at: new Date().toISOString(),
+                        },
+                      }));
+                    }}
                   />
                 )}
               </div>

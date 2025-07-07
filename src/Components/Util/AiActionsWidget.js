@@ -1,134 +1,323 @@
-// src/Components/Util/AiActionsWidget.js
+// 파일: src/Components/Util/AiActionsWidget.js
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
 import { toast } from 'react-hot-toast';
-import { saveNote } from '../Note/note_summary';
-import './AiActionsWidget.css'; 
+import './AiActionsWidget.css';
+import { generateSummary, translateText, chatWithAI, generateTitleFromContent } from '../Note/note_summary';
 
-const ActionIcon = ({ children }) => <span className="action-icon">{children}</span>;
+const ActionIcon = ({ path }) => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d={path}></path>
+    </svg>
+);
 
+const LANGUAGES = [
+  { code: 'English', name: '영어' },
+  { code: 'Japanese', name: '일본어' },
+  { code: 'Chinese', name: '중국어' },
+];
+
+// ✅ [수정] AiActionsWidget 컴포넌트 전체를 아래 코드로 교체해주세요.
 export default function AiActionsWidget({ onClose }) {
-  const { activeNoteContent, setNotes, updateNote } = useNotes();
-  const { openTab, setActiveTabId, activeTabId, noteIdFromTab } = useTabs();
+  const { activeNoteContent, updateNote } = useNotes();
+  const { activeTabId, noteIdFromTab, updateTitle } = useTabs();
   
   const [view, setView] = useState('initial'); 
-  const [resultData, setResultData] = useState({ title: '', content: '' });
-  const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
-  
-  const API_BASE_URL = 'http://localhost:8000';
+  const [resultText, setResultText] = useState('');
+  const [chatInput, setChatInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState(null);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [suggestedTitles, setSuggestedTitles] = useState([]);
+  // ✅ [추가] 번역/요약 결과에 포함될 새 제목을 저장하는 상태
+  const [newTitleForResult, setNewTitleForResult] = useState(null);
 
+  const abortControllerRef = useRef(null);
+  const chatContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory, view, suggestedTitles]);
+
+  const handleGoBack = () => { 
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+    }
+    setView('initial'); 
+    setChatHistory([]); 
+    setResultText('');
+    setIsLoading(false);
+    setLoadingType(null);
+    setSuggestedTitles([]);
+    setNewTitleForResult(null); // ✅ [추가] 상태 초기화
+  };
+  
   const handleChatSubmit = async (e) => {
-    if (e.key === 'Enter' && chatInput.trim() !== '') {
-      e.preventDefault();
-      const question = chatInput;
-      setChatHistory(prev => [...prev, { type: 'user', text: question }]);
-      setChatInput('');
-      setView('loading');
-      try {
-        const response = await fetch(`${API_BASE_URL}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, context: activeNoteContent }) });
-        if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || '서버 응답 오류'); }
-        const data = await response.json();
-        setChatHistory(prev => [...prev, { type: 'ai', text: data.answer }]);
-        setView('chat');
-      } catch (error) {
-        toast.error(`AI 응답 실패: ${error.message}`);
-        setChatHistory(prev => prev.slice(0, -1));
-        setView('initial');
-      }
+    if (e.key === 'Enter' && !e.shiftKey && chatInput.trim() !== '') {
+        e.preventDefault();
+        const question = chatInput;
+        
+        if (chatHistory.length === 0) {
+            setView('chat');
+        }
+
+        setChatHistory(prev => [...prev, { type: 'user', text: question }]);
+        setChatInput('');
+        setIsLoading(true);
+
+        try {
+            const answer = await chatWithAI(question, activeNoteContent);
+            setChatHistory(prev => [...prev, { type: 'ai', text: answer }]);
+        } catch (error) {
+            toast.error(`AI 작업 실패: ${error.message}`);
+            setChatHistory(prev => prev.slice(0, -1));
+        } finally {
+            setIsLoading(false);
+        }
+    }
+  }
+
+   const handleTextGeneration = async (type, params) => {
+    setLoadingType(type);
+    setView('loading');
+    try {
+        if (type === 'summary') {
+            const data = await generateSummary(params.content);
+            setResultText(data.content);
+            // 요약 기능은 제목을 바꾸지 않으므로 null로 설정
+            setNewTitleForResult(null); 
+        } else if (type === 'translate') {
+            // 현재 노트의 제목을 가져옵니다.
+            const currentTitle = noteIdFromTab(activeTabId);
+            // 번역 API에 제목과 내용을 모두 전달합니다.
+            const data = await translateText(currentTitle, params.content, params.target_language);
+            setResultText(data.translated_content);
+            setNewTitleForResult(data.translated_title); // 번역된 제목을 상태에 저장
+        }
+
+        setIsFadingOut(true);
+        setTimeout(() => {
+            setView('result');
+            setIsFadingOut(false);
+        }, 300);
+    } catch (error) {
+        toast.error(`AI 작업 실패: ${error.message}`);
+        handleGoBack();
+    }
+  };
+  
+  const handleGenerateTitle = async () => {
+    const currentNoteId = noteIdFromTab(activeTabId);
+    if (!currentNoteId) {
+        toast.error("제목을 적용할 노트가 없습니다.");
+        return;
+    }
+
+    // ✅ [추가] 새로운 AbortController를 생성하고 참조에 저장합니다.
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+
+    setLoadingType('title');
+    setView('loading');
+
+    try {
+        // ✅ [수정] API 호출 함수에 signal을 전달합니다.
+        const titles = await generateTitleFromContent(activeNoteContent, signal);
+        
+        // 요청이 성공적으로 완료되면 AbortController 참조를 초기화합니다.
+        abortControllerRef.current = null;
+
+        setSuggestedTitles(titles);
+        setView('title-suggestions');
+        setLoadingType(null);
+    } catch (error) {
+        // ✅ [추가] AbortError는 사용자가 취소한 것이므로 조용히 처리합니다.
+        if (error.name === 'AbortError') {
+            console.log('AI title generation was aborted by the user.');
+            return; // 함수 실행 종료
+        }
+        toast.error(`AI 제목 생성 실패: ${error.message}`);
+        handleGoBack();
     }
   };
 
-  const handleGenerateSummary = async () => {
-    if (!activeNoteContent || activeNoteContent.trim() === '') { toast.error("요약할 노트 내용이 없습니다."); return; }
-    setView('loading');
-    try {
-      const response = await fetch(`${API_BASE_URL}/generate-summary`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: activeNoteContent }) });
-      if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || `서버 오류`); }
-      const data = await response.json();
-      setResultData(data);
-      setView('result');
-    } catch (error) { toast.error(`요약 실패: ${error.message}`); setView('initial'); }
-  };
+  const handleSelectTitle = (selectedTitle) => {
+  // 1. 현재 활성화된 탭의 "노트 ID (이전 제목)"를 가져옵니다.
+  const oldNoteId = noteIdFromTab(activeTabId);
+  if (!oldNoteId) {
+    toast.error("오류: 제목을 변경할 노트를 찾을 수 없습니다.");
+    return;
+  }
 
-  const handleTranslateAndSaveAsNew = async () => {
-    if (!activeNoteContent || activeNoteContent.trim() === '') { toast.error("번역할 노트 내용이 없습니다."); return; }
-    setView('loading');
-    try {
-        const response = await fetch(`${API_BASE_URL}/translate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: activeNoteContent }) });
-        if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || `서버 오류`); }
-        const data = await response.json();
-        
-        const currentNoteId = noteIdFromTab(activeTabId);
-        const newTitle = `${currentNoteId}_EN`;
+  // 2. NotesContext를 통해 노트 데이터를 업데이트하고, 중복 처리된 "최종 제목"을 받습니다.
+  const finalTitle = updateNote(oldNoteId, selectedTitle, activeNoteContent);
 
-        toast.loading("번역된 노트를 저장 중...", { id: 'saving-translation' });
-        
-        const savedData = await saveNote({
-            title: newTitle,
-            content: data.translated_text,
-            owner_id: 'test_user_001',
-            group_id: 1
-        });
-
-        setNotes(prev => ({ ...prev, [savedData.title]: { content: data.translated_text } }));
-        openTab({ title: savedData.title, type: 'note', noteId: savedData.title });
-        setActiveTabId(savedData.title);
-        
-        toast.success(`"${newTitle}"(으)로 저장되었습니다!`, { id: 'saving-translation' });
-        onClose();
-
-    } catch (error) { toast.error(`번역 및 저장 실패: ${error.message}`, { id: 'saving-translation' }); setView('initial'); }
-  };
+  // 3. TabsContext의 updateTitle을 호출하여 "이전 제목"을 "최종 제목"으로 변경합니다.
+  //    (이제 updateTitle은 noteId를 기준으로 동작하므로 올바르게 작동합니다)
+  if (oldNoteId !== finalTitle) {
+      updateTitle(oldNoteId, finalTitle);
+  }
   
-  const handleApplySummary = () => {
-    const currentNoteId = noteIdFromTab(activeTabId);
-    if (!currentNoteId) { toast.error("적용할 노트가 없습니다."); return; }
+  toast.success(`제목이 "${finalTitle}"(으)로 변경되었습니다!`);
+  onClose(); // 위젯 닫기
+};
+
+  const handleApplyResult = () => {
+    const oldNoteId = noteIdFromTab(activeTabId);
+    if (!oldNoteId) { toast.error("적용할 노트가 없습니다."); return; }
+    if (!resultText) { toast.error("적용할 내용이 없습니다."); return; }
+
+    // 적용할 제목을 결정합니다. (번역된 제목이 있으면 사용, 없으면 기존 제목 유지)
+    const titleToApply = newTitleForResult || oldNoteId;
+
+    // 노트 내용과 제목을 한 번에 업데이트합니다.
+    const finalTitle = updateNote(oldNoteId, titleToApply, resultText);
     
-    const updatedId = updateNote(currentNoteId, resultData.title, resultData.content);
-    
-    // 제목이 변경되었을 경우 탭 정보도 업데이트 해야 하지만, 이 로직은 복잡하므로
-    // 일단은 내용만 업데이트하는 것으로 사용자가 인지하도록 합니다.
-    // 추후 TabsContext에 탭 제목 변경 함수를 추가하면 완벽해집니다.
-    
-    toast.success("요약 내용이 파일에 적용되었습니다!");
+    // 탭 제목도 업데이트합니다.
+    if (oldNoteId !== finalTitle) {
+      updateTitle(oldNoteId, finalTitle);
+    }
+
+    toast.success("노트에 적용되었습니다!");
     onClose();
   };
-  
-  const handleGoBack = () => { setView('initial'); setChatHistory([]); setResultData({ title: '', content: '' }); }
 
   return (
     <div className="ai-actions-widget">
       <div className="widget-header">
-        <h4>AI 도우미</h4>
-        <button className="widget-close-button" onClick={onClose}>×</button>
+        {view !== 'initial' && (
+            <button className="widget-back-button" onClick={handleGoBack}>←</button>
+        )}
+        <h4 className="widget-title">AI 도우미</h4>
+        <div className="widget-header-right">
+            <button className="widget-close-button" onClick={onClose}>×</button>
+        </div>
       </div>
+      
       <div className="widget-content-wrapper">
-        {view === 'initial' && (
-          <div className="widget-view initial-view">
-            <textarea className="chat-input" placeholder="문서 내용에 대해 질문해보세요..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={handleChatSubmit} rows={3} />
-            <button className="action-button" onClick={handleGenerateSummary}><ActionIcon>📄</ActionIcon> 이 페이지 요약하기</button>
-            <button className="action-button" onClick={handleTranslateAndSaveAsNew}><ActionIcon>A文</ActionIcon> 번역하여 새 노트로 저장</button>
-          </div>
-        )}
-        {view === 'loading' && ( <div className="widget-view loading-view"><p>AI가 생각 중입니다...</p></div> )}
-        {view === 'chat' && (
-            <div className="widget-view chat-view">
-                <div className="chat-history">{chatHistory.map((msg, index) => ( <div key={index} className={`chat-message ${msg.type}`}><p>{msg.text}</p></div> ))}</div>
-                <div className="result-actions"><button onClick={handleGoBack} className="widget-button-secondary">돌아가기</button></div>
+        <div className="main-content-area" ref={chatContainerRef}>
+            <div className={`initial-view-container ${view !== 'initial' ? 'fade-out' : 'fade-in'}`}>
+              <div className="ai-greeting">
+                  <div className="ai-icon-background"><ActionIcon path="M12 18V6M6 12h12" /></div>
+                  <h2>무엇을 도와드릴까요?</h2>
+                  <p className="ai-service-title">AI Services</p>
+              </div>
+              <div className="action-button-group">
+                  <button className="action-button" onClick={() => handleTextGeneration('summary', { content: activeNoteContent })}>
+                      <ActionIcon path="M3 6h18M3 12h18M3 18h18" /><span>페이지에서 요약문 생성</span>
+                  </button>
+                  <button className="action-button" onClick={handleGenerateTitle}>
+                      <ActionIcon path="M12 15l-3.5-3.5a6 6 0 0 1 8-8L12 8" /><span>AI로 제목 생성</span>
+                  </button>
+                  <button className="action-button" onClick={() => setView('translate')}>
+                      <ActionIcon path="M5 12h14M12 5l7 7-7 7" /><span>이 페이지 번역</span>
+                  </button>
+              </div>
+            </div>
+
+            <div className={`chat-history-wrapper ${view === 'chat' ? 'fade-in' : ''}`}>
+              {chatHistory.map((msg, index) => (
+                  <div key={index} className={`chat-message ${msg.type}`}><p>{msg.text}</p></div>
+              ))}
+              {isLoading && (<div className="chat-message ai"><p>AI가 생각 중입니다...</p></div>)}
+            </div>
+            
+            {view === 'title-suggestions' && (
+                <div className="title-suggestions-view fade-in">
+                    <p className="translate-guide">AI가 추천하는 제목입니다.</p>
+                    <div className="action-button-group vertical">
+                        {suggestedTitles.map((title, index) => (
+                          <button 
+                            key={index} 
+                            className="action-button"
+                            onClick={() => handleSelectTitle(title)}
+                          >
+                            {title}
+                          </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {view === 'translate' && (
+              <div className="translate-view fade-in">
+                  <p className="translate-guide">어떤 언어로 번역할까요?</p>
+                  <div className="language-options">
+                      {LANGUAGES.map((lang) => (
+                        <button key={lang.code} className="language-button" 
+                          onClick={() => handleTextGeneration('translate', { content: activeNoteContent, target_language: lang.code })}>
+                          {lang.name}
+                        </button>
+                      ))}
+                  </div>
+              </div>
+            )}
+            {view === 'result' && (
+              <div className="result-only-view fade-in">
+                <p>{resultText}</p>
+                <div className="result-apply-button-container">
+                  <button className="apply-to-note-button" onClick={handleApplyResult}>
+                      현재 노트에 적용
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* 로딩 뷰 렌더링 부분을 수정합니다. */}
+            {view === 'loading' && (
+                <div className={`loading-view-full ${isFadingOut ? 'fade-out' : 'fade-in'}`}>
+                    
+                    {/* ❗❗❗ [핵심 수정] 새로운 AI 제목 생성 로딩 애니메이션 적용 ❗❗❗ */}
+                    {loadingType === 'title' && (
+                        <div className="title-loader-wrapper">
+                            <div className="loader-text">AI가 제목을 구상 중입니다...</div>
+                            <div className="typing-effect">Thinking of a good title...</div>
+                        </div>
+                    )}
+
+                    {loadingType === 'summary' && (
+                        <div className="summary-loader">
+                            <div className="loader-text">요약 중...</div>
+                            <div className="bar"></div>
+                            <div className="bar"></div>
+                            <div className="bar"></div>
+                        </div>
+                    )}
+                    {loadingType === 'translate' && (
+                        <div className="translate-loader-wrapper">
+                             <div className="loader-text">번역 중...</div>
+                            <div className="translate-loader">
+                                <div className="lang-icon-container">
+                                    <div className="lang-icon" id="lang-icon-left">A</div>
+                                    <div className="lang-icon" id="lang-icon-right">文</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+
+        {(view === 'initial' || view === 'chat') && (
+            <div className="chat-input-container-bottom">
+                <textarea
+                    className="chat-input"
+                    placeholder="AI에게 노트에 대해 물어보기"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={handleChatSubmit}
+                    rows={1}
+                />
             </div>
         )}
-        {view === 'result' && (
-          <div className="widget-view result-view">
-            <pre>{resultData.content}</pre>
-            <div className="result-actions">
-              <button onClick={handleGoBack} className="widget-button-secondary">취소</button>
-              <button onClick={handleApplySummary} className="widget-button-primary">현재 노트에 적용</button>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
