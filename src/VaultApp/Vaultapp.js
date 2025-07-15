@@ -6,7 +6,7 @@ import NoteView from "../Components/Note/Note";
 import { useNotes } from "../Contexts/NotesContext";
 import { useTabs } from "../Contexts/TabsContext";
 import { toast, Toaster } from "react-hot-toast";
-import AiHelper from "../Components/Util/AiHelper";
+import AiHelper from "../Components/AI_Assistance/AiHelper";
 // ✅ [수정] intelligentSaveNote 대신 saveNote를 사용합니다.
 
 export default function VaultApp() {

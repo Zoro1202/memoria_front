@@ -18,6 +18,7 @@ export function getResourceAPI() {
       if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
       return await response.json();
     },
+
     // region 토큰 새로고침
     token_refresh: async ()=>{
       const response = await fetch(`${baseUrl}/auth/refresh`, {
@@ -183,40 +184,49 @@ export function getResourceAPI() {
     },
     // region 멤버 추방 
     kickMember: async (group_id, recipient) => {
-      try{
-        const response = await fetch(`${baseUrl}/api/kick`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ recipient, group_id })
-        });
+      const response = await fetch(`${baseUrl}/api/kick`, {
+        method: 'POST',
+        credentials:'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ recipient, group_id })
+      });
 
-        if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        return response.json();
-      }
-      catch (err)
-      {
-        return null;
-      }
+      if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+      return response.json();
     },
     // region 멤버 권한 수정
     permissionUpdate: async (group_id, recipient, permission) =>{
-      try {
-        const response = await fetch('/authorize', {
-          method:'POST',
-          headers:{
-            'Content-Type' : 'application/json'
-          },
-          body: JSON.stringify({ group_id, recipient, permission})
-        });
-        if(!response.ok) throw Error(response.status, ':Failed to permissionUpdate');
-        return response.json();
-      } catch (err)
-      {
-        return null;
+      const response = await fetch(`${baseUrl}/api/authorize`, {
+        method:'POST',
+        credentials: 'include',
+        headers:{
+          'Content-Type' : 'application/json'
+        },
+        body: JSON.stringify({ group_id, recipient, permission})
+      });
+      if(!response.success) throw Error(response.status, ':Failed to permissionUpdate');
+      return response.json();
+    },
+    uploadProfile: async (file) =>{
+      if(!file) {
+        throw new Error(`이미지 파일을 선택하세요`);
+      }
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const response = await fetch(`${baseUrl}/api/uploadImage`, {
+        method:'POST',
+        body: formData,
+        credentials:'include'
+      });
+      const result = await response.json();
+      if (result.success){
+        return result;
+      } else {
+        throw new Error(`${result.message}`);
       }
     },
-
   };
 }

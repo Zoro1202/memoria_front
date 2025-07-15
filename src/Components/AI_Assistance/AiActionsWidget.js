@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
 import { toast } from 'react-hot-toast';
+import memoriaIcon from './Black.png'; 
 import './AiActionsWidget.css';
 import { generateSummary, translateText, chatWithAI, generateTitleFromContent } from '../Note/note_summary';
 
@@ -14,6 +15,7 @@ const ActionIcon = ({ path }) => (
 );
 
 const LANGUAGES = [
+  { code: 'Korean', name: '한국어' },
   { code: 'English', name: '영어' },
   { code: 'Japanese', name: '일본어' },
   { code: 'Chinese', name: '중국어' },
@@ -194,7 +196,7 @@ export default function AiActionsWidget({ onClose }) {
         {view !== 'initial' && (
             <button className="widget-back-button" onClick={handleGoBack}>←</button>
         )}
-        <h4 className="widget-title">AI 도우미</h4>
+        <h4 className="widget-title">AI Assistance</h4>
         <div className="widget-header-right">
             <button className="widget-close-button" onClick={onClose}>×</button>
         </div>
@@ -204,16 +206,19 @@ export default function AiActionsWidget({ onClose }) {
         <div className="main-content-area" ref={chatContainerRef}>
             <div className={`initial-view-container ${view !== 'initial' ? 'fade-out' : 'fade-in'}`}>
               <div className="ai-greeting">
-                  <div className="ai-icon-background"><ActionIcon path="M12 18V6M6 12h12" /></div>
+                  <div className="ai-icon-background">
+                <img src={memoriaIcon} alt="AI 아이콘" style={{ width: '32px', height: '32px' }} />
+              </div>
+
                   <h2>무엇을 도와드릴까요?</h2>
-                  <p className="ai-service-title">AI Services</p>
+                  <p className="ai-service-title">Synapse AI</p>
               </div>
               <div className="action-button-group">
                   <button className="action-button" onClick={() => handleTextGeneration('summary', { content: activeNoteContent })}>
                       <ActionIcon path="M3 6h18M3 12h18M3 18h18" /><span>페이지에서 요약문 생성</span>
                   </button>
                   <button className="action-button" onClick={handleGenerateTitle}>
-                      <ActionIcon path="M12 15l-3.5-3.5a6 6 0 0 1 8-8L12 8" /><span>AI로 제목 생성</span>
+                      <ActionIcon path="M6 4h12v16l-6-4-6 4z" /><span>AI로 제목 생성</span>
                   </button>
                   <button className="action-button" onClick={() => setView('translate')}>
                       <ActionIcon path="M5 12h14M12 5l7 7-7 7" /><span>이 페이지 번역</span>
@@ -223,7 +228,9 @@ export default function AiActionsWidget({ onClose }) {
 
             <div className={`chat-history-wrapper ${view === 'chat' ? 'fade-in' : ''}`}>
               {chatHistory.map((msg, index) => (
-                  <div key={index} className={`chat-message ${msg.type}`}><p>{msg.text}</p></div>
+                <div key={index} className={`chat-message ${msg.type}`}>
+                  <p>{msg.text}</p>
+                </div>
               ))}
               {isLoading && (<div className="chat-message ai"><p>AI가 생각 중입니다...</p></div>)}
             </div>

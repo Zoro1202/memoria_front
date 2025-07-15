@@ -10,6 +10,12 @@ export default function APITestPage() {
   const [user, setUser] = useState(null); // 사용자 정보 상태
   const [profileImage, setProfileImage] = useState(null); // 프로필 이미지 상태
 
+  //user
+  const [sid, setSid] = useState();
+  const [provider, setProvider] = useState();
+  const [remainTime, setRemainTime] = useState();
+
+  // test
   const [t_noteid, setNote_id] = useState();
   const [t_groupid, setGroup_id] = useState();
   const [t_groupname, setGroupname] = useState();
@@ -21,10 +27,22 @@ export default function APITestPage() {
     try{
       const info = await resourceAPI.token_info();
       console.log('token info : ', info);
+      setSid(info.subject_id);
+      setProvider(info.provider);
+      setRemainTime(info.remainingTime);
     }catch(err){
-      console.log('faild:', err);
+      console.log('token load faild:', err);
     }
   };
+  //region 토큰 새로고침
+  const tokenRefresh = async() =>{
+    try{
+      const data = await resourceAPI.token_refresh();
+      console.log(`토큰 : ${data}`);
+    } catch (err){
+      console.log('token refresh faild:', err);
+    }
+  }
 
   // region 노트삭제
   const deleteNote = async (noteId, groupId) => {
@@ -81,7 +99,7 @@ export default function APITestPage() {
   
   // region 유저정보
   const fetchUser = async () => {
-    const resourceAPI = getResourceAPI(); 
+    
     try {
       const userData = await resourceAPI.get_user();
       setUser(userData);
@@ -91,7 +109,7 @@ export default function APITestPage() {
   };
   // region 프사
   const fetchProfileImage = async () => {
-        const resourceAPI = getResourceAPI();   
+           
       try {
         const res = await resourceAPI.get_profile_image();
         const blob = await res.blob();
@@ -103,10 +121,21 @@ export default function APITestPage() {
       }
       
   };
+  
   useEffect(() => {
     tokenInfo();
     fetchUser();
     fetchProfileImage();
+    setInterval(()=>{
+        setRemainTime(prevRemainTime => {
+          if (prevRemainTime === 880) {
+            tokenRefresh();
+            tokenInfo();
+          }
+          return prevRemainTime - 1;
+        });
+      }, 1000);
+    // eslint-disable-next-line
   },[]);
   // region 로그 띄우기
   function logTestResult(message, isSuccess = true) {
@@ -126,7 +155,7 @@ export default function APITestPage() {
   }
   // region 그룹
   async function groupLoad (){
-    const resourceAPI = getResourceAPI();
+    
     try {
       const data = await resourceAPI.getGroups();
       console.log('초기 데이터:', data);
@@ -139,7 +168,7 @@ export default function APITestPage() {
   }
   //region 그룹 생성
   async function groupCreate(group_name) {
-    const resourceAPI = getResourceAPI();
+    
     try {
       const data = await resourceAPI.createGroup(group_name);
       logTestResult(`그룹 생성 성공! ID: ${data.group_id}, 이름: "${group_name}"`);
@@ -149,9 +178,10 @@ export default function APITestPage() {
   }
   // region 그룹 삭제
   async function groupDelete(group_id) {
-    const resourceAPI = getResourceAPI();
+    
     try{
       const data = await resourceAPI.deleteGroup(group_id);
+      console.log(`groupDelete${data}`);
       logTestResult(`그룹 삭제 성공 ID : ${group_id}`);
     }
     catch(err){
@@ -161,27 +191,54 @@ export default function APITestPage() {
 
   // region 그룹 멤버 초대
   async function groupInvite(group_id, recipient, permission) {
-    const resourceAPI = getResourceAPI();
+    
     try{
       const data = await resourceAPI.inviteMember(recipient, group_id, permission);
+      console.log(`groupInvite${data}`);
       logTestResult(`초대 성공! ${recipient} 사용자를 ${permission} 권한으로 초대`);
     }
     catch(err){
       logTestResult(`멤버 초대 실패: ${err.message}`, false);
     }
   }
-
+  // region 멤버 추방
   async function groupKick(group_id, recipient) {
-    const resourceAPI = getResourceAPI();
+    
     try{
       const data = await resourceAPI.kickMember(group_id, recipient);
+      console.log(`groupKick${data}`);
       logTestResult(`추방 성공! ${recipient} 사용자 추방`);
     }
     catch (err){
       logTestResult(`멤버 추방 실패: ${err.message}`, false);
     }
   }
-
+  // region 권한 변경
+  async function groupPermission(group_id, recipient, permission){
+    
+    try{
+      const data = await resourceAPI.permissionUpdate(group_id, recipient, permission);
+      console.log(`groupPermission${data}`);
+      logTestResult(`권한 변경 성공! ${recipient}: ${permission}`);
+    } catch(err){
+      logTestResult(`권한 변경 실패: ${err.message}`, false);
+    }
+  }
+  // region 프로필 이미지 업로드
+  async function uploadProfile() {
+    
+    try{
+      //getElememtbyId로 이미지 가져오기
+      const input = document.getElementById('profile-image-input');
+      const file = input.files[0];
+      const data = await resourceAPI.uploadProfile(file);
+      console.log(`uploadProfile${data}`);
+      logTestResult(`프로필 사진 변경 성공!`);
+    } catch(err)
+    {
+      logTestResult(`프사 업로드 실패: ${err.message}`, false);
+    }
+  }
   //DOM
   return (
     <div className="apitestpage">
@@ -189,12 +246,18 @@ export default function APITestPage() {
         <h1>API Test Page</h1>
         
         <button onClick={()=>{logTestResultClear()}}>logClear</button>
-        
+        <button onClick={()=>{
+          tokenRefresh();
+          tokenInfo();
+          fetchUser();
+          fetchProfileImage();
+        }}>refreshToken</button>
         {user && (
           <div className="sidebar-footer">
             <div className="user-profile">
             <img src={profileImage} alt="User Avatar" className="user-avatar" />
             <span className="user-name">{user.nickname}</span>
+            <span>: {provider} : {remainTime}</span>
             </div>
           </div>
         )}
@@ -296,7 +359,30 @@ export default function APITestPage() {
           />
         <button onClick={()=>{groupKick(t_groupid, t_inviteid)}}>Kick</button>
         
+        <p>UpdatePermission</p>
+        <input
+          type='number'
+          value={t_groupid}
+          onChange={(e) => setGroup_id(e.target.value)}
+          placeholder='Enter Group ID'
+          />
+        <input
+          type='string'
+          value={t_inviteid}
+          onChange={(e) => setInviteid(e.target.value)}
+          placeholder='Enter recipient ID'
+          />
+        <input
+          type='number'
+          value={t_permission}
+          onChange={(e) => setPermission(e.target.value)}
+          placeholder='Enter Permission(0~3)'
+          />
+        <button onClick={()=>{groupPermission(t_groupid, t_inviteid, t_permission)}}>Update</button>
 
+        <p>UpdateProfileImage</p>
+        <input type="file" id="profile-image-input" accept="image/png, image/jpeg, image/webp" />
+        <button onClick={()=>{uploadProfile()}}>업로드</button>
 
         <div id="test-results"></div>
       {/* </Toaster> */}

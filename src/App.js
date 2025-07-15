@@ -9,10 +9,10 @@ import { NotesProvider } from './Contexts/NotesContext';
 import Hwasang from './Components/Hwasang/Hwasang';
 import { TabsProvider } from './Contexts/TabsContext';
 import React from 'react';
-import AiHelper from './Components/Util/AiHelper'; // AiHelper를 import 합니다.
+import AiHelper from './Components/AI_Assistance/AiHelper'; // AiHelper를 import 합니다.
 
 // 이제 SummaryWidget은 AiHelper 내부에서만 사용되므로 여기서 import 할 필요가 없습니다.
-// import SummaryWidget from './Components/Util/SummaryWidget';
+// import SummaryWidget from './Components/AI_Assistance/SummaryWidget';
 
 export default function App() {
   return (

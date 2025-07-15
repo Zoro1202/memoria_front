@@ -69,7 +69,14 @@
 .action-button span { flex-grow: 1; }
 
 /* 채팅 메시지 */
-.chat-history-wrapper { opacity: 0; }
+.chat-history-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  /* opacity: 1; // 필요 시 추가 */
+}
+
 .chat-message {
   padding: 10px 16px; border-radius: 20px; max-width: 80%;
   word-wrap: break-word; line-height: 1.6; margin-bottom: 10px;

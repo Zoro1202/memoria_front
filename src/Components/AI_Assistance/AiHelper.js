@@ -5,7 +5,7 @@ import AiActionsWidget from './AiActionsWidget';
 import './AiHelper.css';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
-import memoriaLogo from './Memoria_Icon2.png';
+import memoriaLogo from './Black_White_Sub_Center.png';
 
 const AiIcon = () => (
     // img 태그를 사용하여 로고 이미지를 표시합니다.
