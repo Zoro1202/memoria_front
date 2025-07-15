@@ -3,17 +3,105 @@ import React, { useRef, useMemo, useState, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import toast from 'react-hot-toast';
 import { forceRadial } from 'd3-force-3d';
+import {getResourceAPI} from '../../Contexts/APIs/ResourceAPI';
+
+
+
+
+/**
+ * raw 데이터를 기반으로 상위 그룹 그래프와 하위 그래프들을 생성합니다.
+ * (그룹 간 링크 계산 로직 추가됨)
+ * @param {object} raw - { nodes, links } 형태의 데이터
+ * @returns {{groupGraph: object, subGraphs: object}}
+ */
+function buildHierGraphs(raw) {
+  // 1. 노드를 그룹별로 분류
+  const groupBucket = {};
+  const noteIdToGroupMap = new Map(raw.nodes.map(n => [n.id, n.group]));
+
+  raw.nodes.forEach((n) => {
+    const gid = n.group || 'unknown';
+    if (!groupBucket[gid]) groupBucket[gid] = [];
+    groupBucket[gid].push(n);
+  });
+
+  // 2. 그룹 간 링크 계산
+  const groupLinks = [];
+  const groupLinksSet = new Set(); // 중복 링크 방지
+  raw.links.forEach(link => {
+    const sourceGroup = noteIdToGroupMap.get(link.source);
+    const targetGroup = noteIdToGroupMap.get(link.target);
+
+    // 소스 그룹과 타겟 그룹이 다를 경우, 그룹 간 링크로 추가
+    if (sourceGroup && targetGroup && sourceGroup !== targetGroup) {
+      const linkId = [sourceGroup, targetGroup].sort().join('->');
+      if (!groupLinksSet.has(linkId)) {
+        groupLinksSet.add(linkId);
+        groupLinks.push({ source: sourceGroup, target: targetGroup });
+      }
+    }
+  });
+
+  // 3. 상위(그룹) 그래프 생성
+  const groupGraph = {
+    nodes: Object.entries(groupBucket).map(([gid, nodes]) => ({
+      id: gid,
+      size: nodes.length,
+      level: 0,
+    })),
+    links: groupLinks, // 계산된 그룹 간 링크 사용
+  };
+
+  // 4. 각 그룹의 하위 그래프 생성
+  const subGraphs = {};
+  Object.entries(groupBucket).forEach(([gid, nodes]) => {
+    const idSet = new Set(nodes.map((n) => n.id));
+    subGraphs[gid] = {
+      nodes: nodes.map((n) => ({ ...n, level: 1 })),
+      links: raw.links.filter(
+        (l) => idSet.has(l.source) && idSet.has(l.target)
+      ),
+    };
+  });
+
+  return { groupGraph, subGraphs };
+}
+
 
 /*─────────────────────────────────────
-  1) 원본 raw 데이터 → 그룹/서브 그래프로
+  2) 계층 ForceGraph 컴포넌트
 ─────────────────────────────────────*/
-function buildHierGraphs(raw) {
-  raw = {  "nodes": [
+export default function HierGraph({ onSelect }) {
+  const fgRef = useRef(null);
+
+  const getNoteList = async (groupId)=>{
+    const resourceAPI = getResourceAPI();
+    try{
+      const response = await resourceAPI.getGroupNotes(groupId);
+      console.log('초기 데이터:', response);
+
+        // logTestResult(`노트 데이터 로드 성공! 개수 : ${response.titles.length}, 링크 개수: ${response.links.length}`);
+        // response.titles.forEach(g => {
+        //   logTestResult(`노트 ${response.titles.indexOf(g) + 1} : 노트ID: ${g.note_id}, 타이틀: ${g.title}, 그룹ID: ${groupId}`);
+        // });
+        // response.links.forEach(g => {
+        //   logTestResult(`링크 ${response.links.indexOf(g) + 1} : src: ${g.src_note_id}, dst_title: ${g.dst_title}`);
+        // });
+      return response;
+    } catch(err)
+    {
+      console.log(err);
+      return null;
+    }
+  }
+
+
+  const raw = { "nodes": [
     /* ───── GroupA ───── */
-    { "id": "A-1", "group": "GroupA",  },
-    { "id": "A-2", "group": "GroupA",  },
-    { "id": "A-3", "group": "GroupA",  },
-    { "id": "A-4", "group": "GroupA",  },
+    { "id": "A-1", "group": "GroupA", },
+    { "id": "A-2", "group": "GroupA", },
+    { "id": "A-3", "group": "GroupA", },
+    { "id": "A-4", "group": "GroupA", },
 
     /* ───── GroupB ───── */
     { "id": "B-1", "group": "GroupB", },
@@ -21,14 +109,14 @@ function buildHierGraphs(raw) {
     { "id": "B-3", "group": "GroupB", },
 
     /* ───── GroupC ───── */
-    { "id": "C-1", "group": "GroupC",  },
-    { "id": "C-2", "group": "GroupC",  },
-    { "id": "C-3", "group": "GroupC",  },
-    { "id": "C-4", "group": "GroupC",  },
-    { "id": "C-5", "group": "GroupC",  },
-  ],
+    { "id": "C-1", "group": "GroupC", },
+    { "id": "C-2", "group": "GroupC", },
+    { "id": "C-3", "group": "GroupC", },
+    { "id": "C-4", "group": "GroupC", },
+    { "id": "C-5", "group": "GroupC", },
+    ],
 
-  "links": [
+    "links": [
     /* ───── GroupA 내부 ───── */
     { "source": "A-1", "target": "A-2" },
     { "source": "A-2", "target": "A-3" },
@@ -52,48 +140,7 @@ function buildHierGraphs(raw) {
     { "source": "B-3", "target": "C-2" },
     { "source": "C-4", "target": "A-4" }
   ] };
-
-  // 1. 그룹별 버킷 만들기
-  const groupBucket = {}; // { [groupId]: RawNode[] }
-  raw.nodes.forEach((n) => {
-    const gid = n.group || 'unknown';
-    if (!groupBucket[gid]) groupBucket[gid] = [];
-    groupBucket[gid].push(n);
-  });
-
-  // 2. 상위(그룹) 그래프
-  const groupGraph = {
-    nodes: Object.entries(groupBucket).map(([gid, nodes]) => ({
-      id: gid,
-      size: nodes.length, // 하위 노드 수
-      level: 0,           // 최상위 레벨
-    })),
-    links: [],            // 그룹 간 링크를 모으고 싶다면 여기서 계산
-  };
-
-  // 3. 각 그룹의 하위 그래프
-  const subGraphs = {}; // { [groupId]: {nodes, links} }
-  Object.entries(groupBucket).forEach(([gid, nodes]) => {
-    const idSet = new Set(nodes.map((n) => n.id));
-    subGraphs[gid] = {
-      nodes: nodes.map((n) => ({ ...n, level: 1 })), // level=1
-      links: raw.links.filter(
-        (l) =>
-          idSet.has(l.source.id || l.source) &&
-          idSet.has(l.target.id || l.target)
-      ),
-    };
-  });
-
-  return { groupGraph, subGraphs };
-}
-
-/*─────────────────────────────────────
-  2) 계층 ForceGraph 컴포넌트
-─────────────────────────────────────*/
-export default function HierGraph({ raw, onSelect }) {
-  const fgRef = useRef(null);
-
+  
   // 전처리
   const { groupGraph, subGraphs } = useMemo(
     () => buildHierGraphs(raw),

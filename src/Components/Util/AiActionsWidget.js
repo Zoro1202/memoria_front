@@ -32,7 +32,6 @@ export default function AiActionsWidget({ onClose }) {
   const [loadingType, setLoadingType] = useState(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [suggestedTitles, setSuggestedTitles] = useState([]);
-  // ✅ [추가] 번역/요약 결과에 포함될 새 제목을 저장하는 상태
   const [newTitleForResult, setNewTitleForResult] = useState(null);
 
   const abortControllerRef = useRef(null);
@@ -89,7 +88,7 @@ export default function AiActionsWidget({ onClose }) {
     try {
         if (type === 'summary') {
             const data = await generateSummary(params.content);
-            setResultText(data.content);
+            setResultText(data.summary);
             // 요약 기능은 제목을 바꾸지 않으므로 null로 설정
             setNewTitleForResult(null); 
         } else if (type === 'translate') {

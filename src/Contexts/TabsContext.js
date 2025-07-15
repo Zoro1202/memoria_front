@@ -55,9 +55,6 @@ export function TabsProvider({ children }) {
     );
   };
   
-  // ❌ updateTabInfo 함수는 updateTitle과 기능이 중복되므로 삭제하거나 주석 처리해도 됩니다.
-  // const updateTabInfo = (tabId, newNoteId) => { ... }
-
   return (
     <TabsContext.Provider value={{
       tabs,

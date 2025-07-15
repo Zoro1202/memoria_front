@@ -6,6 +6,7 @@ import Main from './Main/Main';
 import HierGraph from './Components/Group/Group';
 import APITestPage from './Contexts/APIs/APITESTPAGE';
 import { NotesProvider } from './Contexts/NotesContext';
+import Hwasang from './Components/Hwasang/Hwasang';
 import { TabsProvider } from './Contexts/TabsContext';
 import React from 'react';
 import AiHelper from './Components/Util/AiHelper'; // AiHelper를 import 합니다.
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/vault" element={<VaultApp />} />
           <Route path="/main" element={<Main />} />
           <Route path='/group' element={<HierGraph />} />
+          <Route path="/video-conference" element={<Hwasang />} />
           <Route path="/apitest" element={<APITestPage/>} />
         </Routes>
 

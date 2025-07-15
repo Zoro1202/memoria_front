@@ -1,59 +1,50 @@
+/* VaultManager.css */
+
 .vaultmanager-wrapper {
-  flex: 100;
+  /* [수정됨] flexbox 레이아웃으로 변경하여 자식 요소들이 공간을 유연하게 사용하도록 함 */
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  background-color: #fff;
+
+  /* [수정됨] 부모 요소의 높이를 100% 채우도록 설정. 
+     이 컴포넌트의 부모가 화면 전체 높이를 차지해야 정상 작동합니다. */
+  height: 100%;
+  width: 100%;
+  
+  background-color: #f4f6f8; /* 노트 영역의 배경색 */
   border-left: 1px solid #e3e3e3;
   position: relative;
-  min-width: 320px;
   user-select: none;
-  overflow: hidden;
+  overflow: hidden; /* 이 컴포넌트 자체의 스크롤은 막음. 내부에서 스크롤 처리. */
 }
 
 .vaultmanager-wrapper.no-notes {
   cursor: pointer;
+  align-items: center;
+  justify-content: center;
 }
 
-.vaultmanager-wrapper.no-notes .add-new-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.add-new-overlay {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 10px;
-  opacity: 0;
-  pointer-events: none;
-  user-select: none;
-  transition: opacity 0.3s ease;
   font-size: 20px;
-  color: rgba(0, 0, 0, 0.3);
+  color: #aaa;
   font-weight: 600;
-  background-color: rgba(255, 255, 255, 0.85);
-  padding: 10px 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
-}
-
-.vaultmanager-wrapper.no-notes:hover .add-new-overlay {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .add-new-overlay .plus-icon {
-  font-size: 28px;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.4);
-  user-select: none;
+  font-size: 48px;
+  font-weight: 200;
 }
 
 .tab-bar {
+  /* [수정됨] 높이가 내용에 따라 변하지 않도록 고정 */
+  flex-shrink: 0; 
   display: flex;
   border-bottom: 1px solid #ddd;
-  padding-bottom: 4px;
-  margin-bottom: 8px;
-  overflow-x: auto;
+  padding: 4px;
+  background-color: #fff;
 }
 
 .tabs-wrapper {
@@ -64,6 +55,8 @@
 }
 
 .tabs-container {
+  /* [수정됨] 탭이 많아질 경우 남은 공간을 모두 차지하며 수평 스크롤 */
+  flex-grow: 1; 
   display: flex;
   flex-wrap: nowrap;
   gap: 4px;
@@ -91,24 +84,27 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
   border: 1.5px solid transparent;
+  white-space: nowrap; /* 탭 이름 줄바꿈 방지 */
 }
 
 .tab.active {
-  background-color: #e0e0e0;
-  border-color: #a9a9a9;
+  background-color: #e9eef7;
+  border-color: #007bff;
+  color: #007bff;
+  font-weight: 600;
 }
 
 .tab:hover {
-  background-color: #dedede;
+  background-color: #e0e0e0;
 }
 
 .tab-title {
-  flex: 1;
-  white-space: nowrap;
+  flex-shrink: 1; /* 제목이 너무 길면 줄어들도록 함 */
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 150px; /* 탭의 최대 너비 제한 */
 }
 
 .close-button {
@@ -121,26 +117,54 @@
   padding: 0 2px;
   user-select: none;
   line-height: 1;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  border-radius: 50%;
+  flex-shrink: 0; /* 버튼 크기 고정 */
 }
 
 .close-button:hover {
-  color: #a00;
+  color: #fff;
+  background-color: #ff5252;
 }
 
 .add-tab-button {
+  flex-shrink: 0;
   border: none;
   background: none;
   font-size: 22px;
   cursor: pointer;
-  padding: 0 6px;
+  padding: 0 10px;
   color: #666;
   user-select: none;
   transition: color 0.2s ease;
 }
 
 .add-tab-button:hover {
-  color: #333;
+  color: #007bff;
+}
+
+/* 
+  ⭐ [핵심] 노트 콘텐츠를 담는 영역 
+  부모(.vaultmanager-wrapper)의 남은 모든 공간을 차지하고 (flex-grow: 1)
+  내부 콘텐츠가 길어지면 자체적으로 스크롤바를 생성 (overflow-y: auto)
+*/
+.vault-content-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  background-color: #f4f6f8;
+  position: relative;
+  /* Note 컴포넌트가 중앙에 오도록 내부 패딩 추가 */
+  padding: 20px; 
+}
+
+/* 
+  [추가됨] 
+  실제 노트 컴포넌트가 담기는 div. 
+  기존 코드의 flex:1을 제거해야 부모의 스크롤이 정상 작동합니다.
+*/
+.vault-tab-content {
+  height: 100%;
+  width: 100%;
 }
 
 .error-message {
@@ -148,4 +172,5 @@
   font-weight: 600;
   margin-top: 8px;
   font-size: 13px;
+  padding: 0 4px;
 }

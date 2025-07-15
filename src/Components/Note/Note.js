@@ -92,14 +92,10 @@ const deserialize = markdown => {
   return nodes.length > 0 ? nodes : [{ type: 'paragraph', children: [{ text: '' }] }];
 };
 
-// ✅ [수정] NoteView 컴포넌트 전체를 아래 코드로 교체합니다.
-// 복잡했던 AI 관련 로직을 모두 제거하고 원래의 단순한 구조로 복원합니다.
 export default function NoteView({ id, markdown, onChange }) {
-    // 필요한 Context만 가져옵니다.
     const { createNoteFromTitle, updateNote, updateGraphLinksFromContent } = useNotes();
     const { openTab, updateTitle } = useTabs();
 
-    // useMemo 훅들은 그대로 유지합니다.
     const decorate = useMemo(() => Decorations(), []);
     const editor = useMemo(() => Shortcuts(withReact(withHistory(createEditor()))), []);
     const titleEditor = useMemo(() => withReact(withHistory(createEditor())), []);
@@ -111,9 +107,8 @@ export default function NoteView({ id, markdown, onChange }) {
     
     const initialValue = useMemo(() => deserialize(markdown), [id, markdown]);
 
-    // id/markdown 동기화 useEffect는 그대로 유지합니다.
+    // ✅ [수정] id/markdown 동기화 useEffect를 더욱 안정적인 코드로 변경
     useEffect(() => {
-        // 제목 에디터의 내용을 현재 노트 ID(prop)와 동기화합니다.
         if (titleEditor) {
             const currentTitleInEditor = Editor.string(titleEditor, []);
             if (currentTitleInEditor !== id) {
@@ -121,17 +116,36 @@ export default function NoteView({ id, markdown, onChange }) {
                 Transforms.insertText(titleEditor, id || '', { at: [0, 0] });
             }
         }
-        // 메인 에디터의 내용을 외부 markdown prop과 동기화합니다.
+        
         if (editor) {
             const currentMarkdown = serialize(editor.children);
             if (currentMarkdown !== markdown) {
-                editor.children = initialValue;
-                editor.selection = null; 
+                // 여러 Slate 연산을 하나의 트랜잭션으로 묶어 상태 불일치를 방지합니다.
+                Editor.withoutNormalizing(editor, () => {
+                    // 1. 모든 최상위 노드를 제거합니다. (역순으로 진행해야 경로가 꼬이지 않음)
+                    const totalNodes = editor.children.length;
+                    for (let i = totalNodes - 1; i >= 0; i--) {
+                        Transforms.removeNodes(editor, { at: [i] });
+                    }
+
+                    // 2. 새로운 노드를 삽입합니다.
+                    // initialValue가 비어있더라도 최소 하나의 빈 문단을 갖도록 보장합니다.
+                    const newNodes = (initialValue && initialValue.length > 0)
+                        ? initialValue
+                        : [{ type: 'paragraph', children: [{ text: '' }] }];
+                    Transforms.insertNodes(editor, newNodes, { at: [0] });
+
+                    // 3. 에디터의 selection을 유효한 위치(문서의 시작점)로 설정합니다.
+                    // 이 작업이 상태 불일치로 인한 크래시를 최종적으로 방지합니다.
+                    Transforms.select(editor, Editor.start(editor, []));
+                });
+                
+                // Slate의 내부 변경 사항을 React 렌더링에 반영하도록 강제합니다.
+                editor.onChange();
             }
         }
     }, [id, markdown, titleEditor, editor, initialValue]);
 
-    // 클릭 이벤트 핸들러는 그대로 유지합니다.
     const handleClick = useCallback(e => {
         const target = e.target.closest('[data-link]');
         if (target) {
@@ -147,7 +161,6 @@ export default function NoteView({ id, markdown, onChange }) {
         return () => container?.removeEventListener('click', handleClick);
     }, [handleClick]);
 
-    //#region ctrl + s 이벤트 (저장)
     const handleKeyDown = useCallback((e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
@@ -168,9 +181,7 @@ export default function NoteView({ id, markdown, onChange }) {
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
-    //#endregion
 
-    //#region DOM 렌더링
     return (
         <div
             className={css`
@@ -221,7 +232,6 @@ export default function NoteView({ id, markdown, onChange }) {
             />
         </div>
     );
-    //#endregion
 }
 
 // =================================================

@@ -14,7 +14,7 @@ const VaultManager = forwardRef((props, ref) => {
 
   const {notes, setNotes, graphData, setActiveNoteContent, } = useNotes();
   const {tabs, setTabs, activeTabId, setActiveTabId, openTab} = useTabs();
-  
+
   const resourceAPI = useMemo(() => getResourceAPI(), []);
 
   // DOM 렌더링 시에 사용자 정보를 API로부터 가져와야 함. (로그인 화면에서 리다이렉트->쿠키에 엑세스 토큰 있어야 함.)
@@ -40,19 +40,20 @@ const VaultManager = forwardRef((props, ref) => {
     openTab({ title: newId, type: "note", noteId: newId });
     setError('');
     return newId;
-  }, [tabs]);
+  }, [tabs, notes, setNotes, openTab]); // 의존성 배열에 notes, setNotes, openTab 추가
 
   const addGraphTab = useCallback(() => {
     if (tabs.length >= 30) {
       setError('탭 한도가 초과되었습니다');
       return;
     }
-    const newId = (tabs.length ? Math.max(...tabs.map(t => parseInt(t.id))) + 1 : 1).toString();
+    // [수정됨] id 생성 로직을 더 안전하게 변경
+    const newId = `graph-${Date.now()}`;
     const newTab = { id: newId, title: '그래프 뷰', type: 'graph' };
     setTabs(prevTabs => [...prevTabs, newTab]);
     setActiveTabId(newId);
     setError('');
-  }, [tabs]);
+  }, [tabs, setTabs, setActiveTabId]); // 의존성 배열에 setTabs, setActiveTabId 추가
 
   useImperativeHandle(ref, () => ({
     addTab,
@@ -127,22 +128,21 @@ const VaultManager = forwardRef((props, ref) => {
               </Droppable>
             </DragDropContext>
           </div>
-
+          
+          {/* [수정됨] 스크롤이 적용될 콘텐츠 영역 */}
           <div className="vault-content-area">
             {tabs.map(tab => (
               <div
                 key={tab.id}
                 className="vault-tab-content"
-                style={{ display: tab.id === activeTabId ? 'block' : 'none', flex: 1 }}
+                style={{ display: tab.id === activeTabId ? 'block' : 'none' }}
               >
                 {tab.type === 'graph' ? (
                   <GraphView
                     data={graphData}
                     onSelect={(id) => {
-                      const newId = (tabs.length ? Math.max(...tabs.map(t => parseInt(t.id))) + 1 : 1).toString();
-                      const newTab = { id: newId, title: id, type: 'note', noteId: id };
-                      setTabs([...tabs, newTab]);
-                      setActiveTabId(newId);
+                      // 그래프 노드 클릭 시 새 탭 열기 로직
+                      openTab({ title: id, type: 'note', noteId: id });
                     }}
                   />
                 ) : (

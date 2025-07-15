@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import AiActionsWidget from './AiActionsWidget';
 import './AiHelper.css';
 import { useNotes } from '../../Contexts/NotesContext';
+import { useTabs } from '../../Contexts/TabsContext';
 import memoriaLogo from './Memoria_Icon2.png';
 
 const AiIcon = () => (
@@ -19,6 +20,7 @@ const AiIcon = () => (
 export default function AiHelper() {
     const [isOpen, setIsOpen] = useState(false);
     const { activeNoteContent } = useNotes();
+    const { tabs, activeTabId } = useTabs();
 
     console.log('[AiHelper] Received activeNoteContent:', activeNoteContent);
 
@@ -39,6 +41,7 @@ export default function AiHelper() {
     }
     
     return (
+        tabs.find(t=> t.id === activeTabId && t.type === "note") ?
         <div className="ai-helper-container">
             <button
                 className="ai-trigger-button"
@@ -48,6 +51,6 @@ export default function AiHelper() {
             >
                 <AiIcon />
             </button>
-        </div>
-    );
+        </div> : null
+        );
 }

@@ -8,7 +8,6 @@ import { useTabs } from "../Contexts/TabsContext";
 import { toast, Toaster } from "react-hot-toast";
 import AiHelper from "../Components/Util/AiHelper";
 // ✅ [수정] intelligentSaveNote 대신 saveNote를 사용합니다.
-import { listAllNotesFromDB, saveNote } from "../Components/Note/note_summary";
 
 export default function VaultApp() {
   const { 
@@ -17,29 +16,6 @@ export default function VaultApp() {
   } = useNotes();
   
   const { tabs, activeTabId, setActiveTabId, openTab, closeTab, noteIdFromTab } = useTabs();
-
-  // DB에서 노트 불러오기 (변경 없음)
-  useEffect(() => {
-    const loadNotesFromDB = async () => {
-        try {
-            const dbNotes = await listAllNotesFromDB();
-            const newNotesFromDB = {};
-            dbNotes.forEach((note) => {
-                newNotesFromDB[note.title] = {
-                    content: note.content,
-                    update_at: note.update_at,
-                    note_id: note.note_id,
-                    subject_id: note.subject_id,
-                    group_id: note.group_id,
-                };
-            });
-            setNotes(prevNotes => ({ ...prevNotes, ...newNotesFromDB }));
-        } catch (err) {
-            console.error("DB에서 노트 불러오기 실패:", err);
-        }
-    };
-    loadNotesFromDB();
-  }, [setNotes]);
 
   // 활성 탭 콘텐츠 설정 (변경 없음)
   useEffect(() => {
@@ -103,58 +79,13 @@ export default function VaultApp() {
     }
   }, [notes, noteIdFromTab, closeTab, setNotes, deleteExistingNote]);
 
-
-  // ✅ [수정] 지능형 저장 핸들러를 'DB에 저장' 핸들러로 변경
-  const handleSaveToDB = useCallback(async () => {
-    const currentNoteId = noteIdFromTab(activeTabId);
-    if (!currentNoteId) {
-      toast.error("저장할 노트가 활성화되지 않았습니다.");
-      return;
-    }
-    const currentContent = notes[currentNoteId]?.content;
-    if (!currentContent || currentContent.trim() === '') {
-        toast.error("저장할 내용이 없습니다.");
-        return;
-    }
-
-    const toastId = toast.loading("노트를 DB에 저장 중...");
-    try {
-      // note_summary.js의 saveNote 함수를 호출합니다.
-      // 이 함수는 서버에서 노트를 생성하거나 업데이트합니다.
-      await saveNote({
-        title: currentNoteId,
-        content: currentContent,
-      });
-
-      // 저장이 성공하면, DB에서 전체 노트 목록을 다시 불러와 상태를 최신화합니다.
-      // 이렇게 하면 새로 생성된 노트의 note_id도 정상적으로 반영됩니다.
-      const allNotes = await listAllNotesFromDB();
-      const newNotes = {};
-      allNotes.forEach(note => {
-        newNotes[note.title] = {
-          content: note.content,
-          update_at: note.update_at,
-          note_id: note.note_id,
-          subject_id: note.subject_id,
-          group_id: note.group_id,
-        };
-      });
-      setNotes(newNotes);
-      
-      toast.success(`"${currentNoteId}" 노트가 DB에 저장되었습니다!`, { id: toastId });
-
-    } catch (error) {
-      toast.error(`저장 실패: ${error.message}`, { id: toastId });
-    }
-  }, [activeTabId, notes, noteIdFromTab, setNotes]);
-
   return (
     <div className="vault-container">
       <aside className="toolbar">
         <button onClick={() => openTab({ title: "Graph", type: "graph" })}>🕸️</button>
         <button onClick={createNote}>+📝</button>
         {/* ✅ [수정] 로켓 버튼의 onClick과 title을 변경합니다. */}
-        <button onClick={handleSaveToDB} title="현재 노트를 DB에 저장">🚀</button>
+        <button title="현재 노트를 DB에 저장">🚀</button>
         <button className="btn-del" onClick={() => deleteNote(activeTabId)}>🗑️</button>
       </aside>
       <div className="tab-bar">

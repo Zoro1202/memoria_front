@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useMemo, useState, useCallback } from "react";
 import { toast } from 'react-hot-toast';
-import { deleteNoteFromDB } from '../Components/Note/note_summary';
 
 const NotesContext = createContext();
 
@@ -65,7 +64,6 @@ export function NotesProvider({ children }) {
         throw new Error("삭제할 노트의 DB ID를 찾을 수 없습니다.");
     }
     try {
-        await deleteNoteFromDB(noteToDelete.note_id);
         setNotes(prevNotes => {
             const newNotes = { ...prevNotes };
             delete newNotes[noteTitle];
