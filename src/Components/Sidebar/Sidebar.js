@@ -1,68 +1,59 @@
-// sidebar.js - 김형우
+// sidebar.js
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Network, Group, CircleUserRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Network, Group, CircleUserRound, VideoOff } from 'lucide-react';
 import VaultManager from '../../Components/VaultManager/VaultManager';
-import { getResourceAPI } from '../../Contexts/APIs/ResourceAPI'; // API 임포트
-import Tooltip from '@mui/material/Tooltip';
-import Button from '@mui/material/Button';
-
+import { useMousePosition } from './util/useMousePosition'; // Hook import
+import GroupList from './util/GroupList';
+import { useNotes } from '../../Contexts/NotesContext';
+import { useGroups } from '../../Contexts/GroupContext';
+import { useNavigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import './Sidebar.css';
 
 export default function SidebarLayout() {
-  // SideBar State 관련.
-  const [isOpen, setIsOpen]             = useState(true);
+  const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(true);
+  const [showToggleButton, setShowToggleButton] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
-  const vaultRef                        = useRef(null);
-  const isResizing                      = useRef(false);
-  const [user, setUser]                 = useState(null); // 사용자 정보 상태
-  const [profileImage, setProfileImage] = useState(null); // 프로필 이미지 상태
+  const vaultRef = useRef(null);
+  const mousePosition = useMousePosition(); // 마우스 위치 추적
+  
+  const {
+    sid,
+    provider,
+    remainTime,
+    setRemainTime,
+    tokenInfo,
+    tokenRefresh,
+    user,
+    profileImage,
+    fetchUser,
+    fetchProfileImage,
+  } = useGroups();
+  
+  const { loadNotes, loadNotes_lagacy } = useNotes();
 
-  // 컴포넌트 마운트 시 사용자 정보 가져오기
   useEffect(() => {
-    const resourceAPI = getResourceAPI();
-    const fetchUser = async () => {
-      try {
-        const userData = await resourceAPI.get_user();
-        setUser(userData);
-      } catch (error) {
-        console.error("사용자 정보를 가져오는데 실패했습니다:", error);
-      }
-    };
-    const fetchProfileImage = async () => {
-      const resourceAPI = getResourceAPI();
-      try {
-        const res = await resourceAPI.get_profile_image();
-        const blob = await res.blob();
-        const imgUrl = URL.createObjectURL(blob);
-        setProfileImage(imgUrl);
-      } catch (error) {
-        console.error("프로필 이미지를 가져오는데 실패했습니다:", error);
-        setProfileImage('/default-avatar.png'); // 기본 이미지로 설정
-      }
-    };
-    
     fetchUser();
     fetchProfileImage();
+    tokenInfo();
+    setInterval(() => {
+      setRemainTime(prevRemainTime => {
+        if (prevRemainTime < 650) {
+          tokenRefresh();
+          tokenInfo();
+          return 900;
+        }
+        return prevRemainTime - 1;
+      });
+    }, 1000);
   }, []);
 
-//#region 사이드 바 숨기기 관련 함수들
-  const handleMouseDown = () => {
-    isResizing.current = true;
-  }; 
-  const handleMouseMove = (e) => {
-    if (isResizing.current && isOpen) {
-      const newWidth = e.clientX;
-      if (newWidth > 100 && newWidth < 500) {
-        setSidebarWidth(newWidth);
-      }
-    }
-  };
-  const handleMouseUp = () => {
-    isResizing.current = false;
-  };
-//#endregion
+  // 마우스가 왼쪽 영역에 있는지 확인
+  const isMouseOnLeftSide = mousePosition.x < 100;
+  const isMouseOnTabs = mousePosition.y < 65;
 
-//#region Sidebar의 AddNote 와 GraphView 창 열기 버튼 관련 함수들
+  // 버튼 핸들러들
   const handleAddNote = useCallback(() => {
     vaultRef.current?.addTab();
   }, []);
@@ -71,98 +62,77 @@ export default function SidebarLayout() {
     vaultRef.current?.addGraphTab();
   }, []);
 
-  const handleOpenCnf = useCallback(() => {
-    vaultRef.current?.addTab();
-  })
-//#endregion
-  
-  //DOM
   return (
-
-    <div
-      className="container"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      <div
-        className={`sidebar ${isOpen ? 'open' : 'closed'}`}
-      >
-        <div className="sidebar-header">
-          {isOpen && (
-            <img src="/memoria.png" alt="Logo" className="logo" />
-          )}
-          <button className="toggle-btn" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-          </button>
+    <div className="container">
+      {/* 마우스 위치 추적 토글 버튼 */}
+      {!isOpen && isMouseOnLeftSide && !isMouseOnTabs && (
+        <div
+          className="toggle-btn-follow-mouse"
+          style={{
+            left: `${20}px`,
+            top: `${mousePosition.y - 20}px`,
+          }}
+          onClick={() => setIsOpen(true)}
+        >
+          <ChevronRight size={20} />
         </div>
+      )}
 
-        {!isOpen && (
-          <div className="sidebar-content">
-            <button className='note-group-btn' onClick={()=>console.log("GROUP_CLICK")}>
-              <Group size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              <Tooltip title = "노트 그룹"/>
+      {/* 사이드바 */}
+      {isOpen && (
+        <div
+          className="sidebar"
+          style={{ width: sidebarWidth }}
+        >
+          <div className="sidebar-header">
+            <button className='main-logo' onClick={() => navigate('/')}>
+              <img src="/memoria.png" alt="Logo" className="logo" />
             </button>
-            <button className="add-note-btn" onClick={handleAddNote}>
-              <Plus size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              <Tooltip title = "새 노트"/>
-            </button>
-            <button className="add-note-btn" onClick={handleAddGraph}>
-              <Network size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              <Tooltip title = "그래프 뷰 보기"/>
-            </button>
-            <button className="add-note-btn" onClick={() => window.location.href = '/video-conference'}>
-              <i className="fas fa-video" style={{ marginRight: 6, verticalAlign: 'middle' }}></i>
-              <Tooltip title = "화상회의"/>
+            <button className="toggle-btn" onClick={() => setIsOpen(false)}>
+              <ChevronLeft size={20} />
             </button>
           </div>
-        )}
 
-        {isOpen && (
           <div className="sidebar-content">
-            <button className='note-group-btn' onClick={()=>console.log("GROUP_CLICK")}>
-              <Group size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              <Tooltip title = "노트 그룹"/>
-              그룹
-            </button>
+            <GroupList onGroupSelect={(group) => {
+              console.log(group);
+              loadNotes_lagacy(group.group_id); //이거 바꿔야함!!!
+            }} />
             <button className="add-note-btn" onClick={handleAddNote}>
               <Plus size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              <Tooltip title = "새 노트"/>
               새 노트
             </button>
             <button className="add-note-btn" onClick={handleAddGraph}>
               <Network size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              <Tooltip title = "그래프 뷰 보기"/>
               그래프 뷰
             </button>
             <button className="add-note-btn" onClick={() => window.location.href = '/video-conference'}>
               <i className="fas fa-video" style={{ marginRight: 6, verticalAlign: 'middle' }}></i>
-              <Tooltip title = "화상회의"/>
               화상회의
             </button>
+            <button className="add-note-btn" onClick={() => window.location.href = '/offline-meeting'}>
+              <VideoOff size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+              오프라인 회의
+            </button>
           </div>
-        )}
 
-        {/* 사용자 정보 표시를 위한 사이드바 푸터 */}
-        {isOpen && user && (
-          <div className="sidebar-footer">
-            <div className="user-profile">
-              <img src={profileImage} alt="User Avatar" className="user-avatar" />
-              <span className="user-name">{user.nickname}</span>
+          {user && (
+            <div className="sidebar-footer">
+              <div className="user-profile">
+                <img src={profileImage} alt="User Avatar" className="user-avatar" />
+                <span className="user-name">{user.nickname} </span>
+                <p>{remainTime}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
-        {isOpen && (
-          <div
-            className="sidebar-resizer"
-            onMouseDown={handleMouseDown}
-          />
-        )}
-
-
+      {/* 메인 콘텐츠 */}
+      <div className="main-content">
+        <VaultManager ref={vaultRef} />
       </div>
-
-      <VaultManager ref={vaultRef} />
+      <Toaster />
     </div>
   );
 }

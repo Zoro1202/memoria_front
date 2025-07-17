@@ -5,33 +5,41 @@ import VaultApp from './VaultApp/Vaultapp';
 import Main from './Main/Main';
 import HierGraph from './Components/Group/Group';
 import APITestPage from './Contexts/APIs/APITESTPAGE';
+import { GroupsProvider } from './Contexts/GroupContext';
 import { NotesProvider } from './Contexts/NotesContext';
-import Hwasang from './Components/Hwasang/Hwasang';
 import { TabsProvider } from './Contexts/TabsContext';
+import Hwasang from './Components/Hwasang/Hwasang';
 import React from 'react';
 import AiHelper from './Components/AI_Assistance/AiHelper'; // AiHelper를 import 합니다.
-
-// 이제 SummaryWidget은 AiHelper 내부에서만 사용되므로 여기서 import 할 필요가 없습니다.
-// import SummaryWidget from './Components/AI_Assistance/SummaryWidget';
+import OfflineMeeting from './Components/OfflineMeeting/Meeting';
+// import RecorderPage from './Components/OfflineMeeting/';
+// import TranscribePage from './Components/OfflineMeeting/TranscribePage';
+// 둘다 없는데여...
 
 export default function App() {
   return (
+    <GroupsProvider>
     <NotesProvider>
-      <TabsProvider>
-        <Routes>
-          <Route path="/" element={<Start />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/vault" element={<VaultApp />} />
-          <Route path="/main" element={<Main />} />
-          <Route path='/group' element={<HierGraph />} />
-          <Route path="/video-conference" element={<Hwasang />} />
-          <Route path="/apitest" element={<APITestPage/>} />
-        </Routes>
+    <TabsProvider>
+      <Routes>
+        <Route path="/" element={<Start />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/vault" element={<VaultApp />} />
+        <Route path="/main" element={<Main />} />
+        <Route path='/group' element={<HierGraph />} />
+        <Route path="/video-conference" element={<Hwasang />} />
+        <Route path="/apitest" element={<APITestPage/>} />
+        <Route path="/offline-meeting" element={<OfflineMeeting />} />
+        {/* <Route path="/record" element={<RecorderPage />} />
+        <Route path="/transcribe" element={<TranscribePage />} /> */}
 
-        {/* 기존 SummaryWidget을 지우고 AiHelper 컴포넌트를 추가합니다. */}
-        <AiHelper />
+      </Routes>
 
-      </TabsProvider>
+      {/* 기존 SummaryWidget을 지우고 AiHelper 컴포넌트를 추가합니다. */}
+      <AiHelper />
+
+    </TabsProvider>
     </NotesProvider>
+    </GroupsProvider>
   );
 }

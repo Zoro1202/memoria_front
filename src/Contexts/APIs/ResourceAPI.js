@@ -89,6 +89,7 @@ export function getResourceAPI() {
       if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
       // returns groupData: {notes: {note_id: any;title: any;}[];links: {src_note_id: any;dst_note_id: any;}[];}
       return await response.json();
+
     },
 
     // region 노트 내용 가져오기
@@ -112,9 +113,10 @@ export function getResourceAPI() {
      * @param {number} noteData.group_id - 그룹 ID (노트이 속한 그룹)
      * @returns {Promise<{ note_id: number, content: string, newtitle: string, group_id: number }>} - 수정된 노트 정보
      */
-    upsertNote: async (group_id, title, content, note_id) => {
+    upsertNote: async (group_id, title, content, note_id = -2) => {
       const response = await fetch(`${baseUrl}/api/upsert`, {
         method: 'POST',
+        credentials:'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({group_id, title, content, note_id}),
       });

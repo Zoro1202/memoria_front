@@ -547,6 +547,7 @@ function Hwasang() {
     const settings = audioTrack.getSettings();
     const audioChannels = settings.channelCount || 1;
 
+    // ... joinRoom 함수 내부 ...
     socket.emit(
       "join-room",
       { roomId: customRoomId, peerId: socketId, nickname: customNickname, audioChannels },
@@ -580,8 +581,20 @@ function Hwasang() {
         }
 
         const device = await createDevice(rtpCapabilities);
-        const sendTransport = createSendTransport(device, sendTransportOptions);
-        createRecvTransport(device, recvTransportOptions);
+        
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★★★ 여기가 수정된 핵심 부분입니다 ★★★
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        // 1. WebRTC 연결을 위한 STUN 서버 목록을 정의합니다.
+        const iceServers = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ];
+
+        // 2. 서버에서 받은 옵션과 STUN 서버 설정을 병합하여 transport를 생성합니다.
+        const sendTransport = createSendTransport(device, { ...sendTransportOptions, iceServers });
+        createRecvTransport(device, { ...recvTransportOptions, iceServers });
 
         socket.off("new-producer", handleNewProducer);
         socket.on("new-producer", handleNewProducer);
@@ -608,6 +621,8 @@ function Hwasang() {
         });
       }
     );
+// ...
+
   };
 
   // 방 나가기

@@ -16,12 +16,13 @@ const SERVER_URL = "https://login.memoriatest.kro.kr";
 // AI 관련 API (AiActionsWidget.js에서 사용)
 // ==========================================================
 
-export async function generateSummary(content) {
+export async function generateSummary(content, signal) {
     try {
         const response = await fetch(`${SERVER_URL}/gemini/generate-summary`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content }),
+            signal: signal
         });
         if (!response.ok) {
             const errorData = await response.json();
@@ -34,12 +35,13 @@ export async function generateSummary(content) {
     }
 }
 
-export async function translateText(title, content, target_language) {
+export async function translateText(title, content, target_language, signal) {
     try {
         const response = await fetch(`${SERVER_URL}/gemini/translate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, content, target_language })
+            body: JSON.stringify({ title, content, target_language }),
+            signal: signal
         });
         if (!response.ok) {
             const errorData = await response.json();

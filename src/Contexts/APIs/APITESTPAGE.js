@@ -1,6 +1,7 @@
 // src/Contexts/APIs/APITESTPAGE.js - 이상영
 import { useEffect, useState} from 'react';
 import {getResourceAPI} from './ResourceAPI';
+import GroupList from '../../Components/Sidebar/util/GroupList'
 // import { Toaster, toast } from 'react-hot-toast';
 
 export default function APITestPage() {
@@ -128,9 +129,10 @@ export default function APITestPage() {
     fetchProfileImage();
     setInterval(()=>{
         setRemainTime(prevRemainTime => {
-          if (prevRemainTime === 880) {
+          if (prevRemainTime < 650) {
             tokenRefresh();
             tokenInfo();
+            return 900;
           }
           return prevRemainTime - 1;
         });
@@ -264,7 +266,10 @@ export default function APITestPage() {
         
         <p>Group List Test</p>
         <button onClick={() => {groupLoad()}}>Group List</button>
-        
+        <GroupList onGroupSelect={(group)=>{
+          console.log(group);
+          setGroup_id(group.group_id);
+          }}/>
         <p>Delete Note Test</p>
         <input
           type="number"

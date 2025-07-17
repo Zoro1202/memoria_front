@@ -1,17 +1,73 @@
 //groupcontext.js - 이상영
-//노트 관리 context
-//사용하려는 스코프 상위에 provider로 감싸줘야 사용 가능
-//나중에 백엔드와 통신해야 함
-import React, { createContext, useContext, useMemo, useState, useCallback } from "react";
+//그룹 & 유저 정보 관리 context
+import React, { createContext, useContext, useState, useCallback } from "react";
 import {toast} from 'react-hot-toast';
 import {getResourceAPI} from './APIs/ResourceAPI';
+
 const GroupsContext = createContext();
+
+export function useGroups() {
+  return useContext(GroupsContext);
+}
 
 export function GroupsProvider({ children }) {
   const resourceAPI = getResourceAPI();
   const [groups, setGroups] = useState({});
   const [loading, setLoading] = useState(false);
-    // 그룹 목록 로드
+
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+
+  const [sid, setSid] = useState();
+  const [provider, setProvider] = useState();
+  const [remainTime, setRemainTime] = useState();
+  
+  const [user, setUser]                 = useState(null); // 사용자 정보 상태
+  const [profileImage, setProfileImage] = useState(null); // 프로필 이미지 상태
+  //region 유저 정보
+  const tokenInfo = async() => {
+    try{
+      const info = await resourceAPI.token_info();
+      console.log('token info : ', info);
+      setSid(info.subject_id);
+      setProvider(info.provider);
+      setRemainTime(info.remainingTime);
+    }catch(err){
+      console.log('token load faild:', err);
+    }
+  };
+  //region 토큰 새로고침
+  const tokenRefresh = async() =>{
+    try{
+      const data = await resourceAPI.token_refresh();
+      console.log(`토큰 : ${data}`);
+    } catch (err){
+      console.log('token refresh faild:', err);
+    }
+  }
+  // region 사용자정보
+  const fetchUser = async () => {
+    try {
+      const userData = await resourceAPI.get_user();
+      setUser(userData);
+    } catch (error) {
+      console.error("사용자 정보를 가져오는데 실패했습니다:", error);
+    }
+  };
+  // region 사용자 프사
+  const fetchProfileImage = async () => {
+    const resourceAPI = getResourceAPI();
+    try {
+      const res = await resourceAPI.get_profile_image();
+      const blob = await res.blob();
+      const imgUrl = URL.createObjectURL(blob);
+      setProfileImage(imgUrl);
+    } catch (error) {
+      console.error("프로필 이미지를 가져오는데 실패했습니다:", error);
+      setProfileImage('/default-avatar.png'); // 기본 이미지로 설정
+    }
+  };
+
+  // region 그룹 목록 로드
   const loadGroups = useCallback(async () => {
     setLoading(true);
     try {
@@ -39,7 +95,7 @@ export function GroupsProvider({ children }) {
     }
   }, []);
 
-  // 그룹 생성
+  // region 그룹 생성
   const createGroup = useCallback(async (groupName) => {
     try {
       const data = await resourceAPI.createGroup(groupName);
@@ -65,7 +121,7 @@ export function GroupsProvider({ children }) {
     }
   }, []);
 
-  // 그룹 삭제
+  // region 그룹 삭제
   const deleteGroup = useCallback(async (groupId) => {
     try {
       await resourceAPI.deleteGroup(groupId);
@@ -85,22 +141,36 @@ export function GroupsProvider({ children }) {
     }
   }, []);
 
+  const value = {
+    //그룹
+    groups,
+    loading,
+    loadGroups,
+    createGroup,
+    deleteGroup,
+    setGroups,
+    //선택한 그룹
+    selectedGroupId, 
+    setSelectedGroupId,
+    // 인증
+    sid,
+    provider,
+    remainTime,
+    setRemainTime,
+    tokenInfo,
+    tokenRefresh,
+    //유저 정보
+    user,
+    profileImage,
+    fetchUser,
+    fetchProfileImage,
+  };
+  
   return (
-    <GroupsContext.Provider value={{
-      groups,
-      loading,
-      loadGroups,
-      createGroup,
-      deleteGroup,
-      setGroups
-      }}>
+    <GroupsContext.Provider value={value}>
       {children}
     </GroupsContext.Provider>
   );
 }
 
-// Hook으로 편하게 사용
-export function useGroups() {
-  return useContext(GroupsContext);
-}
 

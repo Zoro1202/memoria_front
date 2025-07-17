@@ -6,6 +6,16 @@
   border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   display: flex; flex-direction: column; overflow: hidden;
   color: #E3E3E3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  opacity: 0;
+  transform: translateY(15px) scale(0.98); /* 살짝 아래에서 작게 시작 */
+  pointer-events: none; /* 숨겨져 있을 때 클릭 방지 */
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out; /* 부드러운 효과 */
+}
+
+.ai-actions-widget.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1); /* 원래 위치와 크기로 복귀 */
+  pointer-events: auto; /* 보이게 되면 다시 클릭 가능 */
 }
 
 /* 헤더 */
@@ -14,25 +24,36 @@
   border-bottom: 1px solid #383838; flex-shrink: 0;
 }
 .widget-title { font-weight: 500; color: #e0e0e0; margin: 0; font-size: 14px; }
-.widget-header-right { margin-left: auto; }
-.widget-back-button, .widget-close-button {
-  background: none; border: none; color: #888; font-size: 20px;
-  cursor: pointer; line-height: 1; padding: 4px;
+.widget-header-right { 
+  margin-left: auto; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.widget-back-button:hover, .widget-close-button:hover { color: #fff; }
+.widget-back-button, .widget-close-button, .widget-minimize-button, .widget-refresh-button {
+  background: none; border: none; color: #888;
+  cursor: pointer; line-height: 1; padding: 4px;
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+.widget-close-button {
+  font-size: 24px;
+}
+.widget-back-button:hover, .widget-close-button:hover, .widget-minimize-button:hover, .widget-refresh-button:hover { 
+  color: #fff; 
+}
 
 /* 메인 컨텐츠 영역 */
 .widget-content-wrapper {
   flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* ======================================== */
-/* ⭐⭐⭐ 1. 이 부분에 position: relative; 추가 ⭐⭐⭐ */
-/* ======================================== */
 .main-content-area {
   flex-grow: 1; overflow-y: auto; padding: 16px 12px;
   display: flex; flex-direction: column;
-  position: relative; /* 자식 요소의 absolute 포지셔닝 기준점이 됩니다. */
+  position: relative;
 }
 
 
@@ -42,8 +63,22 @@
 .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
 .fade-out { animation: fadeOut 0.3s ease-in-out forwards; pointer-events: none; }
 
-/* 초기 화면 */
-.initial-view-container { padding-top: 40px; }
+/* ✅ [수정] 초기 화면 레이아웃 컨테이너 스타일 */
+.initial-view-container {
+  flex-grow: 1; /* 부모 flex 컨테이너(.main-content-area)의 남은 공간을 모두 차지 */
+  display: flex;
+  flex-direction: column;
+  padding-top: 40px;
+}
+
+/* ✅ [추가] 'cleared-mode'일 때 중앙 정렬을 위한 스타일 */
+.initial-view-container.cleared-mode {
+  justify-content: center; /* 수직 중앙 정렬 */
+  align-items: center;     /* 수평 중앙 정렬 */
+  padding-top: 0;          /* 중앙 정렬 시에는 상단 패딩 제거 */
+}
+
+/* 초기 화면 컨텐츠 */
 .ai-greeting {
   display: flex; flex-direction: column; align-items: center;
   gap: 8px; margin-bottom: 24px;
@@ -74,7 +109,6 @@
   flex-direction: column;
   gap: 4px;
   flex: 1 1 auto;
-  /* opacity: 1; // 필요 시 추가 */
 }
 
 .chat-message {
@@ -86,58 +120,45 @@
 .chat-message p { margin: 0; white-space: pre-wrap; }
 
 .chat-message.user {
-  align-self: flex-end; /* 오른쪽 정렬 */
+  align-self: flex-end;
   background-color: #007AFF;
   color: white;
   border-bottom-right-radius: 6px;
-  margin-right: -12px; /* 오른쪽 패딩 무시하고 끝선 맞춤 */
-  text-align: right; /* ⭐ 말풍선 안의 텍스트를 오른쪽으로 정렬합니다. */
+  margin-right: -12px;
+  text-align: right;
 }
 .chat-message.ai {
   background-color: #37373D;
   color: #E3E3E3;
-  align-self: flex-start; /* 왼쪽으로 붙이기 */
+  align-self: flex-start;
   border-bottom-left-radius: 6px;
 }
 
-
-/* ======================================== */
-/* ⭐⭐⭐ 2. 이 부분을 수정하여 레이아웃 정상화 ⭐⭐⭐ */
-/* ======================================== */
 /* 요약/번역 결과 */
-.result-only-view, .translate-view {
-    /* position: absolute와 중앙 정렬 속성을 제거하여 일반적인 문서 흐름을 따르도록 합니다. */
+.result-only-view, .translate-view, .title-suggestions-view {
     width: 100%;
     opacity: 0;
 }
 .result-only-view p {
   background-color: #2F3035; border-radius: 12px;
   padding: 16px; white-space: pre-wrap; line-height: 1.6;
-  text-align: left; /* 텍스트를 왼쪽 정렬합니다. */
+  text-align: left;
 }
 .result-apply-button-container { margin-top: 16px; text-align: right; }
 
-/* 로딩 화면은 화면 중앙에 표시되어야 하므로 absolute 유지 */
+/* 로딩 화면 */
 .loading-view-full {
     position: absolute;
-    /* inset: 0은 top, right, bottom, left를 모두 0으로 설정합니다. */
-    /* 부모(.main-content-area) 영역에 꽉 차는 오버레이를 만듭니다. */
     inset: 0;
-    
-    /* Flexbox를 사용해 오버레이 내부의 콘텐츠를 완벽하게 중앙 정렬합니다. */
     display: flex;
-    flex-direction: column; /* "요약 중..." 텍스트와 애니메이션을 세로로 배치 */
-    justify-content: center; /* 수직 중앙 정렬 */
-    align-items: center;   /* 수평 중앙 정렬 */
-    
-    /* 로딩 중 뒷 배경을 살짝 어둡게 만들어 집중도를 높입니다. */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     background-color: rgba(25, 25, 25, 0.7);
     backdrop-filter: blur(2px);
-    
     opacity: 0;
-    z-index: 10; /* 다른 요소들 위에 표시되도록 z-index 설정 */
+    z-index: 10;
 }
-
 
 .apply-to-note-button {
   background-image: linear-gradient(to right, #4A5568, #2D3748);
@@ -181,11 +202,7 @@
     color: #a0a0a0;
     margin-bottom: 20px;
 }
-
-/* 요약 로딩 애니메이션 */
-.summary-loader {
-    display: flex; flex-direction: column; align-items: center;
-}
+.summary-loader { display: flex; flex-direction: column; align-items: center; }
 .summary-loader .bar {
     width: 80px; height: 6px; background-color: #444;
     border-radius: 3px; margin: 4px 0;
@@ -194,119 +211,34 @@
 .summary-loader .bar:nth-child(2) { animation-delay: 0.1s; }
 .summary-loader .bar:nth-child(3) { animation-delay: 0.2s; }
 .summary-loader .bar:nth-child(4) { animation-delay: 0.3s; }
-
 @keyframes summary-pulse {
     0%, 100% { transform: scaleX(1); opacity: 1; }
     50% { transform: scaleX(0.6); opacity: 0.6; }
 }
+.translate-loader-wrapper { display: flex; flex-direction: column; align-items: center; }
+.translate-loader { display: flex; align-items: center; justify-content: center; min-height: 80px; }
+.lang-icon-container { position: relative; width: 120px; height: 50px; }
+.lang-icon { position: absolute; width: 50px; height: 50px; border-radius: 50%; background-color: #333; color: #ccc; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; font-family: 'Arial', sans-serif; transition: transform 0.8s ease-in-out; }
+#lang-icon-left { left: 0; animation: move-right 2s ease-in-out infinite; }
+#lang-icon-right { right: 0; animation: move-left 2s ease-in-out infinite; }
+@keyframes move-right { 0%, 100% { transform: translateX(0); z-index: 1; } 50% { transform: translateX(70px); z-index: 0; } }
+@keyframes move-left { 0%, 100% { transform: translateX(0); z-index: 0; } 50% { transform: translateX(-70px); z-index: 1; } }
+.action-button-group.vertical { flex-direction: column; gap: 8px; }
+.title-suggestions-view { padding: 10px 15px; }
 
-/* 번역 로딩 애니메이션 */
-.translate-loader-wrapper { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
+/* AI 제목 생성 로딩 애니메이션 */
+.title-loader-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; color: #555; }
+.typing-effect { font-family: 'Courier New', Courier, monospace; font-size: 1.2rem; font-weight: bold; white-space: nowrap; overflow: hidden; border-right: 3px solid #777; animation: typing 2.5s steps(30, end) infinite, blink-caret 0.75s step-end infinite; }
+@keyframes typing { from { width: 0 } to { width: 100% } }
+@keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #777; } }
+
+/* ✅ [수정] 채팅 초기화 후 텍스트 스타일 */
+.typing-effect.cleared-text {
+  color: #a0a0a0;
+  font-size: 1rem;
+  font-weight: normal;
+  animation: typing 2s steps(21) forwards,
+             blink-caret 0.75s step-end 3 forwards;
 }
 
-.translate-loader { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    min-height: 80px;
-}
-
-.lang-icon-container {
-    position: relative;
-    width: 120px; /* 아이콘 간의 거리 확보 */
-    height: 50px;
-}
-
-.lang-icon {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #333;
-    color: #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    font-weight: bold;
-    font-family: 'Arial', sans-serif;
-    transition: transform 0.8s ease-in-out;
-}
-
-#lang-icon-left {
-    left: 0;
-    animation: move-right 2s ease-in-out infinite;
-}
-
-#lang-icon-right {
-    right: 0;
-    animation: move-left 2s ease-in-out infinite;
-}
-
-
-@keyframes move-right {
-    0%, 100% {
-        transform: translateX(0);
-        z-index: 1; /* 처음에는 위에 있도록 설정 */
-    }
-    50% {
-        transform: translateX(70px); /* 오른쪽으로 이동 */
-        z-index: 0; /* 중앙을 지날 때 아래로 가도록 설정 */
-    }
-}
-
-@keyframes move-left {
-    0%, 100% {
-        transform: translateX(0);
-        z-index: 0; /* 처음에는 아래에 있도록 설정 */
-    }
-    50% {
-        transform: translateX(-70px); /* 왼쪽으로 이동 */
-        z-index: 1; /* 중앙을 지날 때 위로 가도록 설정 */
-    }
-}
-
-.action-button-group.vertical {
-  flex-direction: column;
-  gap: 8px;
-}
-
-.title-suggestions-view {
-  padding: 10px 15px;
-}
-
-/* ✅ [추가] 새로운 AI 제목 생성 로딩 애니메이션 스타일 */
-.title-loader-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  color: #555;
-}
-
-.typing-effect {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 1.2rem;
-  font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  border-right: 3px solid #777; /* 커서 효과 */
-  animation: typing 2.5s steps(30, end) infinite, 
-             blink-caret 0.75s step-end infinite;
-}
-
-/* 타이핑 효과 애니메이션 */
-@keyframes typing {
-  from { width: 0 }
-  to { width: 100% }
-}
-
-/* 커서 깜빡임 효과 애니메이션 */
-@keyframes blink-caret {
-  from, to { border-color: transparent }
-  50% { border-color: #777; }
-}
+/* ❌ [삭제] 더 이상 필요 없는 .ai-greeting.cleared 스타일을 제거했습니다. */

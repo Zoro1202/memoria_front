@@ -1,0 +1,189 @@
+/* 래퍼 - 고정 너비 */
+/* .group-list-wrapper {
+  width: 240px;
+  border-right: 1px solid #e3e3e3;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: hidden;
+} */
+
+/* 헤더 - 항상 보임 */
+.groups-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e3e3e3;
+  background: #f7f7f5;
+  flex-shrink: 0; /* 헤더 크기 고정 */
+}
+
+.group-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #37352f;
+}
+
+/* 토글 버튼 */
+.group-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #6b6b6b;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background-color 0.1s;
+  user-select: none;
+}
+
+.group-toggle-btn:hover {
+  background: #efefef;
+}
+
+/* 목록 컨테이너 - 높이 애니메이션 */
+.groups-container {
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+}
+
+.groups-container.expanded {
+  max-height: 400px; /* 충분한 높이 설정 */
+}
+
+.groups-container.collapsed {
+  max-height: 0;
+}
+
+/* 실제 콘텐츠 */
+.groups-content {
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 350px; /* 스크롤 가능한 최대 높이 */
+}
+
+/* 개별 그룹 항목 */
+.group-item {
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background-color 0.1s ease;
+  user-select: none;
+  font-family: inherit;
+  color: #37352f;
+}
+
+.group-item:hover {
+  background-color: #f0f0f0;
+}
+
+.group-item.selected {
+  background-color: #2383e2;
+  color: white;
+}
+
+.group-item.selected .group-name {
+  color: white;
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.group-name {
+  font-weight: 500;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #37352f;
+}
+
+.group-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+/* 로딩 상태 */
+.group-list-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: #6b6b6b;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #efefef;
+  border-top: 2px solid #2383e2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 스크롤바 스타일 */
+.groups-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.groups-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.groups-content::-webkit-scrollbar-thumb {
+  background: #e3e3e3;
+  border-radius: 2px;
+}
+
+.groups-content::-webkit-scrollbar-thumb:hover {
+  background: #d0d0d0;
+}
+
+/* 입력폼 */
+.add-group-input {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+}
+.add-group-input:focus {
+  outline: none;
+  border-color: #2383e2;
+}
+.add-group-confirm {
+  padding: 4px 10px;
+  background: #2383e2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.add-group-cancel {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #888;
+}
+.add-group-cancel:hover { color: #555; }
