@@ -34,7 +34,15 @@ export function TabsProvider({ children }) {
   const closeTab = (id) => {
     setTabs(prev => prev.filter(t => t.id !== id));
   };
-  
+
+  const clostTab_noteID =(note_id) =>{
+    setTabs(prev => prev.filter(t=> t.noteId !== note_id));
+  }
+  //note탭만 닫기
+  const closeAllNoteTab = () => {
+    setTabs(prev => prev.filter(t => t.type !== 'note'));
+  }
+
   const noteIdFromTab = (tabId) => {
     const tab = tabs.find(t => t.id === tabId && t.type === 'note');
     return tab?.noteId ?? null;
@@ -63,6 +71,8 @@ export function TabsProvider({ children }) {
       setActiveTabId,
       openTab,
       closeTab,
+      clostTab_noteID,
+      closeAllNoteTab,
       noteIdFromTab,
       updateTitle // 수정된 함수를 전달
     }}>

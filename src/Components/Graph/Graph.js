@@ -11,16 +11,16 @@ export default function GraphView({ data, onSelect }) {
 
   //#region Graph State들 관련
   //Display
-  const [nodeSize, setNodeSize] = useState(10);//노드 사이즈
+  const [nodeSize, setNodeSize] = useState(8);//노드 사이즈
   const [linkWidth, setLinkWidth] = useState(1); // 링크 두께
-  const [zoom, setZoom] = useState(0.5);  // 텍스트 표시 시작점임.
+  const [zoom, setZoom] = useState(1.0);  // 텍스트 표시 시작점임.
   const [hoverNode, setHoverNode] = useState(null); // 마우스 올려논 노드 표시
   const [w, h] = useWindowSize();
   //Physics
   const [centerForce, setCenterForce] = useState(0.2); // 중심 장력(중력같은느낌?)
-  const [linkStrength, setLinkStrength] = useState(1); // 링크 거리가 유지되는 힘?
-  const [repulsion, setRepulsion] = useState(-150); // 노드 간 척력
-  const [linkDistance, setLinkDistance] = useState(100); // 링크 거리
+  const [linkStrength, setLinkStrength] = useState(2); // 링크 거리가 유지되는 힘?
+  const [repulsion, setRepulsion] = useState(-300); // 노드 간 척력
+  const [linkDistance, setLinkDistance] = useState(70); // 링크 거리
   const [panelOpen, setPanelOpen] = useState(false); // 판넬 오픈 state
   //#endregion
 
@@ -57,10 +57,12 @@ export default function GraphView({ data, onSelect }) {
 
     return map; // 필요하면 maxDegree도 여기서 함께 반환
   }, [data.links]);
+  
   // 링크 수에 따라 크기 구하기(절대값 아님. 상대값임. 최소 크기 1, 링크 1마다 0.1씩 늘어남)
   const getRadius = (node, scale = 1) => {
     const deg = degreeMap[node.id] ?? 0;     // 연결 수
-    return (nodeSize * (1+deg/10)) / scale; // 1 + (0.1 * n) 크기 0.1씩 증가
+    // return (nodeSize * (1+deg/10)) / scale; // 1 + (0.1 * n) 크기 0.1씩 증가 , 글로발 크케일로 나눠서 화면 줌에 상관없이 일관된 크기 유지함.
+    return (nodeSize * (1+deg/10)); // 1 + (0.1 * n) 크기 0.1씩 증가
   };
 
   // DOM
@@ -78,15 +80,15 @@ export default function GraphView({ data, onSelect }) {
 
         <div className={`panel-body ${panelOpen ? '' : 'closed'}`}>
           <h2 className="section-title">Display</h2>
-          <Slider label="Node Size" value={nodeSize} setValue={setNodeSize} min={2} max={30} />
-          <Slider label="Link Width" value={linkWidth} setValue={setLinkWidth} min={0.5} max={4} step={0.5} />
-          <Slider label="Zoom" value={zoom} setValue={setZoom} min={0.5} max={3} step={0.1} />
+          <Slider label="Node Size" value={nodeSize} setValue={setNodeSize} min={0} max={30} />
+          <Slider label="Link Width" value={linkWidth} setValue={setLinkWidth} min={0} max={10} step={0.5} />
+          <Slider label="Text Distance" value={zoom} setValue={setZoom} min={0} max={3} step={0.1} />
 
           <h2 className="section-title">Physics</h2>
           <Slider label="Center Force" value={centerForce} setValue={setCenterForce} min={0} max={1} step={0.01} />
-          <Slider label="Link Strength" value={linkStrength} setValue={setLinkStrength} min={0} max={2} step={0.1} />
-          <Slider label="Repulsion" value={repulsion} setValue={setRepulsion} min={-300} max={0} step={10} />
-          <Slider label="Link Distance" value={linkDistance} setValue={setLinkDistance} min={20} max={300} step={10} />
+          <Slider label="Link Strength" value={linkStrength} setValue={setLinkStrength} min={0} max={5} step={0.1} />
+          <Slider label="Repulsion" value={repulsion} setValue={setRepulsion} min={-500} max={0} step={10} />
+          <Slider label="Link Distance" value={linkDistance} setValue={setLinkDistance} min={10} max={300} step={10} />
         </div>
       </div>
 

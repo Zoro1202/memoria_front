@@ -1,16 +1,21 @@
 // GroupList.js
 import React, { useState, useEffect,useRef } from 'react';
 import './GroupList.css';
-import {PlusCircle, X}from 'lucide-react'
+import {PlusCircle, X, Trash2, }from 'lucide-react'
 import { useGroups } from '../../../Contexts/GroupContext';
 import { toast } from 'react-hot-toast';
+import { useTabs } from '../../../Contexts/TabsContext';
 
 const GroupList = ({ onGroupSelect }) => {
-  const { groups, loadGroups, loading, createGroup, selectedGroupId, setSelectedGroupId } = useGroups();
+  const { groups, loadGroups, loading, createGroup, deleteGroup, selectedGroupId, setSelectedGroupId } = useGroups();
+  const {closeAllNoteTab} = useTabs();
   const [isOpen, setIsOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const inputRef = useRef(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   useEffect(() => {
     loadGroups();
@@ -20,8 +25,38 @@ const GroupList = ({ onGroupSelect }) => {
     setSelectedGroupId(group.group_id);
     if (onGroupSelect) {
       onGroupSelect(group);
+      //그래프 빼고 탭 삭제해야함
+      closeAllNoteTab();
     }
     // toast.success(`그룹 "${group.name}"이 선택되었습니다.`);
+  };
+
+  const handleGroupDelete = (group) =>{
+    if(selectedGroupId !== group.group_id){
+      setPendingDeleteId(group.group_id); // 삭제 대기 중인 노트 ID 저장
+      setIsDeleteModalOpen(true);
+      // setSelectedGroupId(groups[selectedGroupId]);
+
+      //** */
+      // deleteGroup(group.group_id);
+      // toast.success(`그룹을 삭제했습니다!`);
+      //** */
+      
+      //현재 선택된 그룹을 삭제 시 열린 탭 삭제해야함
+      closeAllNoteTab();
+    } else {
+      toast.error(`그룹이 열려 있습니다!`);
+    }
+  }
+  
+  const confirmDelete = () => {
+    if (pendingDeleteId === null) return;
+
+    deleteGroup(pendingDeleteId);
+    toast.success(`그룹을 삭제했습니다!`);
+
+    setPendingDeleteId(null);
+    setIsDeleteModalOpen(false);
   };
 
   const confirmCreate = async () => {
@@ -60,7 +95,10 @@ const GroupList = ({ onGroupSelect }) => {
     <div className="group-list-wrapper">
       {/* 헤더 */}
       <div className="groups-header">
-        <h3 className="group-title">그룹 목록</h3>
+        <h3 className="group-title">
+          
+          그룹 목록
+          </h3>
         <button
           className="group-toggle-btn"
           onClick={() => setIsOpen((p) => !p)}
@@ -75,14 +113,24 @@ const GroupList = ({ onGroupSelect }) => {
         <div className="groups-container">
           <div className="groups-content">
             {/* 기존 그룹 */}
-            {Object.values(groups).map((g) => (
-              <button
-                key={g.group_id}
+            {Object.values(groups).map((g, index) => (
+              <div 
+                key={index}
                 className={`group-item ${selectedGroupId === g.group_id ? 'selected' : ''}`}
-                onClick={() => handleGroupSelect(g)}
-              >
-                {g.name}
-              </button>
+                onClick={() => handleGroupSelect(g)}>
+                <button
+                  className={`group-item-sel ${selectedGroupId === g.group_id ? 'selected' : ''}`}
+                  key={g.group_id}
+                >
+                  {g.name}
+                </button>
+                <button
+                  className={`group-item-del ${selectedGroupId === g.group_id ? 'selected' : ''}`}
+                  onClick={(e)=> {e.stopPropagation();handleGroupDelete(g)}}
+                >
+                  <Trash2 size={14} style={{ marginRight: 6, verticalAlign: 'middle' }}/>
+                </button>
+              </div>
             ))}
 
             {/* + 버튼 또는 입력폼 */}
@@ -106,12 +154,26 @@ const GroupList = ({ onGroupSelect }) => {
                   className="add-group-cancel"
                   onClick={() => { setShowAdd(false); setNewName(''); }}
                 >
-                  <X size={14} />
+                  <X size={14} style={{ marginRight: 6, verticalAlign: 'middle' }}/>
                 </button>
               </div>
             )}
           </div>
         </div>
+      )}
+      {isDeleteModalOpen && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <p>정말 이 그룹을 삭제하시겠습니까?</p>
+          <div className="modal-buttons">
+            <button onClick={confirmDelete}>예</button>
+            <button onClick={() => {
+              setIsDeleteModalOpen(false);
+              setPendingDeleteId(null);
+            }}>아니오</button>
+          </div>
+        </div>
+      </div>
       )}
     </div>
   );

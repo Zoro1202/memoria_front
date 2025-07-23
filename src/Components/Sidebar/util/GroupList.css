@@ -80,6 +80,41 @@
   color: #37352f;
 }
 
+.group-item-sel{
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  width: 70%;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background-color 0.1s ease;
+  user-select: none;
+  font-family: inherit;
+  color: #37352f;
+}
+
+.group-item-del {
+  background: none;
+  border: none;
+  user-select: none;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 25%;
+  transition: background-color 0.1s ease;
+}
+
+.group-item-sel:hover {
+  background-color: #f0f0f0;
+}
+
+.group-item-del:hover {
+  background-color: #2383e2;
+}
+
 .group-item:hover {
   background-color: #f0f0f0;
 }
@@ -89,7 +124,21 @@
   color: white;
 }
 
+.group-item-sel.selected {
+  background-color: #2383e2;
+  color: white;
+}
+
+.group-item-del.selected:hover {
+  cursor: not-allowed;
+  background-color: #ff5f5f;
+}
+
 .group-item.selected .group-name {
+  color: white;
+}
+
+.group-item-sel.selected .group-name {
   color: white;
 }
 

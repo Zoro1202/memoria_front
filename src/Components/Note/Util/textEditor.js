@@ -3,12 +3,13 @@ import isHotkey from 'is-hotkey'
 import React, { useCallback, useMemo } from 'react'
 import {
   Editor,
+  Path,
   Element as SlateElement,
   Transforms,
   createEditor,
 } from 'slate'
 import { withHistory } from 'slate-history'
-import { Editable, Slate, useSlate, withReact } from 'slate-react'
+import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { Button, Icon, Toolbar } from './noteComponent'
 import { HToolbar } from './Toolbar'
 const HOTKEYS = {
@@ -19,29 +20,35 @@ const HOTKEYS = {
 }
 
 
+
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify']
 
-export const TextEditor = ({ editor, initialValue, decorate, renderLeaf, onchange }) => {
+export const TextEditor = ({ editor, initialValue, decorate, renderLeaf, onchange, onDeleteClick }) => {
   const renderElement = useCallback(props => <Element {...props} />, [])
 
   return (
     <Slate editor={editor} initialValue={initialValue} onChange={onchange}>
       <HToolbar/>
       <Toolbar>
-        <MarkButton format="bold" icon="format_bold" />
-        <MarkButton format="italic" icon="format_italic" />
-        <MarkButton format="underline" icon="format_underlined" />
-        <MarkButton format="code" icon="code" />
-        <BlockButton format="heading-one" icon="looks_one" />
-        <BlockButton format="heading-two" icon="looks_two" />
-        <BlockButton format="block-quote" icon="format_quote" />
-        <BlockButton format="numbered-list" icon="format_list_numbered" />
-        <BlockButton format="bulleted-list" icon="format_list_bulleted" />
-        <BlockButton format="left" icon="format_align_left" />
-        <BlockButton format="center" icon="format_align_center" />
-        <BlockButton format="right" icon="format_align_right" />
-        <BlockButton format="justify" icon="format_align_justify" />
+        <div style={{ display: 'flex', flexGrow: 1 }}>
+          <MarkButton format="bold" icon="format_bold" />
+          <MarkButton format="italic" icon="format_italic" />
+          <MarkButton format="underline" icon="format_underlined" />
+          <MarkButton format="code" icon="code" />
+          <BlockButton format="heading-one" icon="looks_one" />
+          <BlockButton format="heading-two" icon="looks_two" />
+          <BlockButton format="block-quote" icon="format_quote" />
+          <BlockButton format="numbered-list" icon="format_list_numbered" />
+          <BlockButton format="bulleted-list" icon="format_list_bulleted" />
+          <BlockButton format="left" icon="format_align_left" />
+          <BlockButton format="center" icon="format_align_center" />
+          <BlockButton format="right" icon="format_align_right" />
+          <BlockButton format="justify" icon="format_align_justify" />
+        </div>
+        <div>
+          <DeleteNoteButton onDeleteClick={onDeleteClick}/>
+        </div>
       </Toolbar>
       <Editable
         decorate={decorate}
@@ -51,20 +58,37 @@ export const TextEditor = ({ editor, initialValue, decorate, renderLeaf, onchang
         spellCheck
         autoFocus
         onKeyDown={event => {
+          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
+            event.preventDefault();
+
+            const { selection } = editor;
+            if (selection) {
+              Transforms.select(editor, {
+                anchor: Editor.start(editor, []),
+                focus: Editor.end(editor, []),
+              });
+            }
+            return;
+          }
+          
           if (event.key === 'Enter') {
             event.preventDefault();
             const { selection } = editor;
             if (selection) {
-              editor.insertText('\n');
+              // 현재 위치에서 노드 분리
+              Transforms.splitNodes(editor, { always: true });
+
+              // 새로 생성된 노드를 paragraph 타입으로 설정
+              Transforms.setNodes(editor, { type: 'paragraph' });
             }
             return;
           }
-
           for (const hotkey in HOTKEYS) {
             if (isHotkey(hotkey, event)) {
               event.preventDefault();
               const mark = HOTKEYS[hotkey];
               toggleMark(editor, mark);
+              return;
             }
           }
         }}
@@ -140,55 +164,70 @@ const isMarkActive = (editor, format) => {
 }
 
 const Element = ({ attributes, children, element }) => {
-  const style = {}
+  const editor = useSlate();
+  const path = ReactEditor.findPath(editor, element);
+
+  const handleAddBlock = () => {
+    const newBlock = { type: 'paragraph', children: [{ text: '' }] };
+    Transforms.insertNodes(editor, newBlock, { at: Path.next(path) });
+  };
+
+  const style = {};
   if (isAlignElement(element)) {
-    style.textAlign = element.align
+    style.textAlign = element.align;
   }
-  switch (element.type) {
-    case 'block-quote':
-      return (
-        <blockquote style={style} {...attributes}>
-          {children}
-        </blockquote>
-      )
-    case 'bulleted-list':
-      return (
-        <ul style={style} {...attributes}>
-          {children}
-        </ul>
-      )
-    case 'heading-one':
-      return (
-        <h1 style={style} {...attributes}>
-          {children}
-        </h1>
-      )
-    case 'heading-two':
-      return (
-        <h2 style={style} {...attributes}>
-          {children}
-        </h2>
-      )
-    case 'list-item':
-      return (
-        <li style={style} {...attributes}>
-          {children}
-        </li>
-      )
-    case 'numbered-list':
-      return (
-        <ol style={style} {...attributes}>
-          {children}
-        </ol>
-      )
-    default:
-      return (
-        <p style={style} {...attributes}>
-          {children}
-        </p>
-      )
-  }
-}
+
+  return (
+  <div
+    style={{ position: 'relative', paddingLeft: '40px' }}
+    className="slate-block-wrapper"
+  >
+    <div
+      className="add-button-wrapper"
+      style={{
+        position: 'absolute',
+        left: '0px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        opacity: 0,
+        pointerEvents: 'none',
+        transition: 'opacity 0.2s ease',
+      }}
+    >
+      <button
+        onClick={handleAddBlock}
+        style={{
+          width: '24px',
+          height: '24px',
+          borderRadius: '4px',
+          cursor: 'pointer',
+        }}
+      >
+        +
+      </button>
+    </div>
+    
+      {(() => {
+        switch (element.type) {
+          case 'block-quote':
+            return <blockquote style={style} {...attributes}>{children}</blockquote>;
+          case 'bulleted-list':
+            return <ul style={style} {...attributes}>{children}</ul>;
+          case 'heading-one':
+            return <h1 style={style} {...attributes}>{children}</h1>;
+          case 'heading-two':
+            return <h2 style={style} {...attributes}>{children}</h2>;
+          case 'list-item':
+            return <li style={style} {...attributes}>{children}</li>;
+          case 'numbered-list':
+            return <ol style={style} {...attributes}>{children}</ol>;
+          default:
+            return <p style={style} {...attributes}>{children}</p>;
+        }
+      })()}
+    </div>
+  );
+};
 
 const BlockButton = ({ format, icon }) => {
   const editor = useSlate()
@@ -227,3 +266,20 @@ const MarkButton = ({ format, icon }) => {
 const isAlignType = format => TEXT_ALIGN_TYPES.includes(format)
 const isListType = format => LIST_TYPES.includes(format)
 const isAlignElement = element => 'align' in element
+
+const DeleteNoteButton = ({onDeleteClick}) => {
+  // const handleDelete = () => {
+  //   // 여기에 기능 추가
+
+  //   console.log("노트 삭제 버튼 클릭됨");
+  // };
+
+  return (
+    <Button onMouseDown={(e) => {
+      e.preventDefault();
+      onDeleteClick();
+    }}>
+      <Icon>delete</Icon>
+    </Button>
+  );
+};

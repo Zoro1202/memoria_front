@@ -82,9 +82,9 @@ export default function APITestPage() {
 
 
   // region 노트 요청
-  const getContent = async (noteId, groupId) => {
+  const getContent = async (noteId) => {
     try {
-      const response = await resourceAPI.getNoteContent(noteId, groupId);
+      const response = await resourceAPI.getNoteContent(noteId);
       console.log(`response : ${response}`);
       if (response) {
         console.log(`Content for note ${noteId}:`, response.content);
@@ -308,7 +308,7 @@ export default function APITestPage() {
           onChange={(e) => setGroup_id(e.target.value)}
           placeholder="Enter Group ID"
           />
-        <button onClick={() =>{getContent(t_noteid, t_groupid)}}>Content Load</button>
+        <button onClick={() =>{getContent(t_noteid)}}>Content Load</button>
         
         <p>Creat Group</p>
         <input

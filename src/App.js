@@ -35,7 +35,6 @@ export default function App() {
 
       </Routes>
 
-      {/* 기존 SummaryWidget을 지우고 AiHelper 컴포넌트를 추가합니다. */}
       <AiHelper />
 
     </TabsProvider>

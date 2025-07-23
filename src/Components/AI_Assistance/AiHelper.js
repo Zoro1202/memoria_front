@@ -25,6 +25,9 @@ export default function AiHelper() {
     const { tabs, activeTabId } = useTabs();
     const isActionable = activeNoteContent && activeNoteContent.trim() !== '';
 
+    const shouldShowHelper = tabs.find(t => t.id === activeTabId && t.type === "note");
+
+
     // AI 아이콘을 클릭했을 때 위젯을 여는 함수
     const handleOpenWidget = () => {
         if (isActionable) {
@@ -45,16 +48,16 @@ export default function AiHelper() {
     };
 
     // 현재 활성화된 탭이 'note' 타입일 때만 AI 헬퍼 아이콘을 표시
-    const shouldShowHelper = tabs.find(t => t.id === activeTabId && t.type === "note");
+    
 
-    if (!shouldShowHelper) {
-        return null;
-    }
+    
 
     return (
-        <div className="ai-helper-container">
-            {/* --- ✅ [핵심 수정] --- */}
-            {/* AiActionsWidget을 항상 렌더링하고, isVisible prop으로 표시 여부를 전달합니다. */}
+        // ✅ 핵심 수정: 최상위 div에 display 스타일을 동적으로 적용
+        <div 
+            className="ai-helper-container" 
+            style={{ display: shouldShowHelper ? 'block' : 'none' }}
+        >
             <AiActionsWidget
                 key={widgetKey}
                 onClose={handleCloseAndResetWidget}
@@ -62,7 +65,6 @@ export default function AiHelper() {
                 isVisible={isWidgetVisible} 
             />
             
-            {/* 위젯이 보이지 않을 때만 아이콘 버튼을 표시합니다. */}
             {!isWidgetVisible && (
                 <button
                     className="ai-trigger-button"

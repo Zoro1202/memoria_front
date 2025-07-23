@@ -1,0 +1,310 @@
+/* SearchModal.css */
+.search-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.search-modal-container {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  animation: searchModalSlideIn 0.2s ease-out;
+}
+
+@keyframes searchModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.search-modal-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 12px;
+}
+
+.search-icon {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #111827;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #6b7280;
+  transition: background-color 0.15s;
+}
+
+.close-button:hover {
+  background-color: #f3f4f6;
+}
+
+.search-results {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.search-placeholder {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.search-tips h3 {
+  margin-bottom: 16px;
+  color: #374151;
+  font-size: 18px;
+}
+
+.search-tips ul {
+  list-style: none;
+  padding: 0;
+  text-align: left;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.search-tips li {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-tips kbd {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.no-results {
+  padding: 60px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.no-results-icon {
+  margin-bottom: 16px;
+  color: #d1d5db;
+}
+
+.results-list {
+  padding: 8px 0;
+}
+
+.result-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.result-item:hover,
+.result-item.selected {
+  background-color: #f8fafc;
+  border-left-color: #3b82f6;
+}
+
+.result-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.result-icon {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.result-title {
+  font-weight: 500;
+  color: #111827;
+  flex: 1;
+}
+
+.result-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.result-preview {
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 4px 0 8px 24px;
+}
+
+.result-tags {
+  display: flex;
+  gap: 6px;
+  margin-left: 24px;
+  flex-wrap: wrap;
+}
+
+.result-tag {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.search-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 12px 12px;
+}
+
+.search-info {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* SearchModal.css에 추가 */
+.results-header {
+  padding: 8px 20px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.results-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.result-id {
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: normal;
+  margin-left: auto;
+}
+
+.search-tips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-tips kbd {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  color: #374151;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+/* 스크롤 스타일링 */
+.search-results {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f9fafb;
+}
+
+.search-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-results::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+
+/* 다크모드 지원 (선택사항) */
+@media (prefers-color-scheme: dark) {
+  .search-modal-container {
+    background: #1f2937;
+    border: 1px solid #374151;
+  }
+  
+  .search-modal-header {
+    border-bottom-color: #374151;
+  }
+  
+  .search-input {
+    color: #f9fafb;
+  }
+  
+  .search-input::placeholder {
+    color: #6b7280;
+  }
+  
+  .result-item:hover,
+  .result-item.selected {
+    background-color: #374151;
+    border-left-color: #60a5fa;
+  }
+  
+  .result-title {
+    color: #f9fafb;
+  }
+  
+  .search-modal-footer {
+    background: #111827;
+    border-top-color: #374151;
+  }
+}

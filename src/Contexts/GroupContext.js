@@ -28,11 +28,13 @@ export function GroupsProvider({ children }) {
     try{
       const info = await resourceAPI.token_info();
       console.log('token info : ', info);
-      setSid(info.subject_id);
-      setProvider(info.provider);
-      setRemainTime(info.remainingTime);
+      setSid(info.data.subject_id);
+      setProvider(info.data.provider);
+      setRemainTime(info.data.remainingTime);
+      return 1;
     }catch(err){
       console.log('token load faild:', err);
+      return -1;
     }
   };
   //region 토큰 새로고침
@@ -55,7 +57,6 @@ export function GroupsProvider({ children }) {
   };
   // region 사용자 프사
   const fetchProfileImage = async () => {
-    const resourceAPI = getResourceAPI();
     try {
       const res = await resourceAPI.get_profile_image();
       const blob = await res.blob();
@@ -67,6 +68,41 @@ export function GroupsProvider({ children }) {
     }
   };
 
+  const logout = async () =>{
+    let popup = null;
+    let isNaver = false;
+    try{
+      const res = await resourceAPI.postLogout();
+      
+      console.log('되돌아갈 곳 =', res.redirect)
+
+      // 3. 네이버 로그아웃인 경우
+      if (res.redirect && res.redirect.includes('/auth/naver/logout')) {
+        alert('로그아웃되었습니다.');
+        isNaver = true;
+        // 팝업을 "동기적으로" 띄워야 브라우저가 차단하지 않음
+        popup = window.open('about:blank', 'naverLogout', 'width=500,height=600,scrollbars=yes');
+        // 팝업에 네이버 로그아웃 URL로 이동
+        popup.location.href = 'https://login.memoriatest.kro.kr'+res.redirect;
+        // 부모창은 즉시 로그인 페이지로 이동
+        setTimeout(() => {
+          popup.close();
+          window.location.href = 'https://login.memoriatest.kro.kr';
+        }, 300);
+      } else if (res.redirect) {
+        console.log('카카오/로컬/구글 리다이렉트 실행');
+        window.location.href = 'https://login.memoriatest.kro.kr'+res.redirect;
+      } else {
+        alert('로그아웃되었습니다.');
+        window.location.href = 'https://login.memoriatest.kro.kr';
+      }
+    } catch (err){
+      console.error(`로그아웃에 실패했습니다.`, err);
+      //그냥 로그아웃 처리
+      window.location.href = '/';
+    }
+  }
+
   // region 그룹 목록 로드
   const loadGroups = useCallback(async () => {
     setLoading(true);
@@ -75,7 +111,7 @@ export function GroupsProvider({ children }) {
       console.log('초기 데이터:', data);
       
       // 배열을 객체로 변환 (group_id를 키로 사용)
-      const groupsObject = data.reduce((acc, group) => {
+      const groupsObject = data.data.reduce((acc, group) => {
         acc[group.group_id] = {
           name: group.group_name,
           group_id: group.group_id,
@@ -85,7 +121,7 @@ export function GroupsProvider({ children }) {
       }, {});
       
       setGroups(groupsObject);
-      return data;
+      return data.data;
     } catch (err) {
       console.error('그룹 로드 실패:', err);
       toast.error('그룹 목록을 불러올 수 없습니다.');
@@ -164,6 +200,7 @@ export function GroupsProvider({ children }) {
     profileImage,
     fetchUser,
     fetchProfileImage,
+    logout,
   };
   
   return (

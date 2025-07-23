@@ -1,388 +1,749 @@
-// 파일: src/Components/Util/AiActionsWidget.js
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
+import { useGroups } from '../../Contexts/GroupContext';
 import { toast } from 'react-hot-toast';
-import memoriaIcon from './Black.png'; 
+import memoriaIcon from './Black.png';
 import './AiActionsWidget.css';
-import { generateSummary, translateText, chatWithAI, generateTitleFromContent } from '../Note/note_summary';
+import {
+    suggestKeywords,
+    generateSummaryWithKeywords,
+    analyzeKeywordInContext,
+    translateText,
+    chatWithAI,
+    generateTitleFromContent
+} from '../Note/note_summary';
+import ReactMarkdown from 'react-markdown';
 
-// (아이콘 컴포넌트는 수정 없음)
-const ActionIcon = ({ path }) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d={path}></path>
-    </svg>
-);
-const MinimizeIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 12h14"></path>
-    </svg>
-);
-const RefreshIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M23 4v6h-6"></path>
-        <path d="M1 20v-6h6"></path>
-        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-    </svg>
-);
+// 아이콘 컴포넌트
+const ActionIcon = ({ path }) => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={path}></path></svg> );
+const MinimizeIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path></svg> );
+const RefreshIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> );
 
 const LANGUAGES = [
-  { code: 'Korean', name: '한국어' },
-  { code: 'English', name: '영어' },
-  { code: 'Japanese', name: '일본어' },
-  { code: 'Chinese', name: '중국어' },
+  { code: 'Korean', name: '한국어' }, { code: 'English', name: '영어' },
+  { code: 'Japanese', name: '일본어' }, { code: 'Chinese', name: '중국어' },
 ];
 
 export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
-  const { notes, updateNote } = useNotes();
-  const { activeTabId, noteIdFromTab, updateTitle } = useTabs();
-  const [currentNoteContent, setCurrentNoteContent] = useState('');
+  const { notes, setNotes, setLinks, upsertNote, links, createOrAppendKeywordNote } = useNotes();
+  const { activeTabId, noteIdFromTab, openTab, updateTitle } = useTabs();
+  const { selectedGroupId } = useGroups();
   
-  const [view, setView] = useState('initial'); 
-  const [chatHistory, setChatHistory] = useState([]);
-  const [resultText, setResultText] = useState('');
-  const [chatInput, setChatInput] = useState('');
+  const [currentNoteContent, setCurrentNoteContent] = useState('');
+  const [view, setView] = useState('initial');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingType, setLoadingType] = useState(null);
-  const [isFadingOut, setIsFadingOut] = useState(false);
-  const [suggestedTitles, setSuggestedTitles] = useState([]);
-  const [newTitleForResult, setNewTitleForResult] = useState(null);
+  const [resultDataForApply, setResultDataForApply] = useState(null);
+  const [chatHistory, setChatHistory] = useState([]);
   const [wasChatCleared, setWasChatCleared] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [suggestedKeywords, setSuggestedKeywords] = useState([]);
+  const [selectedKeywords, setSelectedKeywords] = useState(new Set());
+  const [suggestedTitles, setSuggestedTitles] = useState([]);
+  const [previewPage, setPreviewPage] = useState(0);
+  const [isRegeneratingKeywords, setIsRegeneratingKeywords] = useState(false); // [추가] 키워드 재추출 로딩 상태
 
   const abortControllerRef = useRef(null);
+  const currentLoadingToastId = useRef(null); 
   const chatContainerRef = useRef(null);
 
   useEffect(() => {
-    const currentNoteId = noteIdFromTab(activeTabId);
-    if (currentNoteId && notes[currentNoteId]) {
-      setCurrentNoteContent(notes[currentNoteId].content);
+    const currentNoteKey = noteIdFromTab(activeTabId);
+    if (currentNoteKey && notes[currentNoteKey]) {
+      setCurrentNoteContent(notes[currentNoteKey].content);
     } else {
       setCurrentNoteContent('');
     }
   }, [activeTabId, notes, noteIdFromTab]);
   
-  
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [chatHistory, view, suggestedTitles]);
+    if (chatContainerRef.current) chatContainerRef.current.scrollTop = 0;
+  }, [previewPage]);
 
-  const handleGoBack = () => { 
+  const handleGoBack = () => {
     if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-    setView('initial'); 
+    
+    if (currentLoadingToastId.current) {
+      toast.dismiss(currentLoadingToastId.current);
+      currentLoadingToastId.current = null;
+    }
+
+    setView('initial');
     setIsLoading(false);
     setLoadingType(null);
+    setResultDataForApply(null);
+    setSuggestedKeywords([]);
+    setSelectedKeywords(new Set());
     setSuggestedTitles([]);
-    setNewTitleForResult(null);
-    setWasChatCleared(false);
+    setPreviewPage(0);
+    setIsRegeneratingKeywords(false); // [추가] 상태 초기화
   };
-  
+
+  const handleMinimizeClick = () => {
+    handleGoBack();
+    onMinimize();
+  };
+
+  const handleCloseClick = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (currentLoadingToastId.current) {
+      toast.dismiss(currentLoadingToastId.current);
+      currentLoadingToastId.current = null;
+    }
+    onClose();
+  };
+
   const handleChatSubmit = async (e) => {
     if (e.key === 'Enter' && !e.shiftKey && chatInput.trim() !== '' && !isLoading) {
         e.preventDefault();
-        
-        if (wasChatCleared) {
+        const question = chatInput.trim();
+        setChatInput('');
+        if (view !== 'chat' || wasChatCleared) {
+            setView('chat');
+            setChatHistory([]);
             setWasChatCleared(false);
         }
-
-        const question = chatInput;
-        
-        if (view !== 'chat') {
-            setView('chat');
-        }
-
         setChatHistory(prev => [...prev, { type: 'user', text: question }]);
-        setChatInput('');
         setIsLoading(true);
+        setLoadingType('chat');
+        
+        currentLoadingToastId.current = toast.loading('Synapse가 생각 중입니다...');
 
         abortControllerRef.current = new AbortController();
         const signal = abortControllerRef.current.signal;
-
         try {
             const answer = await chatWithAI(question, currentNoteContent, signal);
             setChatHistory(prev => [...prev, { type: 'ai', text: answer }]);
+            toast.success('답변 생성 완료!', { id: currentLoadingToastId.current });
         } catch (error) {
-            if (error.name === 'AbortError') {
-              console.log('Chat aborted by user.');
-              setChatHistory(prev => prev.slice(0, -1));
-              return;
-            }
-            toast.error(`AI 작업 실패: ${error.message}`);
-            setChatHistory(prev => prev.slice(0, -1));
+            if (error.name !== 'AbortError') toast.error(`AI 작업 실패: ${error.message}`, { id: currentLoadingToastId.current });
         } finally {
             setIsLoading(false);
+            setLoadingType(null);
             abortControllerRef.current = null;
+            currentLoadingToastId.current = null;
         }
     }
   }
 
   const handleClearChat = () => {
-    if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-    }
     setChatHistory([]);
-    setIsLoading(false);
     setView('initial');
     setWasChatCleared(true);
     toast.success('대화 내용이 초기화되었습니다.');
   };
 
-  const handleTextGeneration = async (type, params) => {
+  const handleStartSummaryProcess = async () => {
+    if (!currentNoteContent) {
+        toast.error("요약할 노트 내용이 없습니다.");
+        return;
+    }
+    setView('loading');
+    setLoadingType('summary');
+    
+    currentLoadingToastId.current = toast.loading('AI가 키워드를 추천 중입니다...'); 
+
+    abortControllerRef.current = new AbortController();
+    try {
+        const data = await suggestKeywords(currentNoteContent, abortControllerRef.current.signal);
+        setSuggestedKeywords(data.keywords || []);
+        setSelectedKeywords(new Set());
+        setView('keyword-selection');
+        toast.success('키워드 추천 완료!', { id: currentLoadingToastId.current });
+    } catch (error) {
+        if (error.name !== 'AbortError') toast.error(`AI 작업 실패: ${error.message}`, { id: currentLoadingToastId.current });
+        handleGoBack();
+    } finally {
+        setLoadingType(null);
+        currentLoadingToastId.current = null;
+    }
+  };
+
+  // [추가] 키워드만 다시 추출하는 함수
+  const handleRegenerateKeywords = async () => {
+      if (!currentNoteContent || isRegeneratingKeywords) return;
+
+      setIsRegeneratingKeywords(true);
+      const toastId = toast.loading('AI가 키워드를 다시 추천 중입니다...');
+      abortControllerRef.current = new AbortController();
+
+      try {
+          const data = await suggestKeywords(currentNoteContent, abortControllerRef.current.signal);
+          setSuggestedKeywords(data.keywords || []);
+          setSelectedKeywords(new Set()); // 선택 초기화
+          toast.success('새로운 키워드를 추천했습니다!', { id: toastId });
+      } catch (error) {
+          if (error.name !== 'AbortError') {
+              toast.error(`키워드 재추천 실패: ${error.message}`, { id: toastId });
+          } else {
+              toast.dismiss(toastId);
+          }
+      } finally {
+          setIsRegeneratingKeywords(false);
+          abortControllerRef.current = null;
+      }
+  };
+
+
+  const handleKeywordToggle = (keyword) => {
+    setSelectedKeywords(prev => {
+        const newSet = new Set(prev);
+        newSet.has(keyword) ? newSet.delete(keyword) : newSet.add(keyword);
+        return newSet;
+    });
+  };
+
+  const handleSelectAllKeywords = () => {
+    if (selectedKeywords.size === suggestedKeywords.length) {
+        setSelectedKeywords(new Set());
+    } else {
+        setSelectedKeywords(new Set(suggestedKeywords));
+    }
+  };
+
+  const handleConfirmKeywords = async () => {
+    if (selectedKeywords.size === 0) {
+      toast.error("하나 이상의 키워드를 선택해주세요.");
+      return;
+    }
+    setView('loading');
+    setLoadingType('summary');
+    
+    currentLoadingToastId.current = toast.loading('AI가 요약 및 분석 내용을 생성 중입니다...'); 
+    
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
-    setLoadingType(type);
-    setView('loading');
-    
     try {
-        if (type === 'summary') {
-            const data = await generateSummary(params.content, signal);
-            let plainSummaryText = '';
-            try {
-                const summaryObject = JSON.parse(data.summary);
-                plainSummaryText = summaryObject.full_summary || summaryObject.summary || '';
-            } catch (e) {
-                plainSummaryText = data.summary;
-            }
-            setResultText(plainSummaryText);
-            setNewTitleForResult(null); 
-        } else if (type === 'translate') {
-            const currentTitle = noteIdFromTab(activeTabId);
-            const data = await translateText(currentTitle, params.content, params.target_language, signal);
-            setResultText(data.translated_content);
-            setNewTitleForResult(data.translated_title);
-        }
-        setIsFadingOut(true);
-        setTimeout(() => {
-            setView('result');
-            setIsFadingOut(false);
-        }, 300);
+        const finalKeywords = Array.from(selectedKeywords);
+        const summaryResult = await generateSummaryWithKeywords(currentNoteContent, finalKeywords, signal);
+        const keywordContentPromises = finalKeywords.map(keyword =>
+            analyzeKeywordInContext(currentNoteContent, keyword, 'Korean', null, signal)
+        );
+        const keywordContents = await Promise.all(keywordContentPromises);
+        
+        const keywordDataMap = {};
+        finalKeywords.forEach((keyword, index) => {
+            keywordDataMap[keyword] = keywordContents[index];
+        });
+
+        setResultDataForApply({
+            type: 'summary',
+            summaryContent: summaryResult.summary,
+            keywordMap: keywordDataMap
+        });
+        setPreviewPage(0);
+
+        toast.success('AI 생성 완료! 결과를 확인하고 적용하세요.', { id: currentLoadingToastId.current });
+        setView('result');
+
     } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('Text generation aborted by user.');
-            handleGoBack();
-            return;
-        }
-        toast.error(`AI 작업 실패: ${error.message}`);
+        if (error.name !== 'AbortError') toast.error(`AI 생성 실패: ${error.message}`, { id: currentLoadingToastId.current });
         handleGoBack();
     } finally {
-        abortControllerRef.current = null;
+        setLoadingType(null);
+        currentLoadingToastId.current = null;
     }
   };
-  
+
+  const handleApplyAndCreateNotes = async () => {
+    const oldNoteKey = noteIdFromTab(activeTabId);
+    const oldNote = notes[oldNoteKey];
+
+    if (!oldNote || !resultDataForApply || !selectedGroupId) {
+        toast.error("적용할 노트, 데이터 또는 그룹을 찾을 수 없습니다.");
+        return;
+    }
+
+    setIsLoading(true);
+    currentLoadingToastId.current = toast.loading('현재 노트에 요약문을 적용 중입니다...'); 
+
+    try {
+        const { summaryContent, keywordMap } = resultDataForApply;
+        
+        await upsertNote(selectedGroupId, oldNote.title, summaryContent, oldNote.note_id, oldNote.title);
+        toast.success(`"${oldNote.title}" 노트 업데이트 완료!`, { id: currentLoadingToastId.current });
+
+        const newNotesData = {};
+        const keywords = Object.keys(keywordMap);
+        currentLoadingToastId.current = toast.loading(`${keywords.length}개의 키워드 노트 생성/업데이트 중...`); 
+
+        for (const keyword of keywords) {
+            const newSegmentContent = keywordMap[keyword];
+            const keywordResponse = await createOrAppendKeywordNote(selectedGroupId, keyword, newSegmentContent);
+
+            newNotesData[keyword] = {
+                content: keywordResponse.content, 
+                note_id: keywordResponse.noteId,
+                title: keyword
+            };
+        }
+        toast.success(`모든 키워드 노트 처리 완료!`, { id: currentLoadingToastId.current });
+
+        setNotes(prevNotes => ({
+            ...prevNotes,
+            [oldNote.title]: { ...prevNotes[oldNote.title], content: summaryContent },
+            ...newNotesData
+        }));
+        
+        const newLinksFromSummary = Object.keys(keywordMap).map(keyword => ({
+            source: oldNote.title,
+            target: keyword
+        }));
+
+        setLinks(prevLinks => {
+            const filteredLinks = prevLinks.filter(link => link.source !== oldNote.title);
+            return [...filteredLinks, ...newLinksFromSummary];
+        });
+
+        onClose();
+
+    } catch (error) {
+        toast.error(`저장 중 오류 발생: ${error.message}`, { id: currentLoadingToastId.current });
+    } finally {
+        setIsLoading(false);
+        currentLoadingToastId.current = null;
+    }
+  };
+
+
   const handleGenerateTitle = async () => {
-    const currentNoteId = noteIdFromTab(activeTabId);
-    if (!currentNoteId) {
+    const currentNoteKey = noteIdFromTab(activeTabId);
+    if (!currentNoteKey || !notes[currentNoteKey]) {
         toast.error("제목을 적용할 노트가 없습니다.");
         return;
     }
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-    setLoadingType('title');
     setView('loading');
+    setLoadingType('title');
+    
+    currentLoadingToastId.current = toast.loading("Synapse가 제목을 구상 중입니다..."); 
+    
+    abortControllerRef.current = new AbortController();
     try {
-        // ✅ [수정] activeNoteContent -> currentNoteContent
-        const titles = await generateTitleFromContent(currentNoteContent, signal);
+        const titles = await generateTitleFromContent(currentNoteContent, abortControllerRef.current.signal);
         setSuggestedTitles(titles);
         setView('title-suggestions');
-        setLoadingType(null);
+        toast.success('제목 생성 완료!', { id: currentLoadingToastId.current });
     } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('AI title generation was aborted by the user.');
-            handleGoBack();
-            return;
-        }
-        toast.error(`AI 제목 생성 실패: ${error.message}`);
+        if (error.name !== 'AbortError') toast.error(`AI 제목 생성 실패: ${error.message}`, { id: currentLoadingToastId.current });
         handleGoBack();
     } finally {
-        abortControllerRef.current = null;
+        setLoadingType(null);
+        currentLoadingToastId.current = null;
     }
   };
+  
+  const handleSelectTitle = async (selectedTitle) => {
+    const oldNoteKey = noteIdFromTab(activeTabId);
+    const noteToUpdate = notes[oldNoteKey];
 
-  const handleSelectTitle = (selectedTitle) => {
-    const oldNoteId = noteIdFromTab(activeTabId);
-    if (!oldNoteId) {
-      toast.error("오류: 제목을 변경할 노트를 찾을 수 없습니다.");
+    if (!noteToUpdate || !selectedGroupId) {
+      toast.error("오류: 제목을 변경할 노트를 찾거나 그룹을 찾을 수 없습니다.");
       return;
     }
-    // ✅ [수정] activeNoteContent -> currentNoteContent
-    const finalTitle = updateNote(oldNoteId, selectedTitle, currentNoteContent);
-    if (oldNoteId !== finalTitle) {
-        updateTitle(oldNoteId, finalTitle);
+
+    setIsLoading(true);
+    currentLoadingToastId.current = toast.loading("제목 변경 중..."); 
+
+    try {
+        await upsertNote(
+            selectedGroupId, 
+            selectedTitle, 
+            noteToUpdate.content, 
+            noteToUpdate.note_id, 
+            oldNoteKey 
+        );
+        
+        updateTitle(oldNoteKey, selectedTitle);
+        toast.success(`제목이 "${selectedTitle}"(으)로 변경되었습니다!`, { id: currentLoadingToastId.current });
+        onClose();
+    } catch (error) {
+        toast.error(`제목 변경 실패: ${error.message}`, { id: currentLoadingToastId.current });
+    } finally {
+        setIsLoading(false);
+        currentLoadingToastId.current = null;
     }
-    toast.success(`제목이 "${finalTitle}"(으)로 변경되었습니다!`);
-    onClose();
   };
 
-  const handleApplyResult = () => {
-    const oldNoteId = noteIdFromTab(activeTabId);
-    if (!oldNoteId) { toast.error("적용할 노트가 없습니다."); return; }
-    if (!resultText) { toast.error("적용할 내용이 없습니다."); return; }
-    const titleToApply = newTitleForResult || oldNoteId;
-    const finalTitle = updateNote(oldNoteId, titleToApply, resultText);
-    if (oldNoteId !== finalTitle) {
-      updateTitle(oldNoteId, finalTitle);
+  const handleTranslate = async (targetLanguage) => {
+    setView('loading');
+    setLoadingType('translate');
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    
+    currentLoadingToastId.current = toast.loading('번역할 노트 목록을 찾는 중...'); 
+
+    try {
+        const currentNoteKey = noteIdFromTab(activeTabId);
+        if (!currentNoteKey || !notes[currentNoteKey]) {
+            throw new Error("번역할 현재 노트를 찾을 수 없습니다.");
+        }
+
+        const linkedKeywordTitles = links
+            .filter(link => link.source === currentNoteKey)
+            .map(link => link.target);
+        const notesToTranslate = [currentNoteKey, ...new Set(linkedKeywordTitles)];
+        
+        toast.loading(`${notesToTranslate.length}개의 노트를 번역 중...`, { id: currentLoadingToastId.current }); 
+
+        const translationPromises = notesToTranslate.map(title => {
+            const content = notes[title]?.content || '';
+            return translateText(title, content, targetLanguage, signal)
+                .then(result => ({
+                    originalTitle: title,
+                    translatedTitle: result.translated_title,
+                    translatedContent: result.translated_content
+                }));
+        });
+
+        const translationResults = await Promise.all(translationPromises);
+        
+        setResultDataForApply({
+            type: 'translation',
+            translations: translationResults
+        });
+        setPreviewPage(0);
+
+        toast.success('번역 완료! 결과를 확인하세요.', { id: currentLoadingToastId.current });
+        setView('result');
+
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            toast.error(`번역 실패: ${error.message}`, { id: currentLoadingToastId.current });
+        }
+        handleGoBack();
+    } finally {
+        setLoadingType(null);
+        currentLoadingToastId.current = null;
     }
-    toast.success("노트에 적용되었습니다!");
-    onClose();
   };
+
+  const handleApplyTranslations = async () => {
+      if (!resultDataForApply || resultDataForApply.type !== 'translation' || !selectedGroupId) {
+          toast.error("적용할 번역 데이터가 없거나 그룹이 선택되지 않았습니다.");
+          return;
+      }
+
+      setIsLoading(true);
+      currentLoadingToastId.current = toast.loading(`${resultDataForApply.translations.length}개의 새로운 번역 노드를 생성 중...`); 
+
+      try {
+          const newNotesData = {};
+          const titleTranslationMap = new Map();
+          resultDataForApply.translations.forEach(item => titleTranslationMap.set(item.originalTitle, item.translatedTitle));
+
+          const processedTranslations = resultDataForApply.translations.map(item => {
+              let correctedContent = item.translatedContent;
+              titleTranslationMap.forEach((newTitle, oldTitle) => {
+                  const oldLinkRegex = new RegExp(`\\[\\[${oldTitle.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\]\\]`, 'g');
+                  correctedContent = correctedContent.replace(oldLinkRegex, `[[${newTitle}]]`);
+              });
+              return { ...item, translatedContent: correctedContent };
+          });
+
+          for (const item of processedTranslations) {
+              const { translatedTitle, translatedContent } = item;
+              const { noteId: newNoteId } = await upsertNote(
+                  selectedGroupId,
+                  translatedTitle,
+                  translatedContent,
+                  null
+              );
+              newNotesData[translatedTitle] = {
+                  content: translatedContent,
+                  note_id: newNoteId,
+                  title: translatedTitle
+              };
+          }
+          toast.success('모든 번역 노트 생성 완료!', { id: currentLoadingToastId.current });
+
+          currentLoadingToastId.current = toast.loading('새로운 링크를 생성 중...'); 
+          
+          const originalSummaryTitle = resultDataForApply.translations[0].originalTitle;
+          const newSummaryTitle = titleTranslationMap.get(originalSummaryTitle);
+
+          const newLinks = links
+            .filter(link => link.source === originalSummaryTitle && titleTranslationMap.has(link.target))
+            .map(link => ({
+                source: newSummaryTitle,
+                target: titleTranslationMap.get(link.target)
+            }))
+            .filter(link => link.source && link.target);
+
+          setNotes(prev => ({ ...prev, ...newNotesData }));
+          setLinks(prev => [ ...prev, ...newLinks ]);
+          
+          toast.success('새로운 링크 생성 완료!', { id: currentLoadingToastId.current });
+
+          openTab({ title: newSummaryTitle, type: 'note', noteId: newSummaryTitle });
+          onClose();
+
+      } catch (error) {
+          toast.error(`번역 적용 실패: ${error.message}`, { id: currentLoadingToastId.current });
+      } finally {
+          setIsLoading(false);
+          currentLoadingToastId.current = null;
+      }
+  };
+
+  const handlePrevPage = () => {
+    setPreviewPage(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    if (!currentPreviewData) return;
+    setPreviewPage(prev => Math.min(currentPreviewData.totalPages - 1, prev + 1));
+  };
+  
+  const currentPreviewData = useMemo(() => {
+    if (!resultDataForApply) return null;
+
+    if (resultDataForApply.type === 'summary') {
+        const orderedKeywords = Object.keys(resultDataForApply.keywordMap);
+        const totalPages = 1 + orderedKeywords.length;
+        if (previewPage === 0) {
+            const title = "요약문";
+            return { title, content: resultDataForApply.summaryContent, totalPages };
+        }
+        const keywordIndex = previewPage - 1;
+        if (keywordIndex < orderedKeywords.length) {
+            const keyword = orderedKeywords[keywordIndex];
+            return { title: `키워드: ${keyword}`, content: resultDataForApply.keywordMap[keyword], totalPages };
+        }
+    }
+
+    if (resultDataForApply.type === 'translation') {
+        const totalPages = resultDataForApply.translations.length;
+        const translationItem = resultDataForApply.translations[previewPage];
+        if (translationItem) {
+            const title = previewPage === 0 ? "메인 노트 번역" : `키워드 '${translationItem.originalTitle}' 번역`;
+            return { title: title, content: `## ${translationItem.translatedTitle}\n\n${translationItem.translatedContent}`, totalPages };
+        }
+    }
+
+    return null;
+  }, [resultDataForApply, previewPage]);
 
     return (
-    <div className={`ai-actions-widget ${isVisible ? 'visible' : ''}`}>
-      <div className="widget-header">
-        {view !== 'initial' && view !== 'chat' && (
-            <button className="widget-back-button" onClick={handleGoBack}>←</button>
-        )}
-        <h4 className="widget-title">AI Assistance</h4>
-        <div className="widget-header-right">
-            {(view === 'chat' || (view === 'initial' && wasChatCleared)) && (
-                <button className="widget-refresh-button" onClick={handleClearChat} title="대화 내용 초기화">
-                    <RefreshIcon />
-                </button>
-            )}
-            <button className="widget-minimize-button" onClick={onMinimize} title="최소화">
-                <MinimizeIcon />
-            </button>
-            <button className="widget-close-button" onClick={onClose} title="닫기">×</button>
-        </div>
-      </div>
-      
-      <div className="widget-content-wrapper">
-        <div className="main-content-area" ref={chatContainerRef}>
-            {view === 'initial' && (
-              <div className={`initial-view-container ${wasChatCleared ? 'cleared-mode' : ''} fade-in`}>
-                {wasChatCleared ? (
-                  <div className="ai-greeting">
-                      <div className="typing-effect cleared-text">
-                        열린 탭에 대해 시냅스에게 질문하세요
-                        <br />
-                        ex) "이 노트를 좀 더 요약해줘"
+        <div className={`ai-actions-widget ${isVisible ? 'visible' : ''}`}>
+          <div className="widget-header">
+            {view !== 'initial' && (<button className="widget-back-button" onClick={handleGoBack}>←</button>)}
+            <h4 className="widget-title">AI Assistance</h4>
+            <div className="widget-header-right">
+                {view === 'chat' && chatHistory.length > 0 && !isLoading && (<button className="widget-refresh-button" onClick={handleClearChat} title="대화 내용 초기화"><RefreshIcon /></button>)}
+                
+                <button className="widget-minimize-button" onClick={handleMinimizeClick} title="최소화"><MinimizeIcon /></button>
+                <button className="widget-close-button" onClick={handleCloseClick} title="닫기">×</button>
+            </div>
+          </div>
+          
+          <div className="widget-content-wrapper">
+            <div className="main-content-area" ref={chatContainerRef}>
+                
+                {view === 'initial' && (
+                  <div className={`initial-view-container ${wasChatCleared ? 'cleared-mode' : ''} fade-in`}>
+                    {wasChatCleared ? (
+                      <div className="ai-greeting centered">
+                          <div className="typing-effect cleared-text">
+                            대화가 초기화 되었습니다.<br/>다시 질문해주세요.
+                          </div>
                       </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="ai-greeting">
-                      <div className="ai-icon-background">
-                        <img src={memoriaIcon} alt="AI 아이콘" style={{ width: '32px', height: '32px' }} />
-                      </div>
-                      <h2>무엇을 도와드릴까요?</h2>
-                      <p className="ai-service-title">Synapse AI</p>
-                    </div>
-                    <div className="action-button-group">
-                      <button className="action-button" onClick={() => handleTextGeneration('summary', { content: currentNoteContent})}>
-                          <ActionIcon path="M3 6h18M3 12h18M3 18h18" /><span>페이지에서 요약문 생성</span>
-                      </button>
-                      <button className="action-button" onClick={handleGenerateTitle}>
-                          <ActionIcon path="M6 4h12v16l-6-4-6 4z" /><span>Synapse로 제목 생성</span>
-                      </button>
-                      <button className="action-button" onClick={() => setView('translate')}>
-                          <ActionIcon path="M5 12h14M12 5l7 7-7 7" /><span>이 페이지 번역</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {view === 'chat' && (
-                <div className="chat-history-wrapper fade-in">
-                {chatHistory.map((msg, index) => (
-                    <div key={index} className={`chat-message ${msg.type}`}>
-                    <p>{msg.text}</p>
-                    </div>
-                ))}
-                {isLoading && (<div className="chat-message ai"><p>Synapse가 생각 중입니다...</p></div>)}
-                </div>
-            )}
-            
-            {view === 'title-suggestions' && (
-                <div className="title-suggestions-view fade-in">
-                    <p className="translate-guide">Synapse가 추천하는 제목입니다.</p>
-                    <div className="action-button-group vertical">
-                        {suggestedTitles.map((title, index) => (
-                          <button key={index} className="action-button" onClick={() => handleSelectTitle(title)}>
-                            {title}
+                    ) : (
+                      <>
+                        <div className="ai-greeting">
+                          <div className="ai-icon-background">
+                            <img src={memoriaIcon} alt="AI 아이콘" style={{ width: '32px', height: '32px' }} />
+                          </div>
+                          <h2>무엇을 도와드릴까요?</h2>
+                          <p className="ai-service-title">Synapse AI</p>
+                        </div>
+                        <div className="action-button-group">
+                          <button className="action-button" onClick={handleStartSummaryProcess} disabled={!currentNoteContent || isLoading}>
+                              <ActionIcon path="M3 6h18M3 12h18M3 18h18" /><span>페이지에서 요약문 생성</span>
                           </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {view === 'translate' && (
-              <div className="translate-view fade-in">
-                  <p className="translate-guide">어떤 언어로 번역할까요?</p>
-                  <div className="language-options">
-                      {LANGUAGES.map((lang) => (
-                        <button key={lang.code} className="language-button" 
-                          // ✅ [수정] activeNoteContent -> currentNoteContent
-                          onClick={() => handleTextGeneration('translate', { content: currentNoteContent, target_language: lang.code })}>
-                          {lang.name}
-                        </button>
-                      ))}
+                          <button className="action-button" onClick={handleGenerateTitle} disabled={!currentNoteContent || isLoading}>
+                              <ActionIcon path="M6 4h12v16l-6-4-6 4z" /><span>Synapse로 제목 생성</span>
+                          </button>
+                          <button className="action-button" onClick={() => setView('translate')} disabled={!currentNoteContent || isLoading}>
+                              <ActionIcon path="M5 12h14M12 5l7 7-7 7" /><span>이 페이지 번역</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
-              </div>
-            )}
-            {view === 'result' && (
-              <div className="result-only-view fade-in">
-                <p>{resultText}</p>
-                <div className="result-apply-button-container">
-                  <button className="apply-to-note-button" onClick={handleApplyResult}>
-                      현재 노트에 적용
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {view === 'loading' && (
-                <div className={`loading-view-full ${isFadingOut ? 'fade-out' : 'fade-in'}`}>
-                    {loadingType === 'title' && (
-                        <div className="title-loader-wrapper">
-                            <div className="loader-text">Synapse가 제목을 구상 중입니다...</div>
-                            <div className="typing-effect">Thinking of a good title...</div>
+                )}
+    
+                {view === 'chat' && (
+                    <div className="chat-history-wrapper fade-in">
+                        {chatHistory.length === 0 && !isLoading && (
+                            <div className="ai-greeting centered">
+                                <div className="ai-icon-background">
+                                    <img src={memoriaIcon} alt="AI 아이콘" style={{ width: '32px', height: '32px' }} />
+                                </div>
+                                <p className="typing-effect">현재 노트에 대해 무엇이든 물어보세요.</p>
+                            </div>
+                        )}
+                        {chatHistory.map((msg, index) => (
+                            <div key={index} className={`chat-message ${msg.type}`}>
+                                {msg.type === 'ai' ? <ReactMarkdown>{msg.text}</ReactMarkdown> : <p>{msg.text}</p>}
+                            </div>
+                        ))}
+                        {isLoading && loadingType === 'chat' && (
+                            <div className="chat-message ai">
+                                <p>Synapse가 생각 중입니다...</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+    
+                {/* [수정] 키워드 선택 뷰 UI */}
+                {view === 'keyword-selection' && (
+                    <div className="keyword-selection-view fade-in">
+                        <p className="selection-guide">요약에 포함할 핵심 단어를 선택하세요.</p>
+                        <div className={`keyword-list ${isRegeneratingKeywords ? 'regenerating' : ''}`}>
+                            {suggestedKeywords.map((keyword, index) => (
+                                <button
+                                    key={index}
+                                    className={`keyword-chip ${selectedKeywords.has(keyword) ? 'selected' : ''}`}
+                                    onClick={() => handleKeywordToggle(keyword)}
+                                    disabled={isRegeneratingKeywords} // 재추출 중 비활성화
+                                >
+                                    {keyword}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                    {(loadingType === 'summary' || loadingType === 'chat') && (
-                        <div className="summary-loader">
-                            <div className="loader-text">요약 중...</div>
-                            <div className="bar"></div>
-                            <div className="bar"></div>
-                            <div className="bar"></div>
+                        <div className="selection-actions">
+                            {/* [추가] 키워드 재추출 버튼 */}
+                            <button
+                                className="regenerate-keywords-button"
+                                onClick={handleRegenerateKeywords}
+                                disabled={isRegeneratingKeywords}
+                                title="키워드 다시 추출"
+                            >
+                                <RefreshIcon />
+                            </button>
+                            <button
+                                className="select-all-button"
+                                onClick={handleSelectAllKeywords}
+                                disabled={isRegeneratingKeywords} // 재추출 중 비활성화
+                            >
+                                {selectedKeywords.size === suggestedKeywords.length ? '전체 해제' : '전체 선택'}
+                            </button>
+                            <button
+                                className="confirm-button"
+                                onClick={handleConfirmKeywords}
+                                disabled={selectedKeywords.size === 0 || isRegeneratingKeywords} // 재추출 중 비활성화
+                            >
+                                {selectedKeywords.size}개 선택 완료
+                            </button>
                         </div>
-                    )}
-                    {loadingType === 'translate' && (
-                        <div className="translate-loader-wrapper">
-                             <div className="loader-text">번역 중...</div>
-                            <div className="translate-loader">
-                                <div className="lang-icon-container">
-                                    <div className="lang-icon" id="lang-icon-left">A</div>
-                                    <div className="lang-icon" id="lang-icon-right">文</div>
+                    </div>
+                )}
+                
+                {view === 'title-suggestions' && (
+                    <div className="title-suggestions-view fade-in">
+                        <p className="translate-guide">Synapse가 추천하는 제목입니다.</p>
+                        <div className="action-button-group vertical">
+                            {suggestedTitles.map((title, index) => (
+                              <button key={index} className="action-button" onClick={() => handleSelectTitle(title)}>
+                                {title}
+                              </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {view === 'translate' && (
+                  <div className="translate-view fade-in">
+                      <p className="translate-guide">어떤 언어로 번역할까요?</p>
+                      <div className="language-options">
+                          {LANGUAGES.map((lang) => (
+                            <button key={lang.code} className="language-button" onClick={() => handleTranslate(lang.code)}>
+                              {lang.name}
+                            </button>
+                          ))}
+                      </div>
+                  </div>
+                )}
+
+                {view === 'result' && resultDataForApply && currentPreviewData && (
+                  <div className="result-only-view fade-in">
+                        <div className="preview-pagination">
+                            <button onClick={handlePrevPage} disabled={previewPage === 0}>{'< 이전'}</button>
+                            <span>페이지 {previewPage + 1} / {currentPreviewData.totalPages}</span>
+                            <button onClick={handleNextPage} disabled={previewPage >= currentPreviewData.totalPages - 1}>{'다음 >'}</button>
+                        </div>
+                        
+                        <h4>{currentPreviewData.title}</h4>
+                        <div className="result-markdown-preview"><ReactMarkdown>{currentPreviewData.content}</ReactMarkdown></div>
+                        
+                        <div className="result-apply-button-container">
+                          {resultDataForApply.type === 'summary' && (
+                            <button className="apply-to-note-button" onClick={handleApplyAndCreateNotes} disabled={isLoading}>
+                                {isLoading ? '적용 중...' : '현재 노트에 적용 및 생성'}
+                            </button>
+                          )}
+                          {resultDataForApply.type === 'translation' && (
+                            <button className="apply-to-note-button" onClick={handleApplyTranslations} disabled={isLoading}>
+                                {isLoading ? '적용 중...' : '새로운 번역 노트 생성'}
+                            </button>
+                          )}
+                        </div>
+                  </div>
+                )}
+                
+                {view === 'loading' && (
+                    <div className={`loading-view-full fade-in`}>
+                        { (loadingType === 'summary' || loadingType === 'chat') && (
+                            <div className="summary-loader">
+                                <div className="loader-text">{loadingType === 'summary' ? 'AI 분석 중...' : '생각 중...'}</div>
+                                <div className="bar"></div>
+                                <div className="bar"></div>
+                                <div className="bar"></div>
+                            </div>
+                        )}
+                        { loadingType === 'title' && (
+                            <div className="title-loader-wrapper">
+                                <div className="loader-text">Synapse가 제목을 구상 중입니다...</div>
+                                <div className="typing-effect">Thinking of a good title...</div>
+                            </div>
+                        )}
+                        { loadingType === 'translate' && (
+                            <div className="translate-loader-wrapper">
+                                <div className="loader-text">번역 중...</div>
+                                <div className="translate-loader">
+                                    <div className="lang-icon-container">
+                                        <div className="lang-icon" id="lang-icon-left">A</div>
+                                        <div className="lang-icon" id="lang-icon-right">文</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+                )}
+            </div>
+    
+            {(view === 'initial' || view === 'chat') && (
+                <div className="chat-input-container-bottom">
+                    <textarea
+                        className="chat-input"
+                        placeholder={currentNoteContent ? "Synapse에게 노트에 대해 물어보기 (Enter)" : "먼저 노트를 열어주세요..."}
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={handleChatSubmit}
+                        rows={1}
+                        disabled={!currentNoteContent || isLoading}
+                    />
                 </div>
             )}
+          </div>
         </div>
-
-        {(view === 'initial' || view === 'chat') && (
-            <div className="chat-input-container-bottom">
-                <textarea
-                    className="chat-input"
-                    placeholder="Synapse에게 노트에 대해 물어보기"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={handleChatSubmit}
-                    rows={1}
-                />
-            </div>
-        )}
-      </div>
-    </div>
-  );
+      );
 }

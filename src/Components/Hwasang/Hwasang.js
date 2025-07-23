@@ -265,9 +265,15 @@ function Hwasang() {
     });
 
     newSocket.on("slide-close", () => {
-      setSlides([]);
-      setCurrentSlide(0);
-      setSlidesOpen(false);
+      if (fabricCanvasRef.current) {
+    fabricCanvasRef.current.dispose();
+    fabricCanvasRef.current = null; // 참조를 깨끗이 비웁니다.
+  }
+
+  // 2. 수동 정리가 끝난 후, React 상태를 업데이트하여 UI를 안전하게 제거합니다.
+  setSlides([]);
+  setCurrentSlide(0);
+  setSlidesOpen(false);
     });
 
     newSocket.on("presenter-changed", ({ presenterId, presenterNickname }) => {
@@ -527,11 +533,12 @@ function Hwasang() {
       alert("이미 방에 참가 중입니다.");
       return;
     }
+    // 이제 customRoomId는 실제로는 groupId를 의미합니다.
     if (!customRoomId?.trim() || !customNickname?.trim()) {
-      alert("방 ID와 닉네임이 필요합니다.");
+      alert("그룹 ID와 닉네임이 필요합니다.");
       return;
     }
-    setRoomId(customRoomId);
+    setRoomId(customRoomId); // 상태에는 여전히 roomId라는 이름으로 groupId를 저장합니다.
     setNickname(customNickname);
     setIsPresenter(customPresenter);
 
@@ -547,10 +554,12 @@ function Hwasang() {
     const settings = audioTrack.getSettings();
     const audioChannels = settings.channelCount || 1;
 
-    // ... joinRoom 함수 내부 ...
+    // ✅✅✅ 핵심 수정 지점 ✅✅✅
+    // 서버의 통합된 'join-room' 핸들러를 호출합니다.
+    // 'roomId' 키를 'groupId'로 변경하여 전송합니다.
     socket.emit(
       "join-room",
-      { roomId: customRoomId, peerId: socketId, nickname: customNickname, audioChannels },
+      { groupId: customRoomId, peerId: socketId, nickname: customNickname, audioChannels },
       async (res) => {
         if (!res) {
           alert("서버 응답이 없습니다.");
@@ -558,9 +567,13 @@ function Hwasang() {
         }
         if (res.error) {
           alert(`방 참가 실패: ${res.error}`);
+          // 실패 시, 상태 초기화
+          setRoomId("");
+          setNickname("");
           return;
         }
 
+        // --- 여기부터는 기존 응답 처리 로직과 동일합니다. ---
         const {
           rtpCapabilities,
           sendTransportOptions,
@@ -582,17 +595,11 @@ function Hwasang() {
 
         const device = await createDevice(rtpCapabilities);
         
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-        // ★★★ 여기가 수정된 핵심 부분입니다 ★★★
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
-        // 1. WebRTC 연결을 위한 STUN 서버 목록을 정의합니다.
         const iceServers = [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' }
         ];
 
-        // 2. 서버에서 받은 옵션과 STUN 서버 설정을 병합하여 transport를 생성합니다.
         const sendTransport = createSendTransport(device, { ...sendTransportOptions, iceServers });
         createRecvTransport(device, { ...recvTransportOptions, iceServers });
 
@@ -614,6 +621,7 @@ function Hwasang() {
         setJoined(true);
 
         socket.emit("change-media-state", {
+          // 여기서 보내는 roomId는 실제로는 groupId이므로 서버에서 정상적으로 처리됩니다.
           roomId: customRoomId,
           peerId: socketId,
           micOn,
@@ -621,8 +629,6 @@ function Hwasang() {
         });
       }
     );
-// ...
-
   };
 
   // 방 나가기
@@ -843,14 +849,23 @@ function Hwasang() {
   };
 
   // 슬라이드 닫기
-  const closeSlides = () => {
-    setSlides([]);
-    setCurrentSlide(0);
-    setSlidesOpen(false);
-    if (socket && roomIdRef.current) {
-      socket.emit("slide-close", { roomId: roomIdRef.current });
-    }
-  };
+const closeSlides = () => {
+  // 1. Fabric.js 캔버스 인스턴스가 존재하면 수동으로 먼저 정리(dispose)합니다.
+  if (fabricCanvasRef.current) {
+    fabricCanvasRef.current.dispose();
+    fabricCanvasRef.current = null; // 참조를 깨끗하게 비웁니다.
+  }
+
+  // 2. 라이브러리 리소스 정리가 끝난 후, React 상태를 업데이트하여 UI를 제거합니다.
+  setSlides([]);
+  setCurrentSlide(0);
+  setSlidesOpen(false);
+  
+  // 3. 다른 참가자들에게 슬라이드 닫기를 알립니다.
+  if (socket && roomIdRef.current) {
+    socket.emit("slide-close", { roomId: roomIdRef.current });
+  }
+};
 
   // 렌더링
   return (
@@ -863,7 +878,6 @@ function Hwasang() {
           setIsPresenter={setIsPresenter}
           roomId={roomId}
           setRoomId={setRoomId}
-          handleCreateRoom={handleCreateRoom}
           handleJoinRoom={handleJoinRoom}
         />
       ) : (

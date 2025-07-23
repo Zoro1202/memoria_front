@@ -4,17 +4,19 @@ import './VaultManager.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import Note from '../Note/Note';
 import GraphView from '../Graph/Graph';
+// import GraphView3D from "../Graph/3D/3DGraph"; // 금지
 import { useNotes } from "../../Contexts/NotesContext";
 import { useTabs } from "../../Contexts/TabsContext";
 import { useGroups } from "../../Contexts/GroupContext";
 import { getResourceAPI } from "../../Contexts/APIs/ResourceAPI";
 import toast from "react-hot-toast";
+import { Button } from "../Note/Util/noteComponent";
 
 const VaultManager = forwardRef((props, ref) => {
   //state 관련
   const [error, setError] = useState('');
 
-  const {notes, setNotes, graphData, setActiveNoteContent, upsertNote } = useNotes();
+  const {notes, setNotes, graphData, setActiveNoteContent, upsertNote,loadNotes } = useNotes();
   const {tabs, setTabs, activeTabId, setActiveTabId, openTab} = useTabs();
   const {selectedGroupId, sid, user} = useGroups();
 
@@ -60,10 +62,11 @@ const VaultManager = forwardRef((props, ref) => {
       return;
     }
     // [수정됨] id 생성 로직을 더 안전하게 변경
-    const newId = `graph-${Date.now()}`;
-    const newTab = { id: newId, title: '그래프 뷰', type: 'graph' };
-    setTabs(prevTabs => [...prevTabs, newTab]);
-    setActiveTabId(newId);
+    // const newId = `graph-${Date.now()}`;
+    // const newTab = { id: newId, title: '그래프 뷰', type: 'graph' };
+    openTab({ title: "Graph", type: "graph" });
+    // setTabs(prevTabs => [...prevTabs, newTab]);
+    // setActiveTabId(newId);
     setError('');
   }, [tabs, setTabs, setActiveTabId]); // 의존성 배열에 setTabs, setActiveTabId 추가
 
@@ -155,16 +158,22 @@ const VaultManager = forwardRef((props, ref) => {
                     onSelect={(id) => {
                       // 그래프 노드 클릭 시 새 탭 열기 로직
                       openTab({ title: id, type: 'note', noteId: id });
+                      if(!notes[id])
+                      {
+                        upsertNote(selectedGroupId, id, id);
+                        loadNotes();
+                      }
                     }}
                   />
                 ) : (
                   <Note
                     id={tab.title}
-                    noteId={tab.noteId}
+                    // noteId={notes[tab.title].}
                     groupId={tab.groupId || selectedGroupId}
                     markdown={notes[tab.noteId]?.content || "error"}
                     onChange={(md) => {
                       setActiveNoteContent(String(md));
+                      // upsertNote(selectedGroupId, tab.title, md, tab.noteId); // 저장 upsert인데 이거 수정해야함.
                       setNotes((prevNotes) => ({
                         ...prevNotes,
                         [tab.title]: {

@@ -1,30 +1,47 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 
 export default function FileUploadSTT({ selectedSpeakerIds }) {
   const [file, setFile] = useState(null);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
-
   const [lang, setLang] = useState('ko');
+
+  // fetch with timeout helper 함수
+  const fetchWithTimeout = (url, options, timeout = 600000) => {
+    return new Promise((resolve, reject) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('요청이 시간초과 되었습니다.'));
+      }, timeout);
+
+      fetch(url, { ...options, signal: controller.signal })
+        .then(response => {
+          clearTimeout(timer);
+          resolve(response);
+        })
+        .catch(err => {
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  };
 
   const handleUpload = async () => {
     if (!file || selectedSpeakerIds.length === 0) {
       setError('파일과 화자를 모두 설정해야 합니다.');
       return;
     }
-
     setError('');
+    setResult('');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('lang', lang);
 
-    // 다중 샘플 파일 전송 (각 화자별로)
     selectedSpeakerIds.forEach((id, index) => {
-      formData.append('sample_files', new File([], `dummy_${id}.wav`)); // 실제 샘플 데이터로 교체 필요
+      formData.append('sample_files', new File([], `dummy_${id}.wav`));
     });
 
-    // 화자 이름 매핑 예시
     const speakerNames = {};
     selectedSpeakerIds.forEach((id, i) => {
       speakerNames[i + 1] = `화자${i + 1}`;
@@ -32,13 +49,18 @@ export default function FileUploadSTT({ selectedSpeakerIds }) {
     formData.append('speaker_names', JSON.stringify(speakerNames));
 
     try {
-      const res = await axios.post('/transcribe', formData, {
-        timeout: 600000
-      });
-      setResult(res.data.transcript);
+      const res = await fetchWithTimeout('/transcribe', {
+        method: 'POST',
+        body: formData,
+      }, 600000); // 10분 타임아웃
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const data = await res.json();
+      setResult(data.transcript);
     } catch (err) {
       console.error(err);
-      setError('STT 변환 실패');
+      setError(err.message || 'STT 변환 실패');
     }
   };
 

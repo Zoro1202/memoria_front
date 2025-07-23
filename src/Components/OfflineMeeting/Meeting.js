@@ -1,34 +1,22 @@
 import React, { useState } from "react";
-import MemberSelect from "./MemberSelect";
+import GroupSelect from "./GroupSelect";
 import FileUploadSTT from "./FileUploadSTT";
-import MicRecordSTT from "./RecordSTT";
+import RecordSTT from "./RecordSTT";
 
-export default function OfflineMeeting() {
+export default function Meeting() {
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState([]);
-  const [mode, setMode] = useState("file"); // or 'mic'
+  const [mode, setMode] = useState("file");
 
   return (
-    <div style={{ padding: 24 }}>
+    <div>
       <h2>오프라인 회의</h2>
-
-      <div style={{ marginBottom: 16 }}>
-        <button onClick={() => setMode("file")}>📁 파일 업로드</button>
-        <button onClick={() => setMode("mic")} style={{ marginLeft: 10 }}>
-          🎙 마이크 녹음
-        </button>
+      <div>
+        <button onClick={() => setMode("file")}>파일 업로드</button>
+        <button onClick={() => setMode("mic")}>마이크 녹음</button>
       </div>
-
-      {/* 멤버 선택 UI */}
-      <MemberSelect onSelectionChange={setSelectedSpeakerIds} />
-
-      <hr />
-
-      {mode === "file" && (
-        <FileUploadSTT selectedSpeakerIds={selectedSpeakerIds} />
-      )}
-      {mode === "mic" && (
-        <MicRecordSTT selectedSpeakerIds={selectedSpeakerIds} />
-      )}
+      <GroupSelect onSelectionChange={setSelectedSpeakerIds} />
+      {mode === "file" && <FileUploadSTT selectedSpeakerIds={selectedSpeakerIds} />}
+      {mode === "mic" && <RecordSTT selectedSpeakerIds={selectedSpeakerIds} />}
     </div>
   );
 }

@@ -1,79 +1,8 @@
 /* Note.css */
 
 .note-editor {
-  max-width: 800px;
+  max-width: auto;
   margin: 2rem auto;
-}
-
-/* 에디터 영역 전체 */
-.note-editor .ProseMirror {
-  min-height: 400px;
-  padding: 1.5rem;
-  background-color: #1e1e1e;
-  color: #f8f8f2;
-  font-family: "Fira Code", monospace;
-  border-radius: 8px;
-  outline: none;
-  overflow-y: auto;
-}
-
-/* 헤딩 스타일 */
-.note-editor .ProseMirror h1 {
-  font-size: 2em;
-  color: #ff79c6;
-  margin: 0.67em 0 0.3em;
-  border-bottom: 1px solid #44475a;
-  padding-bottom: 0.3em;
-}
-
-.note-editor .ProseMirror h2 {
-  font-size: 1.5em;
-  color: #bd93f9;
-  margin: 0.75em 0 0.25em;
-  border-bottom: 1px solid #44475a;
-  padding-bottom: 0.2em;
-}
-
-.note-editor .ProseMirror h3 {
-  font-size: 1.2em;
-  color: #8be9fd;
-  margin: 0.6em 0 0.2em;
-}
-
-/* 단락, 리스트, 인용구 */
-.note-editor .ProseMirror p {
-  margin: 0.5em 0;
-}
-.note-editor .ProseMirror ul,
-.note-editor .ProseMirror ol {
-  margin: 0.5em 0 0.5em 1.5em;
-}
-.note-editor .ProseMirror blockquote {
-  margin: 0.5em 0;
-  padding-left: 1em;
-  border-left: 3px solid #6272a4;
-  color: #bfbfbf;
-}
-
-/* 코드 */
-.note-editor .ProseMirror code {
-  background-color: #282a36;
-  color: #f1fa8c;
-  padding: 0.2em 0.4em;
-  border-radius: 4px;
-  font-family: "Fira Code", monospace;
-}
-.note-editor .ProseMirror pre {
-  background-color: #282a36;
-  padding: 1em;
-  border-radius: 6px;
-  overflow-x: auto;
-}
-
-/* 링크 */
-.note-editor .ProseMirror a {
-  color: #50fa7b;
-  text-decoration: underline;
 }
 
 .wikilink-node {
@@ -82,4 +11,64 @@
   padding: 2px 4px;
   border-radius: 3px;
   user-select: none;
+}
+
+.slate-block-wrapper:hover .add-button-wrapper {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.add-button-wrapper button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;  /* 배경 제거 */
+  color: #6b6b6b;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.15s ease; /* 배경 없이 색상만 변하도록 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.add-button-wrapper button:hover {
+  color: #000000; /* 호버 시 글자 색만 진해짐 */
+  background: transparent; /* 배경 변화 없음 */
+}
+
+.add-button-wrapper button:focus {
+  outline: none;
+  box-shadow: none; /* 포커스 시 강조 효과 제거 */
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.modal-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-around;
 }

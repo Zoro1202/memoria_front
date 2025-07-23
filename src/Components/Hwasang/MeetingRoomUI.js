@@ -1,5 +1,3 @@
-// MeetingRoom.js
-
 import React, { useRef, useState, useEffect } from "react";
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -665,3 +663,4 @@ export default function MeetingRoomUI({
     </div>
   );
 }
+

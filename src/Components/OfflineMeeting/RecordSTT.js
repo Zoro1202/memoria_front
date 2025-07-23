@@ -1,6 +1,4 @@
-// Components/OfflineMeeting/MicRecordSTT.js
 import React, { useRef, useState } from 'react';
-import axios from 'axios';
 
 export default function MicRecordSTT({ selectedSpeakerIds }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -11,7 +9,7 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
 
-  // 마이크 녹음 시작
+  // 녹음 시작
   const handleStart = async () => {
     setError('');
     setResult('');
@@ -21,9 +19,8 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new window.MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const mediaRecorder = new window.MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+
       chunksRef.current = [];
       mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
       mediaRecorder.onstop = () => {
@@ -31,6 +28,7 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
         const file = new File([blob], `recorded_${Date.now()}.webm`, { type: 'audio/webm' });
         setAudioFile(file);
       };
+
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecording(true);
@@ -47,6 +45,27 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
     }
   };
 
+  // fetch with timeout helper 함수 (중복되므로 별도 util로 분리 권장)
+  const fetchWithTimeout = (url, options, timeout = 600000) => {
+    return new Promise((resolve, reject) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('요청이 시간초과 되었습니다.'));
+      }, timeout);
+
+      fetch(url, { ...options, signal: controller.signal })
+        .then(response => {
+          clearTimeout(timer);
+          resolve(response);
+        })
+        .catch(err => {
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  };
+
   // STT 변환 요청
   const handleTranscribe = async () => {
     setError('');
@@ -59,13 +78,10 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
     formData.append('file', audioFile);
     formData.append('lang', lang);
 
-    // 다중 샘플 파일(실제 서버에서는 sample_files가 배열로 받아야 함)
     selectedSpeakerIds.forEach((id, idx) => {
-      // dummy로 빈 파일이 아니라, 실제 서버에서 id로 샘플 파일을 로딩하도록 변경 권장
       formData.append('sample_ids', id);
     });
 
-    // 화자 이름 매핑
     const speakerNames = {};
     selectedSpeakerIds.forEach((id, idx) => {
       speakerNames[idx + 1] = `화자${idx + 1}`;
@@ -73,10 +89,23 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
     formData.append('speaker_names', JSON.stringify(speakerNames));
 
     try {
-      const res = await axios.post('/transcribe', formData, { timeout: 600000 });
-      setResult(res.data.transcript);
+      const res = await fetchWithTimeout('/transcribe', {
+        method: 'POST',
+        body: formData
+      }, 600000); // 10분 타임아웃
+
+      if (!res.ok) {
+        let errorMessage = `HTTP error! status: ${res.status}`;
+        try {
+          const errorData = await res.json();
+          if (errorData.error) errorMessage = errorData.error;
+        } catch {}
+        throw new Error(errorMessage);
+      }
+      const data = await res.json();
+      setResult(data.transcript);
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
+      setError(err.message);
     }
   };
 

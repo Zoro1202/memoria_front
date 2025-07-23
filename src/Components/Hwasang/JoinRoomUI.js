@@ -3,26 +3,25 @@ import "./HomeScreen.css";
 import memoriaLogo from './memoria.png';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import Button from '@mui/material/Button';
 import RecordingList from "./RecordingList";
 
+// 1. props 시그니처에서 불필요해진 handleCreateRoom을 제거합니다.
 export default function JoinRoomUI({
   nickname,
   setNickname,
   isPresenter,
   setIsPresenter,
-  roomId,
+  roomId, // 이 변수는 이제 서버 로직에 맞춰 'groupId'를 담는 역할을 합니다.
   setRoomId,
-  handleCreateRoom,
   handleJoinRoom
 }) {
   const [egg, setEgg] = useState(false);
   const [theme, setTheme] = useState(() =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light"
   );
-  const [activeTab, setActiveTab] = useState("home"); // ← 탭 상태
+  const [activeTab, setActiveTab] = useState("home");
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -38,9 +37,10 @@ export default function JoinRoomUI({
 
   const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark");
 
+  // 2. 핸들러의 유효성 검사 메시지를 '그룹 ID'를 언급하도록 수정합니다.
   const handleJoinRoomClick = () => {
     if (!roomId.trim() || !nickname.trim()) {
-      alert("방 ID와 닉네임을 입력해주세요.");
+      alert("그룹 ID와 닉네임을 입력해주세요.");
       return;
     }
     handleJoinRoom();
@@ -120,40 +120,20 @@ export default function JoinRoomUI({
       <main className="home-main">
         {(activeTab === "home" || activeTab === "meeting") && (
           <>
-            {/* 시계/날짜 카드 */}
             <section className="home-info-card">
               <div className="home-clock">{time}</div>
               <div className="home-date">{date}</div>
               <div className="home-today-meeting">오늘 예정된 회의 없음</div>
             </section>
-            {/* 방 생성/입장 UI */}
+            
+            {/* 3. '방 생성' UI를 제거하고, '방 참가' UI를 회의 시작/참가 통합 형태로 변경합니다. */}
             <section className="join-room-ui-container">
-              <div className="join-room-cards">
+              <div className="join-room-cards single-card">
                 <div className="card">
-                  <h3>방 생성</h3>
-                  <Button
-                    variant="contained"
-                    color="warning"
-                    startIcon={<AddCircleIcon />}
-                    onClick={handleCreateRoom}
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                      borderRadius: 2,
-                      minWidth: 140,
-                      boxShadow: 2,
-                      mb: 1,
-                    }}
-                    fullWidth
-                  >
-                    방 생성
-                  </Button>
-                </div>
-                <div className="card">
-                  <h3>방 참가</h3>
+                  <h3>회의 시작 또는 참가</h3>
                   <input
                     type="text"
-                    placeholder="방 ID"
+                    placeholder="그룹 ID" // Placeholder를 '그룹 ID'로 변경
                     value={roomId}
                     onChange={e => setRoomId(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -171,7 +151,7 @@ export default function JoinRoomUI({
                       checked={isPresenter}
                       onChange={e => setIsPresenter(e.target.checked)}
                     />
-                    발표자 여부
+                    발표자로 시작
                   </label>
                   <Button
                     variant="contained"
@@ -188,7 +168,7 @@ export default function JoinRoomUI({
                     }}
                     fullWidth
                   >
-                    방 참가
+                    회의 시작
                   </Button>
                 </div>
               </div>
@@ -208,7 +188,7 @@ export default function JoinRoomUI({
               <div className="recording-form">
                 <input
                   type="text"
-                  placeholder="방 ID를 입력하세요"
+                  placeholder="그룹 ID를 입력하세요" // 여기도 '방 ID' -> '그룹 ID'로 통일
                   value={roomId}
                   onChange={e => setRoomId(e.target.value)}
                   className="recording-roomid-input"
@@ -219,7 +199,7 @@ export default function JoinRoomUI({
               </div>
               <div className="recording-tip">
                 <span role="img" aria-label="tip">💡</span>
-                방 ID를 입력하면 해당 회의방의 녹화 목록을 볼 수 있습니다.
+                그룹 ID를 입력하면 해당 회의의 녹화 목록을 볼 수 있습니다.
               </div>
             </div>
           </section>
