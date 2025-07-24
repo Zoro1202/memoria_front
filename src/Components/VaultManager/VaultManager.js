@@ -1,5 +1,5 @@
 // vaultmanager.js - 김형우, 이상영
-import React, { useState, useMemo, forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
+import React, { useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import './VaultManager.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import Note from '../Note/Note';
@@ -8,9 +8,9 @@ import GraphView from '../Graph/Graph';
 import { useNotes } from "../../Contexts/NotesContext";
 import { useTabs } from "../../Contexts/TabsContext";
 import { useGroups } from "../../Contexts/GroupContext";
-import { getResourceAPI } from "../../Contexts/APIs/ResourceAPI";
+// import { getResourceAPI } from "../../Contexts/APIs/ResourceAPI";
 import toast from "react-hot-toast";
-import { Button } from "../Note/Util/noteComponent";
+// import { Button } from "../Note/Util/noteComponent";
 
 const VaultManager = forwardRef((props, ref) => {
   //state 관련
@@ -18,10 +18,10 @@ const VaultManager = forwardRef((props, ref) => {
 
   const {notes, setNotes, graphData, setActiveNoteContent, upsertNote,loadNotes } = useNotes();
   const {tabs, setTabs, activeTabId, setActiveTabId, openTab} = useTabs();
-  const {selectedGroupId, sid, user} = useGroups();
+  const {selectedGroupId} = useGroups();
 
 
-  const resourceAPI = useMemo(() => getResourceAPI(), []);
+  // const resourceAPI = useMemo(() => getResourceAPI(), []);
 
   // DOM 렌더링 시에 사용자 정보를 API로부터 가져와야 함. (로그인 화면에서 리다이렉트->쿠키에 엑세스 토큰 있어야 함.)
   // useEffect(() => { // 이거 Sidebar에서 하고있고 context로 바로 넘기고있어서 할필요 없음!!!
@@ -54,6 +54,7 @@ const VaultManager = forwardRef((props, ref) => {
     openTab({ title: newId, type: "note", noteId: newId });
     setError('');
     return newId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs, notes, setNotes, openTab]); // 의존성 배열에 notes, setNotes, openTab 추가
 
   const addGraphTab = useCallback(() => {
@@ -68,6 +69,7 @@ const VaultManager = forwardRef((props, ref) => {
     // setTabs(prevTabs => [...prevTabs, newTab]);
     // setActiveTabId(newId);
     setError('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs, setTabs, setActiveTabId]); // 의존성 배열에 setTabs, setActiveTabId 추가
 
   useImperativeHandle(ref, () => ({

@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import "./Graph.css"; // Assuming you have a CSS file for styles
 import toast from "react-hot-toast";
-import { forceRadial, } from 'd3-force-3d'; // ForceGraph2D 에서 쓰고있는거 뽀려옴. 프로젝트 의존성에는 없는데 사용 가능.
+import { forceRadial, } from 'd3-force-3d'; // ForceGraph2D 에서 쓰고있는거 뽀려옴.
 import useWindowSize from "./Utils/Resize";
 //data : graph data, onSelect : 노드 클릭시 부모 컴포넌트로 노트 열기 콜백 함수
 export default function GraphView({ data, onSelect }) {

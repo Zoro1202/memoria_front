@@ -1,6 +1,6 @@
 // NoteSearchModal.js
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, FileText, Calendar, Hash } from 'lucide-react';
+import { Search, X, FileText } from 'lucide-react';
 import './NoteSearchModal.css';
 
 // SearchModal.js 수정
@@ -34,7 +34,7 @@ const NoteSearchModal = ({ isOpen, onClose, notes = {}, onNoteSelect }) => {
         if (!note || typeof note !== 'object') return false;
         
         const titleMatch = note.title?.toLowerCase().includes(searchLower);
-        const cleanContent = note.content?.replace(/[#\*\[\]]/g, '').toLowerCase();
+        const cleanContent = note.content?.replace(/[#*[]]/g, '').toLowerCase();
         const contentMatch = cleanContent?.includes(searchLower);
         
         return titleMatch || contentMatch;
@@ -160,7 +160,7 @@ const NoteSearchModal = ({ isOpen, onClose, notes = {}, onNoteSelect }) => {
                   {note.content && (
                     <p className="result-preview">
                       {note.content
-                        .replace(/[#\*\[\]]/g, '')
+                        .replace(/[#*[]]/g, '')
                         .replace(/\n+/g, ' ')
                         .slice(0, 100)}
                       {note.content.length > 100 ? '...' : ''}

@@ -1,15 +1,15 @@
 // Component/textEditor.jsx
 import isHotkey from 'is-hotkey'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback } from 'react'
 import {
   Editor,
   Path,
   Element as SlateElement,
   Transforms,
-  createEditor,
+  // createEditor,
 } from 'slate'
-import { withHistory } from 'slate-history'
-import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
+// import { withHistory } from 'slate-history'
+import { Editable, ReactEditor, Slate, useSlate } from 'slate-react'
 import { Button, Icon, Toolbar } from './noteComponent'
 import { HToolbar } from './Toolbar'
 const HOTKEYS = {

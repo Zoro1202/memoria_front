@@ -14,7 +14,7 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ModeIcon from '@mui/icons-material/Mode';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+// import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import TuneIcon from '@mui/icons-material/Tune';
 import CloseIcon from '@mui/icons-material/Close';
@@ -96,6 +96,7 @@ export default function MeetingRoomUI({
   const [drawing, setDrawing] = useState(false);
   const [lastPos, setLastPos] = useState(null);
   const [focusMode, setFocusMode] = useState(false);
+  // eslint-disable-next-line
   const [isRecording, setIsRecording] = useState(false);
   const recorderRef = useRef();
 
@@ -166,11 +167,13 @@ export default function MeetingRoomUI({
 
   useEffect(() => {
     updateCanvasSize();
+  // eslint-disable-next-line
   }, [imgSize, slides, currentSlide, focusMode]);
 
   useEffect(() => {
     window.addEventListener("resize", updateCanvasSize);
     return () => window.removeEventListener("resize", updateCanvasSize);
+  // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -248,6 +251,7 @@ export default function MeetingRoomUI({
   };
 
   // 녹화 업로드 함수
+  // eslint-disable-next-line
   const uploadRecording = async (blob) => {
     try {
       const formData = new FormData();
@@ -269,6 +273,7 @@ export default function MeetingRoomUI({
   };
 
   // 녹화 버튼 클릭 핸들러
+  // eslint-disable-next-line
   const handleToggleRecording = () => {
     setIsRecording((prev) => {
       const next = !prev;

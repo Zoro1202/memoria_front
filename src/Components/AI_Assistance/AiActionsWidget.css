@@ -187,12 +187,36 @@
 .keyword-chip {
   background-color: #37373D; border: 1px solid #555; border-radius: 16px;
   padding: 6px 12px; font-size: 13px; cursor: pointer; color: #ddd;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 .keyword-chip:hover { background-color: #4a4a52; }
-.keyword-chip.selected {
-  background-color: #007AFF; color: white; border-color: #007AFF; font-weight: 500;
+
+/* [추가] AI 추천 키워드 스타일 (노란색 배경) */
+.keyword-chip.ai-recommended {
+  background-color: #fffbe6; /* 매우 연한 노란색 */
+  border-color: #ffe58f;
+  color: #d46b08;
 }
+
+.keyword-chip.ai-recommended:hover {
+  background-color: #fff1d6;
+}
+
+.keyword-chip.selected {
+  background-color: #1890ff; /* 진한 파란색 */
+  color: white;
+  border-color: #1890ff;
+  font-weight: 500;
+}
+
+.keyword-chip.ai-recommended.selected {
+  box-shadow: 0 0 0 3px rgba(255, 229, 143, 0.8);
+}
+
+.keyword-chip.ai-recommended.selected:hover {
+    background-color: #096dd9; /* 호버 시 약간 더 어두운 파란색 */
+}
+
 .selection-actions {
   display: flex; justify-content: flex-end; gap: 10px; margin-top: auto;
   border-top: 1px solid #383838; padding-top: 16px;
@@ -294,4 +318,94 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* AiActionsWidget.css 파일 맨 아래에 추가 */
+
+/* --- 채팅 입력창 컨테이너 스타일 수정 --- */
+.chat-input-container-bottom {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #333;
+}
+
+/* --- 히스토리 버튼 스타일 --- */
+.history-button {
+  background: none;
+  border: none;
+  padding: 6px;
+  margin-right: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.history-button:hover {
+  background-color: #3a3a3a;
+  color: #fff;
+}
+
+/* --- 히스토리 로그 뷰 스타일 --- */
+.history-log-view {
+  padding: 10px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.history-log-item button {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #333;
+  padding: 12px 8px;
+  text-align: left;
+  cursor: pointer;
+  color: #ddd;
+  transition: background-color 0.2s;
+}
+
+.history-log-item button:hover {
+  background-color: #2a2a2a;
+}
+
+.history-log-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-log-noteId {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.history-log-empty {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #888;
+}
+
+.history-log-empty p {
+  margin: 4px 0;
 }

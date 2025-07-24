@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
 import * as fabric from "fabric";
-import "./styles/global.css";
+// import "./styles/global.css";
 import MeetingRoomUI from "./MeetingRoomUI";
 import "./MeetingRoom.css";
 import JoinRoomUI from "./JoinRoomUI";
@@ -67,8 +67,10 @@ function Hwasang() {
   const [peers, setPeers] = useState([]);
   const [peerNicknames, setPeerNicknames] = useState({});
   const [localStream, setLocalStream] = useState(null);
+  // eslint-disable-next-line
   const [videoProducer, setVideoProducer] = useState(null);
   const [audioProducer, setAudioProducer] = useState(null);
+  // eslint-disable-next-line
   const [screenProducer, setScreenProducer] = useState(null);
   const deviceRef = useRef(null);
   const recvTransportRef = useRef(null);
@@ -295,6 +297,7 @@ function Hwasang() {
     });
 
     return () => newSocket.disconnect();
+  // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -507,6 +510,7 @@ function Hwasang() {
   };
 
   // 방 생성 및 즉시 입장
+  // eslint-disable-next-line
   const handleCreateRoom = () => {
     const newRoomId = generateRoomId();
     socket.emit("create-room", { roomId: newRoomId }, (res) => {

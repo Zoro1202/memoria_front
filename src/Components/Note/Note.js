@@ -197,7 +197,8 @@ export default function NoteView({ id, markdown, onChange }) {
         type: 'heading-one',
         children: [{ text: id || '' }],
     }], [id]);
-    
+
+    // eslint-disable-next-line
     const initialValue = useMemo(() => deserialize(markdown), [id, markdown]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -393,6 +394,7 @@ export default function NoteView({ id, markdown, onChange }) {
                     case 'formatBold'     : event.preventDefault(); return toggleMark(editor, 'bold');
                     case 'formatItalic'   : event.preventDefault(); return toggleMark(editor, 'italic');
                     case 'formatUnderline': event.preventDefault(); return toggleMark(editor, 'underline');
+                    default : return;
                   }
                 }}
             />

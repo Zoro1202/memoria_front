@@ -54,7 +54,8 @@ export function getResourceAPI() {
           credentials: 'include', // 쿠키를 포함하여 요청
         });
         if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        return await response.json();
+        const data = await response.json();
+        return data.data;
       } catch(err) {
         throw err;
       }

@@ -1,8 +1,14 @@
 import { css } from '@emotion/css'
-import React, { useEffect, useMemo, useRef } from 'react'
-import { Editor, Range, createEditor } from 'slate'
-import { withHistory } from 'slate-history'
-import { Editable, Slate, useFocused, useSlate, withReact } from 'slate-react'
+import React, { useEffect, useRef } from 'react'
+import { Editor, Range, } from 'slate'
+// import { withHistory } from 'slate-history'
+import { 
+  // Editable, 
+  // Slate, 
+  useFocused, 
+  useSlate, 
+  // withReact 
+} from 'slate-react'
 import { Button, Icon, Menu, Portal } from './noteComponent'
 
 export const HToolbar = () => {

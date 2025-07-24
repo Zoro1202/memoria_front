@@ -45,23 +45,21 @@
 
 /* 목록 컨테이너 - 높이 애니메이션 */
 .groups-container {
-  transition: max-height 0.3s ease-out;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
   overflow: hidden;
-}
-
-.groups-container.expanded {
-  max-height: 400px; /* 충분한 높이 설정 */
-}
-
-.groups-container.collapsed {
-  max-height: 0;
 }
 
 /* 실제 콘텐츠 */
 .groups-content {
-  padding: 12px;
-  overflow-y: auto;
-  max-height: 350px; /* 스크롤 가능한 최대 높이 */
+  /* 부모의 flex 레이아웃에서 남은 공간 활용 */
+  flex: 1;
+  padding: 10px;
+  overflow-y: scroll;
+  min-height: 0;
+  max-height: calc(100vh - 180px);
+  /* 스크롤바 스타일 */
+  scrollbar-width: thin;
+  scrollbar-color: #e3e3e3 transparent;
 }
 
 /* 개별 그룹 항목 */

@@ -112,25 +112,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  /* padding: 12px 16px; */
   height: 40px;
   border-bottom: 1px solid #e3e3e3;
-  background-color: #f7f7f5;
+  background-color: #ffffff;
   flex-shrink: 0;
 }
 
-.main-logo {
-  background-color: #f7f7f5;
-  height: 54px;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.1s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-}
 
 .main-logo:hover {
   background-color: #efefef;
@@ -149,11 +137,28 @@
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
+  border-color: #000000;
   transition: background-color 0.1s;
   user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 15px;;
+}
+
+.asdf-btn {
+  background: none;
+  border: none;
+  color: #6b6b6b;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.1s;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;;
 }
 
 .toggle-btn:hover {
@@ -161,10 +166,25 @@
 }
 
 .sidebar-content {
-  flex: 1;
-  padding: 12px;
+  flex: 1; /* 남은 공간 모두 차지 */
+  padding: 4px 0;
   font-size: 14px;
-  overflow-y: auto;
+  overflow-y: unset;
+  min-height: 0; /* Flexbox에서 overflow 작동을 위해 필요 */
+  max-height: calc(100vh - 130px);
+  /* 스크롤바 스타일링 */
+  /* scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f9fafb; */
+}
+
+.sidebar-footer {
+  flex-shrink: 0; /* 크기 고정 */
+  padding: 12px;
+  background-color: #ffffff;
+  border-top: 1px solid #e3e3e3;
+  position: sticky;
+  bottom: 0;
+  z-index: 10; /* 스크롤되는 콘텐츠 위에 표시 */
 }
 
 .add-note-btn {
@@ -194,17 +214,19 @@
   background-color: #fcfcfa;
   overflow: hidden;
 }
+
 .user-profile {
   display: flex;
   flex-direction: row;
-  align-items: center; /* 수직 가운데 정렬 */
-  justify-content: space-between; /* 좌우 끝으로 배치 */
+  align-items: center;
+  justify-content: space-between;
   padding: 6px 8px;
   border-radius: 6px;
   transition: background-color 0.1s ease;
   cursor: pointer;
   overflow: hidden;
 }
+
 .user-profile:hover{
   background-color: #f0f0f0;
 }

@@ -1,0 +1,278 @@
+/* GroupProfile.css */
+
+/* 모달 오버레이 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* 투명도 있는 검정 배경 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* 다른 요소 위에 표시 */
+    backdrop-filter: blur(4px); /* 배경 블러 효과 */
+}
+
+/* 모달 창 자체 */
+.modal-window {
+    background: #ffffff;
+    border-radius: 12px; /* 둥근 모서리 */
+    width: 600px;
+    max-width: 90vw; /* 화면 너비의 최대 90% */
+    max-height: 80vh; /* 화면 높이의 최대 80% */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); /* 그림자 효과 */
+    animation: groupModalSlideIn 0.3s ease-out; /* 애니메이션 적용 */
+    position: relative; /* 중요: 자식 absolute 요소의 기준이 됩니다. */
+}
+
+/* 모달 등장 애니메이션 */
+@keyframes groupModalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* 닫기 버튼 */
+.close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    color: #6b7280;
+    transition: all 0.15s;
+    /* UserWindowModal.css의 .user-modal-close는 absolute가 없지만,
+       모달 우측 상단에 고정하려면 absolute를 사용하고,
+       modal-window에 position: relative;를 줘야 합니다. */
+    position: absolute; /* 모달 우측 상단에 고정 */
+    top: 15px;
+    right: 15px;
+    z-index: 10; /* 다른 요소 위에 표시 */
+}
+
+.close-btn:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+/* 모달 헤더 (GroupProfile.js에 이 부분이 있다면 사용) */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* 탭 네비게이션 */
+.modal-tabs {
+    display: flex;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-tab { /* UserWindowModal.css의 .tab-button과 유사 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s;
+    border-bottom: 2px solid transparent;
+}
+
+.modal-tab:hover {
+    color: #374151;
+    background-color: #f3f4f6;
+}
+
+.modal-tab.active {
+    color: #2563eb;
+    background-color: #ffffff;
+    border-bottom-color: #2563eb;
+}
+
+.modal-content {
+    flex: 1; /* 남은 공간 차지 */
+    overflow-y: auto; /* 내용이 넘칠 경우 스크롤 */
+    padding: 24px;
+}
+
+.modal-tab-content { /* 이 부분을 수정합니다. */
+    display: flex; /* 자식 요소들을 flexbox로 관리 */
+    flex-direction: column; /* 세로 방향으로 정렬 (위에서 아래로) */
+    gap: 20px; /* 각 폼 그룹 사이의 간격을 20px로 설정 */
+}
+
+/* 폼 그룹 */
+.form-group {
+    /* 기존 margin-bottom을 제거하고, flexbox의 gap으로 대체 */
+    margin-bottom: 0; /* 이 부분을 0으로 설정하거나 삭제 */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px; /* 레이블과 입력 필드 사이의 간격 */
+    font-weight: 500;
+    color: #374151;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.15s;
+    box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 131, 235, 0.1);
+}
+
+/* 그룹 멤버 목록 */
+.group-members-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.member-item:last-child {
+    border-bottom: none;
+}
+
+.member-actions .kick-btn {
+    padding: 6px 12px;
+    background: #fee2e2;
+    border: 1px solid #dc2626;
+    border-radius: 6px;
+    color: #dc2626;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.kick-btn:hover {
+    background: #fecaca;
+}
+
+/* 초대 섹션 */
+.invite-section {
+    display: flex;
+    gap: 10px;
+}
+
+.invite-section input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.invite-btn {
+    padding: 8px 16px;
+    background: #2563eb;
+    border: 1px solid #2563eb;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.invite-btn:hover {
+    background: #1d4ed8;
+}
+
+/* 모달 푸터 (저장/취소 버튼) */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end; /* 버튼을 오른쪽으로 정렬 */
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    border-radius: 0 0 12px 12px; /* 하단 모서리 둥글게 */
+    gap: 12px; /* 버튼 간 간격 */
+}
+
+.save-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #2563eb;
+    border: 1px solid #2563eb;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.save-btn:hover {
+    background: #1d4ed8;
+}
+
+/* 스크롤바 스타일링 (콘텐츠 영역) */
+.modal-content {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #d1d5db #f9fafb; /* Firefox */
+}
+
+/* 웹킷 (Chrome, Safari) 스크롤바 */
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f9fafb;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}

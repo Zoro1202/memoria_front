@@ -12,7 +12,7 @@ export default function APITestPage() {
   const [profileImage, setProfileImage] = useState(null); // 프로필 이미지 상태
 
   //user
-  const [sid, setSid] = useState();
+  // const [sid, setSid] = useState();
   const [provider, setProvider] = useState();
   const [remainTime, setRemainTime] = useState();
 
@@ -28,7 +28,7 @@ export default function APITestPage() {
     try{
       const info = await resourceAPI.token_info();
       console.log('token info : ', info);
-      setSid(info.subject_id);
+      // setSid(info.subject_id);
       setProvider(info.provider);
       setRemainTime(info.remainingTime);
     }catch(err){

@@ -70,7 +70,7 @@ export function GroupsProvider({ children }) {
 
   const logout = async () =>{
     let popup = null;
-    let isNaver = false;
+    // let isNaver = false;
     try{
       const res = await resourceAPI.postLogout();
       
@@ -79,7 +79,7 @@ export function GroupsProvider({ children }) {
       // 3. 네이버 로그아웃인 경우
       if (res.redirect && res.redirect.includes('/auth/naver/logout')) {
         alert('로그아웃되었습니다.');
-        isNaver = true;
+        // isNaver = true;
         // 팝업을 "동기적으로" 띄워야 브라우저가 차단하지 않음
         popup = window.open('about:blank', 'naverLogout', 'width=500,height=600,scrollbars=yes');
         // 팝업에 네이버 로그아웃 URL로 이동
@@ -129,7 +129,7 @@ export function GroupsProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [resourceAPI]);
 
   // region 그룹 생성
   const createGroup = useCallback(async (groupName) => {
@@ -155,7 +155,7 @@ export function GroupsProvider({ children }) {
       toast.error('그룹 생성에 실패했습니다.');
       throw err;
     }
-  }, []);
+  }, [resourceAPI]);
 
   // region 그룹 삭제
   const deleteGroup = useCallback(async (groupId) => {
@@ -175,7 +175,7 @@ export function GroupsProvider({ children }) {
       toast.error('그룹 삭제에 실패했습니다.');
       throw err;
     }
-  }, []);
+  }, [resourceAPI]);
 
   const value = {
     //그룹

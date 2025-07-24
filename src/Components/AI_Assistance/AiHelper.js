@@ -6,6 +6,7 @@ import './AiHelper.css';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
 import memoriaLogo from './Black_White_Sub_Center.png';
+//import { useGroups } from '../../Contexts/GroupContext';
 
 const AiIcon = () => (
     <img 
@@ -16,6 +17,7 @@ const AiIcon = () => (
 );
 
 export default function AiHelper() {
+    //const {groups} = useGroups();
     // [기존] isOpen 상태의 이름을 isWidgetVisible로 변경하여 명확화
     const [isWidgetVisible, setIsWidgetVisible] = useState(false);
     // [추가] AiActionsWidget의 상태를 완전히 초기화하기 위한 key 상태
@@ -63,6 +65,8 @@ export default function AiHelper() {
                 onClose={handleCloseAndResetWidget}
                 onMinimize={handleMinimizeWidget}
                 isVisible={isWidgetVisible} 
+                //groups={groups} // [수정] 받은 groups prop을 그대로 전달
+
             />
             
             {!isWidgetVisible && (

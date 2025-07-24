@@ -1,28 +1,39 @@
 // sidebar.js
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Network, Search, CircleUserRound, FileVideo2Icon, VideoOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Network, Search, FileVideo2Icon, VideoOff, Group, File } from 'lucide-react';
 import VaultManager from '../../Components/VaultManager/VaultManager';
-import { useMousePosition } from './util/useMousePosition'; // Hook import
+// import { useMousePosition } from './util/useMousePosition'; // 마우스 위치 검사 훅
 import GroupList from './util/GroupList';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useGroups } from '../../Contexts/GroupContext';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import NoteSearchModal from './util/NoteSearchModal';
+import UserWindowModal from '../UserProfile/UserProfile';
 import './Sidebar.css';
 import { useTabs } from '../../Contexts/TabsContext';
 
 export default function SidebarLayout() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(240);
+  const sidebarWidth = 240;
+
+  //사이드바 탭
+  const [activeTab, setActiveTab] = useState('groups');
+
+  const tabs = [
+    { id: 'groups', label: '그룹', icon: Group },
+    { id: 'notes', label: '노트', icon: File }
+  ];
+
+  //모달 온오프
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  
   const vaultRef = useRef(null);
-  const mousePosition = useMousePosition(); // 마우스 위치 추적
+  // const mousePosition = useMousePosition(); // 마우스 위치 추적
   
   const {
-    sid,
-    provider,
     remainTime,
     setRemainTime,
     tokenInfo,
@@ -34,7 +45,7 @@ export default function SidebarLayout() {
     logout
   } = useGroups();
   
-  const { notes, loadNotes, loadNotes_lagacy } = useNotes();
+  const { notes, loadNotes_lagacy } = useNotes();
   const {openTab} = useTabs();
 
   useEffect(() => {
@@ -83,12 +94,13 @@ export default function SidebarLayout() {
         clearInterval(intervalId);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   // 마우스가 왼쪽 영역에 있는지 확인
-  const isMouseOnLeftSide = mousePosition.x < 100;
-  const isMouseOnTabs = mousePosition.y < 65;
+  // const isMouseOnLeftSide = mousePosition.x < 100;
+  // const isMouseOnTabs = mousePosition.y < 65;
 
   // 버튼 핸들러들
   const handleAddNote = useCallback(() => {
@@ -117,22 +129,51 @@ export default function SidebarLayout() {
     openTab({ title: note.title, type: 'note', noteId: note.title });
   };
 
+  //-----------------------------사용자 정보창 모달----------------------------
+  const handleUserProfileClick = () => {
+    setIsUserModalOpen(true);
+  };
+  const handleUserSave = (userData) => {
+    console.log('Saving user data:', userData);
+    // 저장 로직 구현
+    // API 호출 등...
+    setIsUserModalOpen(false);
+  };
+
   return (
     <div className="container">
-      {/* 마우스 위치 추적 토글 버튼 */}
-      {!isOpen && isMouseOnLeftSide && !isMouseOnTabs && (
-        <div
-          className="toggle-btn-follow-mouse"
-          style={{
-            left: `${20}px`,
-            top: `${mousePosition.y - 20}px`,
-          }}
-          onClick={() => setIsOpen(true)}
+      <div className="fixed-sidebar">
+        <button
+          className="toggle-btn"
+          onClick={() => setIsOpen((prev) => !prev)}
+          title={isOpen ? "사이드바 닫기" : "사이드바 열기"}
         >
-          <ChevronRight size={20} />
-        </div>
-      )}
-
+          {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+        </button>
+        <button className="asdf-btn" onClick={handleSearchClick} title="노트 검색">
+          <Search size={16} />
+        </button>
+        <button className="asdf-btn" onClick={handleAddNote} title="새 노트">
+          <Plus size={16} />
+        </button>
+        <button className="asdf-btn" onClick={handleAddGraph} title="그래프 뷰">
+          <Network size={16} />
+        </button>
+        <button
+          className="asdf-btn"
+          onClick={() => (window.location.href = '/video-conference')}
+          title="화상회의"
+        >
+          <FileVideo2Icon size={16} />
+        </button>
+        <button
+          className="asdf-btn"
+          onClick={() => (window.location.href = '/offline-meeting')}
+          title="오프라인 회의"
+        >
+          <VideoOff size={16} />
+        </button>
+      </div>
       {/* 사이드바 */}
       {isOpen && (
         <div
@@ -140,52 +181,58 @@ export default function SidebarLayout() {
           style={{ width: sidebarWidth }}
         >
           <div className="sidebar-header">
-            <button className='main-logo' onClick={() => navigate('/')}>
-              <img src="/memoria.png" alt="Logo" className="logo" />
-            </button>
-            <button className="toggle-btn" onClick={() => setIsOpen(false)}>
+            {/* <button className="toggle-btn" onClick={() => setIsOpen(false)}>
               <ChevronLeft size={20} />
-            </button>
+            </button> */}
+            {tabs.map(tab => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <IconComponent size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
           </div>
 
           <div className="sidebar-content">
-            <GroupList onGroupSelect={(group) => {
-              console.log(group);
-              handleAddGraph();
-              loadNotes_lagacy(group.group_id); //이거 바꿔야함!!!
-            }} />
-            <button className="add-note-btn" onClick={handleSearchClick}>
-              <Search size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              노트 검색
-            </button>
-            <button className="add-note-btn" onClick={handleAddNote}>
-              <Plus size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              새 노트
-            </button>
-            <button className="add-note-btn" onClick={handleAddGraph}>
-              <Network size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              그래프 뷰
-            </button>
-            <button className="add-note-btn" onClick={() => window.location.href = '/video-conference'}>
-              <FileVideo2Icon size={16} style={{ marginRight: 6, verticalAlign: 'middle' }}/>
-              화상회의
-            </button>
-            <button className="add-note-btn" onClick={() => window.location.href = '/offline-meeting'}>
-              <VideoOff size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-              오프라인 회의
-            </button>
+            {activeTab === 'groups' && (
+              <GroupList onGroupSelect={(group) => {
+                console.log(group);
+                handleAddGraph();
+                loadNotes_lagacy(group.group_id); //이거 바꿔야함!!!
+              }} />
+            )}
+            {activeTab === 'notes' && (
+              <p>notes List</p>
+            )}
           </div>
 
           {user && (
-            <div className="sidebar-footer">
-              <div onClick={()=>{console.log(`ClickUserProfile!!`)}} className="user-profile">
-                <img src={profileImage} alt="User Avatar" className="user-avatar" />
-                <span className="user-name">{user.data.nickname} </span>
-                <p>{remainTime}</p>
-                <button className='user-logout-btn' onClick={(e)=>{e.stopPropagation();console.log(`로그아웃 버튼`);handleLogout();}}>logout</button>
-              </div>
-            </div>
-          )}
+        <div className="sidebar-footer">
+          <div 
+            onClick={handleUserProfileClick} // 수정된 부분
+            className="user-profile"
+          >
+            <img src={profileImage} alt="User Avatar" className="user-avatar" />
+            <span className="user-name">{user.nickname}</span>
+            <p>{remainTime}</p>
+            {/* <button 
+              className='user-logout-btn' 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLogout();
+              }}
+            >
+              logout
+            </button> */}
+          </div>
+        </div>
+      )}
         </div>
       )}
 
@@ -193,6 +240,16 @@ export default function SidebarLayout() {
       <div className="main-content">
         <VaultManager ref={vaultRef} />
       </div>
+      {/* 사용자 설정 모달 */}
+      <UserWindowModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        user={user}
+        profileImage={profileImage}
+        onSave={handleUserSave}
+        onLogout={handleLogout}
+      />
+      {/* 검색 모달 */}
       <NoteSearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
