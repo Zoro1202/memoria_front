@@ -47,7 +47,7 @@ export function GroupsProvider({ children }) {
     }
   }
   // region 사용자정보
-  const fetchUser = async () => {
+  const fetchUser = async () => { 
     try {
       const userData = await resourceAPI.get_user();
       setUser(userData);
@@ -67,7 +67,7 @@ export function GroupsProvider({ children }) {
       setProfileImage('/default-avatar.png'); // 기본 이미지로 설정
     }
   };
-
+  // region 로그아웃
   const logout = async () =>{
     let popup = null;
     // let isNaver = false;
@@ -102,7 +102,53 @@ export function GroupsProvider({ children }) {
       window.location.href = '/';
     }
   }
-
+  // region 비밀번호 체크
+  const checkPassword = useCallback(async (password)=>{
+    try {
+      const res = await resourceAPI.check_password(password);
+      return res;
+    } catch(err){
+      console.error(`비밀번호 체크에 실패했습니다.`, err);
+      toast.error(`비밀번호가 일치하지 않습니다!`);
+    }
+  },[resourceAPI]);
+  // region 비밀번호 변경
+  const changePassword = useCallback(async (password)=>{
+    try{
+      const res = await resourceAPI.change_password(password);
+      return res;
+    }catch(err){
+      console.error(`비밀벊 변경에 실패했습니다.`, err); 
+      toast.error(`비밀번호 변경에 실해했습니다!`);
+    }
+  },[resourceAPI]);
+  //region 사용자 프사 변경
+  const changeProfileImage = useCallback(async (file)=>{
+    try{
+      const data = await resourceAPI.uploadProfile(file); 
+      if(data.success){
+        console.log(`프사 업로드 성공!`);
+        const imgUrl = URL.createObjectURL(file);
+        setProfileImage(imgUrl);
+      }
+    } catch (err){
+      console.log(`파일 업로드 실패!`, err);
+    }
+  }, [resourceAPI]);
+  //region 사용자 닉네임 변경
+  const changeNickname = useCallback(async (nickname)=>{
+    try{
+      const data = await resourceAPI.change_nickname(nickname);
+      if (data.success){
+        console.log('닉네임 변경 성공1!'); 
+        let temp = user;
+        temp.nickname = nickname;
+        setUser(temp);
+      }
+    }catch(err){
+      console.log(`닉네임 변경 실패!`, err);
+    }
+  },[resourceAPI]);
   // region 그룹 목록 로드
   const loadGroups = useCallback(async () => {
     setLoading(true);
@@ -129,7 +175,7 @@ export function GroupsProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [resourceAPI]);
+  }, []);
 
   // region 그룹 생성
   const createGroup = useCallback(async (groupName) => {
@@ -168,15 +214,65 @@ export function GroupsProvider({ children }) {
         delete newGroups[groupId];
         return newGroups;
       });
-      
-      toast.success('그룹이 삭제되었습니다.');
+       
+      toast.success('그룹이 삭제되었습니다1.');
     } catch (err) {
       console.error('그룹 삭제 실패:', err);
       toast.error('그룹 삭제에 실패했습니다.');
       throw err;
+    } 
+  }, [resourceAPI]);
+  // region 그룹 멤버 목록
+  const getMemberList = useCallback(async (groupId) => { 
+    try {
+        // ResourceAPI에서 이미 에러 처리를 하고 있으므로, 여기서는 단순히 호출하고 반환합니다.
+        const data = await resourceAPI.getMemberList(groupId);
+        // API 응답 구조에 따라 data.data 또는 data 자체가 멤버 배열일 수 있습니다.
+        // ResourceAPI의 getMemberList는 `return data;`로 되어 있으므로,
+        // 여기서는 `data`가 멤버 배열이라고 가정합니다.
+        return data.members;
+    } catch (err) {
+        console.error('GroupContext - 멤버 목록을 가져오는데 실패했습니다:', err);
+        // GroupProfile.js에서 toast 메시지를 띄울 것이므로 여기서는 throw만 해도 됩니다.
+        throw err;
+    }
+  }, [resourceAPI]); 
+  // region 그룹 멤버 초대
+  const inviteMember = useCallback(async (recipient, groupId, permission) => {
+    try {
+        const data = await resourceAPI.inviteMember(recipient, groupId, permission);
+        if (!data.success) throw new Error(`멤버 초대 실패${data?.message}`);
+        toast.success(`${recipient}님을 그룹에 초대했습니다.`);
+        return data;
+        // setInviteInput('');
+        // fetchMemberList(group.group_id);
+    } catch (error) {
+        console.error('Failed to invite member:', error);
+        toast.error(`멤버 초대 실패: ${error.err}`);
+    }
+  }, [resourceAPI]);
+  // region 그룹 멤버 추방
+  const kickMember = useCallback(async (groupId, recipient) => {
+    try {
+        const data = await resourceAPI.kickMember(groupId, recipient);
+        return data;
+    } catch (err) {
+        console.error('GroupContext - 멤버 추방 실패:', err);
+        throw err;
+    } 
+  }, [resourceAPI]);
+  // region 그룹 멤버 권한 변경 
+  const permissionUpdate = useCallback(async (groupId, recipient, permission) => {
+    try {
+        const data = await resourceAPI.permissionUpdate(groupId, recipient, permission);
+        return data;
+    } catch (err) {
+        console.error('GroupContext - 멤버 권한 업데이트 실패:', err);
+        throw err;
     }
   }, [resourceAPI]);
 
+  //region export
   const value = {
     //그룹
     groups,
@@ -192,7 +288,7 @@ export function GroupsProvider({ children }) {
     sid,
     provider,
     remainTime,
-    setRemainTime,
+    setRemainTime, 
     tokenInfo,
     tokenRefresh,
     //유저 정보
@@ -201,6 +297,15 @@ export function GroupsProvider({ children }) {
     fetchUser,
     fetchProfileImage,
     logout,
+    checkPassword,
+    changePassword, 
+    changeProfileImage,
+    changeNickname,
+    // 그룹관리
+    getMemberList,
+    inviteMember,
+    kickMember,
+    permissionUpdate,
   };
   
   return (

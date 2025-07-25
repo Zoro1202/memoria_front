@@ -91,6 +91,7 @@ export default function MicRecordSTT({ selectedSpeakerIds }) {
     try {
       const res = await fetchWithTimeout('/transcribe', {
         method: 'POST',
+        // Credentials: 'include',
         body: formData
       }, 600000); // 10분 타임아웃
 

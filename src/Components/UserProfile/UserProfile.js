@@ -14,8 +14,12 @@ import {
   Monitor
 } from 'lucide-react';
 import './UserProfile.css';
+import ChangePasswordModal from './ChangePasswordModal';
+import { useGroups } from '../../Contexts/GroupContext';
+import toast from 'react-hot-toast';
 
 const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout }) => {
+  const {checkPassword, changePassword} = useGroups();
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
     nickname: user?.nickname || '',
@@ -25,6 +29,10 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(profileImage);
   const fileInputRef = useRef(null);
+
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  
 
   // 모달이 열릴 때 사용자 데이터로 초기화
   useEffect(() => {
@@ -86,6 +94,26 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
     if (window.confirm('정말 로그아웃하시겠습니까?')) {
       onLogout();
       onClose();
+    }
+  };
+
+  const handleChangePassword = () => {
+    //비번 변경 모달띄우기...
+    if(user?.provider === 'local')
+      setIsPasswordModalOpen(true);
+    else
+      toast.error(`local만 비밀번호 변경이 가능합니다.`);
+  };
+
+  const handlePasswordSave = async (passwordData) => {
+    console.log('Changing password:', passwordData);
+    // 실제 비밀번호 변경 API 호출
+    const ret = await checkPassword(passwordData.currentPassword);
+    if(ret.success)
+    {
+      const ret2 = await changePassword(passwordData.newPassword);
+      if(ret2.success)
+        toast.success(`비밀번호 변경 성공!`);
     }
   };
 
@@ -174,7 +202,7 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
               </div>
 
               {/* 자기소개 */}
-              <div className="form-group">
+              {/* <div className="form-group">
                 <label htmlFor="bio">자기소개</label>
                 <textarea
                   id="bio"
@@ -184,7 +212,7 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
                   placeholder="간단한 자기소개를 작성해주세요"
                   rows={3}
                 />
-              </div>
+              </div> */}
             </div>
           )}
 
@@ -218,7 +246,7 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
               {/* 비밀번호 변경 */}
               <div className="form-group">
                 <label>비밀번호</label>
-                <button className="secondary-btn">
+                <button className="secondary-btn" onClick={handleChangePassword}>
                   <Lock size={16} />
                   비밀번호 변경
                 </button>
@@ -309,16 +337,23 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
               로그아웃
             </button>
           </div>
+          {activeTab === 'profile' && 
           <div className="footer-right">
-            <button className="cancel-btn" onClick={onClose}>
-              취소
-            </button>
             <button className="save-btn" onClick={handleSave}>
               <Save size={16} />
               저장
             </button>
-          </div>
+            <button className="cancel-btn" onClick={onClose}>
+              취소
+            </button>
+          </div>}
         </div>
+        {/* <ChangePasswordModal/> */}
+        <ChangePasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => setIsPasswordModalOpen(false)}
+          onSave={handlePasswordSave}
+        />
       </div>
     </div>
   );

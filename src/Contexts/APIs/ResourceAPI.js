@@ -45,8 +45,8 @@ export function getResourceAPI() {
      * 사용자 고유 ID
      * 둘다 쿠키에 있음
      * @returns {Promise<{ nickname: string, profileImageUrl: string }>}
-     */
-    get_user: async () => {
+     */ 
+    get_user: async () => { 
       try{
         const response = await fetch(`${baseUrl}/api/user`, {
           method: 'GET',
@@ -67,6 +67,57 @@ export function getResourceAPI() {
         });
         if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
         return response; // nickname 은 json이고, profileImageUrl은 blob임...
+      } catch(err) {
+        throw err;
+      }
+    },
+    // region 비밀번호 체크 
+    check_password: async (password) => {
+      try{
+        const response = await fetch(`${baseUrl}/api/user/check-password`, {
+          method: 'POST',
+          credentials:'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({password}),
+        });
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        // returns { success }
+        const data = await response.json();
+        return data;
+      } catch(err) {
+        throw err;
+      }
+    },
+    // region 비밀번호 변경
+    change_password: async (password) => {
+      try{
+        const response = await fetch(`${baseUrl}/api/user/change-password`, {
+          method: 'POST',
+          credentials:'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({password}),
+        });
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        // returns { success }
+        const data = await response.json();
+        return data;
+      } catch(err) {
+        throw err;
+      }
+    },
+    //region 사용자 닉네임 변경
+    change_nickname: async (name) => {
+      try{
+        const response = await fetch(`${baseUrl}/api/user/change-name`, {
+          method: 'POST',
+          credentials:'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({name}),
+        });
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        // returns { success, message }
+        const data = await response.json();
+        return data;
       } catch(err) {
         throw err;
       }
@@ -118,7 +169,7 @@ export function getResourceAPI() {
      * @returns {Promise<{groupData: {notes: {note_id: number;title: string;}[];links: {src_note_id: number;dst_note_id: string;}[];}}>}
      */
     getGroupNotes: async (group_id) => {
-      try{
+      try{ 
         const response = await fetch(`${baseUrl}/api/notes?group_id=` + group_id, { 
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -233,6 +284,25 @@ export function getResourceAPI() {
         throw err;
       }
     },
+    //region 멤버 목록 불러오기
+    getMemberList: async (group_id)=>{
+      // groupmember
+      try{
+        const response = await fetch(`${baseUrl}/api/groupmember`, {
+          method: 'POST',
+          headers: { 'Content-Type' : 'application/json'},
+          credentials:'include', 
+          body: JSON.stringify({group_id})
+        });
+
+        if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+
+        const data = await response.json();
+        return data.data;
+      } catch(err) {
+        throw err;
+      }
+    },
     // region 멤버 초대
     inviteMember: async(recipient, group_id, permission) => {
       try{
@@ -245,7 +315,8 @@ export function getResourceAPI() {
 
         if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
 
-        return response.json();
+        const data = await response.json();
+        return data;
       } catch(err) {
         throw err;
       }
@@ -263,7 +334,9 @@ export function getResourceAPI() {
         });
 
         if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        return response.json();
+
+        const data = await response.json();
+        return data;
       } catch(err) {
         throw err;
       }
@@ -280,11 +353,14 @@ export function getResourceAPI() {
           body: JSON.stringify({ group_id, recipient, permission})
         });
         if(!response.success) throw Error(response.status, ':Failed to permissionUpdate');
-        return response.json();
+
+        const data = await response.json();
+        return data;  
       } catch(err) {
         throw err;
       }
     },
+    // region 프사업로드
     uploadProfile: async (file) =>{
       try{
         if(!file) {

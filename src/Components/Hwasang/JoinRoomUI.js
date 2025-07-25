@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import "./HomeScreen.css";
 import memoriaLogo from './memoria.png';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
+// import Brightness4Icon from '@mui/icons-material/Brightness4';
+// import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import HomeIcon from '@mui/icons-material/Home';
 import VideocamIcon from '@mui/icons-material/Videocam';
@@ -64,16 +64,6 @@ export default function HomeScreen({
             </li>
           ))}
         </ul>
-        <div className="sidebar-footer">
-          <button
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            title="테마 전환"
-          >
-            {theme === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-            <span>{theme === 'dark' ? '라이트 모드' : '다크 모드'}</span>
-          </button>
-        </div>
       </nav>
 
       <main className="main-content">

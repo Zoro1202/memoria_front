@@ -147,22 +147,19 @@ export async function generateSummaryWithKeywords(content, selectedKeywords, sig
  * @param {AbortSignal} signal - 요청 중단을 위한 AbortSignal
  * @returns {Promise<string>} AI가 생성한 키워드 분석 마크다운 내용
  */
-export async function analyzeKeywordInContext(original_text, keyword, language, speakers, signal) {
+export async function analyzeKeywordInContext(original_text, keyword, language, speakers, signal, sourceNoteTitle) {
     try {
         const response = await fetch(`${SERVER_URL}/gemini/analyze-keyword`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ original_text, keyword, language, speakers }),
-            signal: signal
+            body: JSON.stringify({ original_text, keyword, language, speakers, source_note_title: sourceNoteTitle }),
+            signal
         });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || '키워드 분석 실패');
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
         const data = await response.json();
-        return data.keyword_content; // 마크다운 텍스트 반환
+        return data.keyword_content;
     } catch (error) {
-        console.error(`❌ 키워드 '${keyword}' 분석 오류:`, error);
+        console.error('Error analyzing keyword:', error);
         throw error;
     }
-}
+};

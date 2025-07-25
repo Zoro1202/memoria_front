@@ -252,6 +252,23 @@
 .save-btn:hover {
     background: #1d4ed8;
 }
+.delete-btn {
+    display: grid;
+    align-items: left;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #ff0000;
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.delete-btn:hover {
+    background: #ff0000;
+}
 
 /* 스크롤바 스타일링 (콘텐츠 영역) */
 .modal-content {
@@ -275,4 +292,33 @@
 
 .modal-content::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
+}
+
+.permission-select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    appearance: none; /* 기본 브라우저 스타일 제거 */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13%205.7L146.2%20202.7%2018.8%2075.1a17.6%2017.6%200%200%200-25.2%2024.7l130.5%20127.9c6.8%206.7%2017.7%206.7%2024.5%200l130.5-127.9a17.6%2017.6%200%200%200-12.9-30.6z%22%2F%3E%3C%2Fsvg%3E'); /* 사용자 정의 화살표 아이콘 */
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+    min-width: 90px; /* 최소 너비 설정 */
+    margin-right: 10px; /* 추방 버튼과의 간격 */
+}
+
+.permission-select:focus {
+    outline: none;
+    border-color: #007bff; /* 포커스 시 색상 변경 */
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.permission-select option {
+    font-weight: normal;
 }

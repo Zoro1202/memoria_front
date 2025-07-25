@@ -12,6 +12,7 @@ import NoteSearchModal from './util/NoteSearchModal';
 import UserWindowModal from '../UserProfile/UserProfile';
 import './Sidebar.css';
 import { useTabs } from '../../Contexts/TabsContext';
+import NoteList from './util/NoteList';
 
 export default function SidebarLayout() {
   // const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function SidebarLayout() {
 
   const tabs = [
     { id: 'groups', label: '그룹', icon: Group },
+    // { id: 'search', label: '검색', icon: Search },
     { id: 'notes', label: '노트', icon: File }
   ];
 
@@ -42,7 +44,10 @@ export default function SidebarLayout() {
     profileImage,
     fetchUser,
     fetchProfileImage,
-    logout
+    logout,
+    selectedGroupId,
+    changeProfileImage, 
+    changeNickname,
   } = useGroups();
   
   const { notes, loadNotes_lagacy } = useNotes();
@@ -65,7 +70,7 @@ export default function SidebarLayout() {
         }
         
         fetchUser();
-        fetchProfileImage();
+        fetchProfileImage(); 
         
         // 컴포넌트가 마운트된 상태에서만 interval 설정
         if (isMounted) {
@@ -133,9 +138,15 @@ export default function SidebarLayout() {
   const handleUserProfileClick = () => {
     setIsUserModalOpen(true);
   };
-  const handleUserSave = (userData) => {
+  const handleUserSave = async (userData) => {
     console.log('Saving user data:', userData);
     // 저장 로직 구현
+    //profileImage
+    //formData.nickname
+    if(userData?.profileImage)
+      await changeProfileImage(userData.profileImage);
+    if(userData?.nickname)
+      await changeNickname(userData.nickname);
     // API 호출 등...
     setIsUserModalOpen(false);
   };
@@ -207,8 +218,24 @@ export default function SidebarLayout() {
                 loadNotes_lagacy(group.group_id); //이거 바꿔야함!!!
               }} />
             )}
+            {/* {activeTab === 'search' && (
+              <NoteSearchModal
+                // 탭 내에서 렌더링되므로 isOpen은 항상 true
+                isOpen={true}
+                // 탭 내에서는 모달을 닫을 필요가 없으므로 onClose는 빈 함수
+                onClose={() => {}}
+                notes={notes} // 실제 노트 데이터로 교체
+                onNoteSelect={handleNoteSelect}
+                // NoteSearchModal 내부에서 닫기 버튼이 보이지 않도록 prop 추가 (선택 사항)
+                hideCloseButton={true}
+              />
+            )} */}
             {activeTab === 'notes' && (
-              <p>notes List</p>
+              <NoteList
+              onNoteSelect={(note)=>{
+                      openTab({ title: note.title, type: 'note', noteId: note.title });
+                    }}
+              />
             )}
           </div>
 

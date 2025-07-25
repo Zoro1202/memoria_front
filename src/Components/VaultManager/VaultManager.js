@@ -1,5 +1,5 @@
 // vaultmanager.js - 김형우, 이상영
-import React, { useState, forwardRef, useImperativeHandle, useCallback } from "react";
+import React, { useState, useMemo, forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
 import './VaultManager.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import Note from '../Note/Note';
@@ -20,8 +20,6 @@ const VaultManager = forwardRef((props, ref) => {
   const {tabs, setTabs, activeTabId, setActiveTabId, openTab} = useTabs();
   const {selectedGroupId} = useGroups();
 
-
-  // const resourceAPI = useMemo(() => getResourceAPI(), []);
 
   // DOM 렌더링 시에 사용자 정보를 API로부터 가져와야 함. (로그인 화면에서 리다이렉트->쿠키에 엑세스 토큰 있어야 함.)
   // useEffect(() => { // 이거 Sidebar에서 하고있고 context로 바로 넘기고있어서 할필요 없음!!!
@@ -54,7 +52,6 @@ const VaultManager = forwardRef((props, ref) => {
     openTab({ title: newId, type: "note", noteId: newId });
     setError('');
     return newId;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs, notes, setNotes, openTab]); // 의존성 배열에 notes, setNotes, openTab 추가
 
   const addGraphTab = useCallback(() => {
@@ -69,7 +66,6 @@ const VaultManager = forwardRef((props, ref) => {
     // setTabs(prevTabs => [...prevTabs, newTab]);
     // setActiveTabId(newId);
     setError('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs, setTabs, setActiveTabId]); // 의존성 배열에 setTabs, setActiveTabId 추가
 
   useImperativeHandle(ref, () => ({

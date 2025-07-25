@@ -11,20 +11,26 @@ export function useNotes() {
 }
 
 export function NotesProvider({ children }) {
+  // region 백엔드 REST API
   const resourceAPI = getResourceAPI();
+
+// region -------------------------------------------------------------------------------
+
+
+  // region note 관련 state
   const [notes, setNotes] = useState({});
   const [activeNoteContent, setActiveNoteContent] = useState('');
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentGroupId, setCurrentGroupId] = useState(null);
   const [currentNoteId, setCurrentNoteId] = useState(null);
+  const [currentGroupId, setCurrentGroupId] = useState(null);
   
-  // Socket.IO 및 ShareDB 관련
+  // region Socket.IO 및 ShareDB 관련
   const socketRef = useRef(null);
   const connectionRef = useRef(null);
   const docRef = useRef(null);
 
-  // Socket 연결 함수
+  // region Socket Connect
   const connectSocket = useCallback(() => {
     if (socketRef.current && socketRef.current.connected) {
       console.log('소켓은 이미 연결되어 있습니다!');
@@ -52,7 +58,7 @@ export function NotesProvider({ children }) {
     socketRef.current.on('connect', () => console.log('Socket 연결됨'));
     socketRef.current.on('disconnect', (reason) => console.log('Socket 연결 해제:', reason));
   }, []);
-
+  // region Socket Listen
   const registerSocketListeners = useCallback(() => {
     if (!socketRef.current || !connectionRef.current) {
       console.error('ShareDB connection이 아직 생성되지 않음!');
@@ -123,7 +129,7 @@ export function NotesProvider({ children }) {
     });
 
   }, [currentNoteId]);
-
+  // region Socket Disconnect
   const disconnectSocket = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.disconnect();
@@ -134,23 +140,36 @@ export function NotesProvider({ children }) {
       console.log('소켓 연결 해제됨');
     }
   }, []);
-  
+// region -------------------------------------------------------------------------------
+  // region 노트/링크 로드
   const loadNotes = useCallback(async (groupId) => {
     if (!groupId) return;
-    setLoading(true);
+    setLoading(true); 
     try {
       const response = await resourceAPI.getGroupNotes(groupId);
       if (response && response.titles) {
         const notesObject = {};
         const noteIdToTitleMap = {};
-        response.titles.forEach(note => {
-          notesObject[note.title] = { 
-            content: '', 
-            note_id: note.note_id, 
-            title: note.title 
-          };
+        const getNoteContentForLoad = async (note_id, group_id) => {
+            try {
+                const response = await resourceAPI.getNoteContent(note_id, group_id);
+                return response && typeof response.content === 'string' ? response.content : '';
+            } catch (err) {
+                console.error(`노트 내용 조회 실패 (note_id: ${note_id}):`, err);
+                return '';
+            }
+        };
+
+        const contentPromises = response.titles.map(note => 
+          getNoteContentForLoad(note.note_id, groupId).then(content => ({ note, content }))
+        );
+        const noteContents = await Promise.all(contentPromises);
+        
+        noteContents.forEach(({ note, content }) => {
+          notesObject[note.title] = { content: content || '', note_id: note.note_id, title: note.title };
           noteIdToTitleMap[note.note_id] = note.title;
         });
+        
         setNotes(notesObject);
         setCurrentGroupId(groupId);
         
@@ -158,12 +177,13 @@ export function NotesProvider({ children }) {
           const linksFormatted = response.links.map(link => {
             const sourceTitle = noteIdToTitleMap[link.src_note_id];
             const targetTitle = link.dst_title;
-            return (sourceTitle && targetTitle) ? { source: sourceTitle, target: targetTitle } : null;
+            return sourceTitle && targetTitle ? { source: sourceTitle, target: targetTitle } : null;
           }).filter(Boolean);
           setLinks(linksFormatted);
         } else {
           setLinks([]);
         }
+        
         toast.success(`노트 ${response.titles.length}개 로드됨`);
         return response;
       } else {
@@ -179,7 +199,8 @@ export function NotesProvider({ children }) {
       setLoading(false);
     }
   }, [resourceAPI]);
-  
+
+  // region upsert note
   const upsertNote = useCallback(async (group_id, title, content, note_id = null, oldTitle = null) => {
     const noteIdToUpsert = (note_id === -2 || !note_id ) ? -2 : note_id;
     try {
@@ -226,16 +247,17 @@ export function NotesProvider({ children }) {
     }
   }, [resourceAPI, loadNotes]);
 
+  // region Link 추출? 백엔드에서 함.
   function extractDstLinks(content) {
-  const regex = /\[\[(.*?)\]\]/g;
-  const matches = [];
-  let match;
-  while ((match = regex.exec(content)) !== null) {
-    matches.push(match[1]);
+    const regex = /\[\[(.*?)\]\]/g;
+    const matches = [];
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      matches.push(match[1]);
+    }
+    return matches;
   }
-  return matches;
-}
-
+  // region 노트 내용 가져오기2?
   const getNoteContent = useCallback(async (noteId, groupId) => {
     if (!noteId || !groupId) return;
     try {
@@ -258,37 +280,37 @@ export function NotesProvider({ children }) {
     }
   }, [resourceAPI]);
 
-
-const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newContent) => {
+  // region 이건 뭐하는 함수지
+  const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newContent) => {
     try {
-        // notes state에서 기존 노트 정보를 찾습니다.
-        const existingNote = Object.values(notes).find(note => note.title === keyword);
+      // notes state에서 기존 노트 정보를 찾습니다.
+      const existingNote = Object.values(notes).find(note => note.title === keyword);
+      
+      if (existingNote && existingNote.note_id) {
+        // 노트가 이미 존재하면, 전체 내용을 서버에서 다시 가져옵니다.
+        const fullNote = await resourceAPI.getNoteContent(existingNote.note_id, groupId);
+        const oldContent = fullNote.content || '';
+        const combinedContent = `${oldContent}\n\n---\n\n${newContent}`;
         
-        if (existingNote && existingNote.note_id) {
-            // 노트가 이미 존재하면, 전체 내용을 서버에서 다시 가져옵니다.
-            const fullNote = await resourceAPI.getNoteContent(existingNote.note_id, groupId);
-            const oldContent = fullNote.content || '';
-            const combinedContent = `${oldContent}\n\n---\n\n${newContent}`;
-            
-            // 합쳐진 내용으로 서버에 업데이트 요청을 보냅니다.
-            const upsertResponse = await upsertNote(groupId, keyword, combinedContent, existingNote.note_id, keyword);
-            
-            // ✨ UI 업데이트를 위해 최종 ID와 '합쳐진 전체 내용'을 반환합니다.
-            return { noteId: upsertResponse.noteId, content: combinedContent };
+        // 합쳐진 내용으로 서버에 업데이트 요청을 보냅니다.
+        const upsertResponse = await upsertNote(groupId, keyword, combinedContent, existingNote.note_id, keyword);
+        
+        // ✨ UI 업데이트를 위해 최종 ID와 '합쳐진 전체 내용'을 반환합니다.
+        return { noteId: upsertResponse.noteId, content: combinedContent };
 
-        } else {
-            // 노트가 없으면, 새로 생성 요청을 보냅니다.
-            const upsertResponse = await upsertNote(groupId, keyword, newContent, null, null);
-            
-            // ✨ UI 업데이트를 위해 새 ID와 '초기 내용'을 반환합니다.
-            return { noteId: upsertResponse.noteId, content: newContent };
-        }
+      } else {
+        // 노트가 없으면, 새로 생성 요청을 보냅니다.
+        const upsertResponse = await upsertNote(groupId, keyword, newContent, null, null);
+        
+        // ✨ UI 업데이트를 위해 새 ID와 '초기 내용'을 반환합니다.
+        return { noteId: upsertResponse.noteId, content: newContent };
+      }
     } catch (error) {
-        console.error(`'${keyword}' 노트 처리 실패:`, error);
-        throw error;
+      console.error(`'${keyword}' 노트 처리 실패:`, error);
+      throw error;
     }
-}, [notes, resourceAPI, upsertNote, getNoteContent]); // 의존성 배열에 getNoteContent 추가
-  
+  }, [notes, resourceAPI, upsertNote, getNoteContent]); // 의존성 배열에 getNoteContent 추가
+  // region 노트 삭제
   const deleteNote = useCallback(async (noteId, groupId) => {
     try {
       await resourceAPI.deleteNote(noteId, groupId);
@@ -300,7 +322,7 @@ const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newConten
       // throw error;
     }
   }, [resourceAPI, loadNotes]);
-
+  // region local에서 노트 생성
   const createNoteFromTitle = useCallback((title) => {
     if (notes[title]) {
       return;
@@ -316,7 +338,7 @@ const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newConten
     }));
     toast.success(`"${title}" 노트가 생성되었습니다. 저장(Ctrl+S)하여 서버에 등록하세요.`);
   }, [notes]);
-
+  // region 노트 내용 가져오기
   const legacy_getNoteContent = async (note_id, group_id) => {
     try {
       const response = await resourceAPI.getNoteContent(note_id, group_id);
@@ -327,7 +349,7 @@ const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newConten
       return '';
     }
   };
-
+  // region 전체노트 가져오기
   const loadNotes_lagacy = useCallback(async (groupId) => {
     if (!groupId) return;
     setLoading(true);
@@ -367,7 +389,7 @@ const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newConten
       setLoading(false);
     }
   }, [resourceAPI]);
-
+  // region GraphData 만들기(Graph에 꼭 필요함)
   const graphData = useMemo(() => {
     if (!notes || Object.keys(notes).length === 0) return { nodes: [], links: [] };
     const realNodes = Object.keys(notes).map(id => ({ id, inactive: false }));
@@ -378,12 +400,12 @@ const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newConten
       .map(id => ({ id, inactive: true }));
     return { nodes: [...realNodes, ...missingNodes], links: safeLinks };
   }, [notes, links]);
-
+  // region Socket 관련 UseEffect
   useEffect(() => {
     connectSocket();
     return () => disconnectSocket();
   }, [connectSocket, disconnectSocket]);
-
+  //  region export우
   const value = {
     notes, setNotes,
     links, setLinks,
@@ -398,7 +420,7 @@ const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newConten
     deleteNote,
     createOrAppendKeywordNote,
     createNoteFromTitle,
-    loadNotes_lagacy, // [수정됨] 이 함수를 외부에서 사용할 수 있도록 추가
+    loadNotes_lagacy,
     socketRef, docRef
   };
 

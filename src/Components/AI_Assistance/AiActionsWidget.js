@@ -12,7 +12,7 @@ import {
     translateText,
     chatWithAI,
     generateTitleFromContent
-} from '../Note/note_summary';
+} from '../Note/note_AIassist';
 import ReactMarkdown from 'react-markdown';
 
 // 아이콘 컴포넌트
@@ -20,6 +20,33 @@ const ActionIcon = ({ path }) => ( <svg width="18" height="18" viewBox="0 0 24 2
 const MinimizeIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path></svg> );
 const RefreshIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> );
 const HistoryIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>);
+
+// 날짜/시간 관련 헬퍼 함수
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''; 
+  const date = new Date(timestamp);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+const formatDate = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year}년 ${month}월 ${day}일`;
+};
+const isSameDay = (ts1, ts2) => {
+    if (!ts1 || !ts2) return false;
+    const date1 = new Date(ts1);
+    const date2 = new Date(ts2);
+    return (
+        date1.getFullYear() === date2.getFullYear() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getDate() === date2.getDate()
+    );
+};
 
 const LANGUAGES = [
   { code: 'Korean', name: '한국어' }, { code: 'English', name: '영어' },
@@ -48,7 +75,7 @@ const saveChatHistoryToStorage = (noteId, groupId, title, history) => {
 };
 
 export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
-  const { notes, setNotes, setLinks, upsertNote, links, createOrAppendKeywordNote, loading: notesLoading } = useNotes();
+  const { notes, setNotes, setLinks, upsertNote, links, createOrAppendKeywordNote, loading: notesLoading, loadNotes } = useNotes();
   const { activeTabId, noteIdFromTab, openTab, updateTitle } = useTabs();
   const { selectedGroupId, setSelectedGroupId, groups } = useGroups();
   
@@ -66,7 +93,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const [suggestedTitles, setSuggestedTitles] = useState([]);
   const [previewPage, setPreviewPage] = useState(0);
   const [isRegeneratingKeywords, setIsRegeneratingKeywords] = useState(false);
-  const [pendingTabOpen, setPendingTabOpen] = useState(null);
+  const [forceChatViewForNote, setForceChatViewForNote] = useState(null);
 
   const abortControllerRef = useRef(null);
   const currentLoadingToastId = useRef(null); 
@@ -84,27 +111,21 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
       
       setWasChatCleared(false);
       
-      const nextView = localStorage.getItem('nextAiView');
-      if (nextView) {
-        setView(nextView);
-        localStorage.removeItem('nextAiView');
-      } else {
+      if (forceChatViewForNote === currentNoteId) {
+        setView('chat');
+        setForceChatViewForNote(null); // 히스토리에서 특정 채팅으로 점프할 때만 'chat' 뷰
+      } 
+      else {
+        // 그 외 모든 경우(위젯을 닫았다 다시 켜는 경우 포함)에는 무조건 'initial' 뷰로 시작
         setView('initial');
       }
+
     } else if (!notesLoading) {
       setCurrentNoteContent('');
       setChatHistory([]);
       setView('initial');
     }
-  }, [currentNoteId, notes, notesLoading]);
-
-  useEffect(() => {
-    if (pendingTabOpen && !notesLoading && notes && notes[pendingTabOpen.noteId]) {
-      openTab({ title: pendingTabOpen.noteId, type: 'note', noteId: pendingTabOpen.noteId });
-      toast.success("노트를 불러왔습니다.");
-      setPendingTabOpen(null);
-    }
-  }, [pendingTabOpen, notes, notesLoading, openTab]);
+  }, [currentNoteId, notes, notesLoading, forceChatViewForNote]);
   
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -136,18 +157,17 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     setPreviewPage(0);
     setIsRegeneratingKeywords(false);
 
-    const hasChatHistory = Array.isArray(chatHistory) && chatHistory.length > 0;
-
-    if (view === 'chat') {
-      setView('initial');
-    } else {
-      const baseView = (hasChatHistory && !wasChatCleared) ? 'chat' : 'initial';
-      setView(baseView);
-    }
+    setView('initial');
   };
 
   const handleMinimizeClick = () => onMinimize();
-  const handleCloseClick = () => onClose();
+
+  // ▼▼▼ 수정된 부분 ▼▼▼
+  const handleCloseClick = () => {
+    handleGoBack(); // 모든 상태를 초기화하는 함수를 먼저 호출
+    onClose();      // 그 다음에 위젯을 닫습니다.
+  };
+  // ▲▲▲ 여기까지 ▲▲▲
 
   const handleChatSubmit = async (e) => {
     if (e.key === 'Enter' && !e.shiftKey && chatInput.trim() !== '' && !isLoading) {
@@ -158,7 +178,12 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
         setWasChatCleared(false);
         
         const currentHistory = Array.isArray(chatHistory) ? chatHistory : [];
-        const newHistoryWithUser = [...currentHistory, { type: 'user', text: question }];
+        
+        const newHistoryWithUser = [...currentHistory, { 
+            type: 'user', 
+            text: question,
+            timestamp: new Date().toISOString()
+        }];
         setChatHistory(newHistoryWithUser);
         
         setIsLoading(true);
@@ -172,7 +197,11 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
             
             setChatHistory(prev => {
                 const prevHistory = Array.isArray(prev) ? prev : [];
-                const newHistoryWithAI = [...prevHistory, { type: 'ai', text: answer }];
+                const newHistoryWithAI = [...prevHistory, { 
+                    type: 'ai', 
+                    text: answer,
+                    timestamp: new Date().toISOString()
+                }];
                 saveChatHistoryToStorage(currentNoteId, selectedGroupId, currentNoteId, newHistoryWithAI);
                 return newHistoryWithAI;
             });
@@ -198,15 +227,17 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   };
 
   const handleLoadHistory = (noteToLoadId, groupId) => {
-    localStorage.setItem('nextAiView', 'chat');
+    setForceChatViewForNote(noteToLoadId);
 
     if (String(groupId) === String(selectedGroupId)) {
       openTab({ title: noteToLoadId, type: 'note', noteId: noteToLoadId });
     } else {
       const groupName = groupNameMap[groupId] || `ID: ${groupId}`;
       toast(`'${groupName}' 그룹으로 이동합니다...`, { icon: '➡️' });
-      setPendingTabOpen({ noteId: noteToLoadId });
       setSelectedGroupId(groupId);
+      loadNotes(groupId).then(() => {
+        openTab({ title: noteToLoadId, type: 'note', noteId: noteToLoadId });
+      });
     }
   };
 
@@ -323,8 +354,9 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     try {
         const finalKeywords = Array.from(selectedKeywords);
         const summaryResult = await generateSummaryWithKeywords(currentNoteContent, finalKeywords, signal);
+        const sourceNoteTitle = notes[currentNoteId]?.title || currentNoteId;
         const keywordContentPromises = finalKeywords.map(keyword =>
-            analyzeKeywordInContext(currentNoteContent, keyword, 'Korean', null, signal)
+            analyzeKeywordInContext(currentNoteContent, keyword, 'Korean', null, signal, sourceNoteTitle)
         );
         const keywordContents = await Promise.all(keywordContentPromises);
         
@@ -693,11 +725,27 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
             {view === 'chat' && isValidChatHistory && (
               <div className="chat-history-wrapper fade-in">
                 {chatHistory.length > 0 ? (
-                  chatHistory.map((msg, index) => (
-                    <div key={index} className={`chat-message ${msg.type}`}>
-                      {msg.type === 'ai' ? <ReactMarkdown>{msg.text}</ReactMarkdown> : <p>{msg.text}</p>}
-                    </div>
-                  ))
+                  chatHistory.map((msg, index) => {
+                    const prevTimestamp = index > 0 ? chatHistory[index - 1].timestamp : null;
+                    const showDateSeparator = index === 0 || !isSameDay(msg.timestamp, prevTimestamp);
+
+                    return (
+                        <React.Fragment key={index}>
+                            {showDateSeparator && (
+                                <div className="chat-date-separator">
+                                    <span>{formatDate(msg.timestamp)}</span>
+                                </div>
+                            )}
+                            <div className={`chat-message-wrapper ${msg.type}`}>
+                                {msg.type === 'ai' && <span className="chat-message-time">{formatTime(msg.timestamp)}</span>}
+                                <div className={`chat-message ${msg.type}`}>
+                                    {msg.type === 'ai' ? <ReactMarkdown>{msg.text}</ReactMarkdown> : <p>{msg.text}</p>}
+                                </div>
+                                {msg.type === 'user' && <span className="chat-message-time">{formatTime(msg.timestamp)}</span>}
+                            </div>
+                        </React.Fragment>
+                    );
+                  })
                 ) : (
                   !isLoading && (
                     <div className="ai-greeting centered">
@@ -715,7 +763,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                 )}
               </div>
             )}
-
+            
             {view === 'history' && (
                 <div className="history-log-view fade-in">
                     {historyLogData && historyLogData.length > 0 ? (

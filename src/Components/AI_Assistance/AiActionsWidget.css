@@ -96,24 +96,15 @@
 
 /* 채팅 */
 .chat-history-wrapper {
-  display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
 }
-.chat-message {
-  padding: 10px 16px; border-radius: 20px; max-width: 80%;
-  word-wrap: break-word; line-height: 1.6; margin-bottom: 10px;
-  font-size: 14px; width: fit-content;
-}
-.chat-message p { margin: 0; white-space: pre-wrap; }
-.chat-message.user {
-  align-self: flex-end; background-color: #007AFF; color: white;
-  border-bottom-right-radius: 6px; text-align: right;
-}
-.chat-message.ai {
-  background-color: #37373D; color: #E3E3E3; align-self: flex-start;
-  border-bottom-left-radius: 6px;
-}
+
 .typing-effect.cleared-text {
-  color: #a0a0a0; font-size: 1rem; font-weight: normal;
+  color: #a0a0a0;
+  font-size: 1rem;
+  font-weight: normal;
   animation: typing 2s steps(21) forwards, blink-caret 0.75s step-end 3 forwards;
 }
 
@@ -153,9 +144,13 @@
 
 /* 하단 입력창 */
 .chat-input-container-bottom {
-  padding: 8px 12px; border-top: 1px solid #383838; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #383838;
   background-color: #191919;
 }
+
 .chat-input {
   width: 100%; background-color: #2a2b2f; border: 1px solid #444;
   border-radius: 8px; padding: 10px; color: #E0E0E0;
@@ -190,29 +185,23 @@
   transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 .keyword-chip:hover { background-color: #4a4a52; }
-
-/* [추가] AI 추천 키워드 스타일 (노란색 배경) */
 .keyword-chip.ai-recommended {
   background-color: #fffbe6; /* 매우 연한 노란색 */
   border-color: #ffe58f;
   color: #d46b08;
 }
-
 .keyword-chip.ai-recommended:hover {
   background-color: #fff1d6;
 }
-
 .keyword-chip.selected {
   background-color: #1890ff; /* 진한 파란색 */
   color: white;
   border-color: #1890ff;
   font-weight: 500;
 }
-
 .keyword-chip.ai-recommended.selected {
   box-shadow: 0 0 0 3px rgba(255, 229, 143, 0.8);
 }
-
 .keyword-chip.ai-recommended.selected:hover {
     background-color: #096dd9; /* 호버 시 약간 더 어두운 파란색 */
 }
@@ -229,7 +218,7 @@
 .confirm-button { background-color: #28a745; color: white; border-color: #28a745; }
 .confirm-button:disabled { background-color: #555; border-color: #555; color: #888; cursor: not-allowed; }
 
-/* --- ✅ [수정됨] 로딩 애니메이션 부분 (전체) --- */
+/* --- 로딩 애니메이션 및 타이핑 효과 --- */
 .loading-view-full {
     position: absolute;
     inset: 0;
@@ -269,21 +258,30 @@
 @keyframes move-right { 0%, 100% { transform: translateX(0); z-index: 1; } 50% { transform: translateX(70px); z-index: 0; } }
 @keyframes move-left { 0%, 100% { transform: translateX(0); z-index: 0; } 50% { transform: translateX(-70px); z-index: 1; } }
 .title-loader-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; color: #555; }
-.typing-effect { font-family: 'Courier New', Courier, monospace; font-size: 1.2rem; font-weight: bold; white-space: nowrap; overflow: hidden; border-right: 3px solid #777; animation: typing 2.5s steps(30, end) infinite, blink-caret 0.75s step-end infinite; }
+.typing-effect {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.1rem;
+  color: #c0c0c0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid #a0a0a0;
+  text-shadow: none;
+  animation: typing 2.2s steps(25) forwards, blink-caret 0.75s step-end 3 forwards;
+}
 @keyframes typing { from { width: 0 } to { width: 100% } }
-@keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #777; } }
+@keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #00ddff; } }
 
-/* [추가] 키워드 재추출 관련 스타일 */
+/* --- 키워드 재추출 관련 스타일 --- */
 .selection-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end; /* 버튼들을 오른쪽으로 정렬 */
+  justify-content: flex-end;
   gap: 10px;
   width: 100%;
 }
-
 .regenerate-keywords-button {
-  margin-right: auto; /* 이 버튼만 왼쪽으로 밀어냄 */
+  margin-right: auto;
   background: none;
   border: 1px solid #ddd;
   border-radius: 50%;
@@ -296,41 +294,26 @@
   color: #555;
   transition: background-color 0.2s, border-color 0.2s;
 }
-
 .regenerate-keywords-button:hover {
   background-color: #f0f0f0;
   border-color: #ccc;
 }
-
 .regenerate-keywords-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  animation: spin 1.5s linear infinite; /* 로딩 중일 때 회전 애니메이션 */
+  animation: spin 1.5s linear infinite;
 }
-
-.keyword-list.regenerating {
-  opacity: 0.5;
-  pointer-events: none; /* 로딩 중 키워드 클릭 방지 */
-  transition: opacity 0.3s ease-in-out;
-}
-
-/* 회전 애니메이션 키프레임 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-/* AiActionsWidget.css 파일 맨 아래에 추가 */
-
-/* --- 채팅 입력창 컨테이너 스타일 수정 --- */
-.chat-input-container-bottom {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-top: 1px solid #333;
+.keyword-list.regenerating {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
 }
 
-/* --- 히스토리 버튼 스타일 --- */
+/* --- 히스토리 버튼 및 뷰 스타일 --- */
 .history-button {
   background: none;
   border: none;
@@ -343,27 +326,22 @@
   justify-content: center;
   color: #999;
 }
-
 .history-button:hover {
   background-color: #3a3a3a;
   color: #fff;
 }
-
-/* --- 히스토리 로그 뷰 스타일 --- */
 .history-log-view {
   padding: 10px;
   height: 100%;
   display: flex;
   flex-direction: column;
 }
-
 .history-log-list {
   list-style: none;
   padding: 0;
   margin: 0;
   overflow-y: auto;
 }
-
 .history-log-item button {
   width: 100%;
   background: none;
@@ -375,11 +353,9 @@
   color: #ddd;
   transition: background-color 0.2s;
 }
-
 .history-log-item button:hover {
   background-color: #2a2a2a;
 }
-
 .history-log-title {
   display: block;
   font-size: 14px;
@@ -388,14 +364,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .history-log-noteId {
   display: block;
   font-size: 12px;
   color: #888;
   margin-top: 4px;
 }
-
 .history-log-empty {
   flex-grow: 1;
   display: flex;
@@ -405,7 +379,75 @@
   text-align: center;
   color: #888;
 }
-
 .history-log-empty p {
   margin: 4px 0;
+}
+
+/* ===================================== */
+/*   채팅 시간/날짜 표시를 위한 스타일   */
+/* ===================================== */
+
+.chat-message-wrapper {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  max-width: 90%;
+  gap: 8px;
+}
+.chat-message-wrapper.user {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.chat-message-wrapper.ai {
+  justify-content: flex-start;
+  margin-right: auto;
+}
+.chat-message {
+  padding: 10px 16px;
+  border-radius: 20px;
+  word-wrap: break-word;
+  line-height: 1.6;
+  font-size: 14px;
+  max-width: 100%;
+}
+.chat-message.user {
+  background-color: #007AFF;
+  color: white;
+  border-bottom-right-radius: 6px;
+}
+.chat-message.ai {
+  background-color: #37373D;
+  color: #E3E3E3;
+  border-bottom-left-radius: 6px;
+}
+.chat-message p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.chat-message-time {
+  font-size: 0.7rem;
+  color: #a0a0a0;
+  flex-shrink: 0;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+/* 날짜 구분선 스타일 */
+.chat-date-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0 16px 0;
+}
+.chat-date-separator::before,
+.chat-date-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #383838;
+}
+.chat-date-separator span {
+  padding: 0 10px;
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 500;
 }

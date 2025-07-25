@@ -23,6 +23,8 @@ export default function APITestPage() {
   const [t_delgroupid, setdelgroupid] = useState();
   const [t_inviteid, setInviteid] = useState();
   const [t_permission, setPermission] = useState();
+  const [t_password, setPassword] = useState();
+  const [t_changepassword, setChangePassword] = useState();
   // region 토큰 인증
   const tokenInfo = async() => {
     try{
@@ -241,9 +243,42 @@ export default function APITestPage() {
       logTestResult(`프사 업로드 실패: ${err.message}`, false);
     }
   }
+  // region 비번 쳌
+  async function checkPassword(pw){
+    try {
+      const res = await resourceAPI.check_password(pw);
+      // t_password, setPassword
+      if(res.success)
+        logTestResult(`비밀번호 체크 성공!`);
+    } catch(err){
+      console.error(`비밀번호 체크에 실패했습니다.`, err);
+      logTestResult(`비밀번호 체크 실패:${err}`, false);
+    }
+  }
+  // region 비밀번호 변경
+  async function changePassword (password){
+    try{
+      const res = await resourceAPI.change_password(password);
+      // t_changepassword, setChangePassword
+      if(res.success)
+        logTestResult(`비밀번호 변경 성공!`);
+    }catch(err){
+      console.error(`비밀벊 변경에 실패했습니다.`, err);
+      logTestResult(`비밀벊 변경에 실패했습니다:${err}`, false);
+    }
+  }
   //DOM
   return (
-    <div className="apitestpage">
+    <div className="apitestpage"
+    style={{
+      height: '400px',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      padding: '16px',
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      flex: '1',
+    }} >
       {/* <Toaster> */}
         <h1>API Test Page</h1>
         
@@ -388,7 +423,23 @@ export default function APITestPage() {
         <p>UpdateProfileImage</p>
         <input type="file" id="profile-image-input" accept="image/png, image/jpeg, image/webp" />
         <button onClick={()=>{uploadProfile()}}>업로드</button>
-
+        
+        <p>CheckPassword</p>
+        <input
+          type='string'
+          value={t_password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder='Enter recipient ID'
+          />
+        <button onClick={()=>{checkPassword(t_password)}}>Check</button>
+        <p>ChangePassword</p>
+        <input
+          type='string'
+          value={t_changepassword}
+          onChange={(e) => setChangePassword(e.target.value)}
+          placeholder='Enter recipient ID'
+          />
+        <button onClick={()=>{changePassword(t_changepassword)}}>Update</button>
         <div id="test-results"></div>
       {/* </Toaster> */}
     </div>
