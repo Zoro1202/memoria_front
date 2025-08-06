@@ -12,24 +12,62 @@ function FullMeetingRecorder({ roomId }) {
 
   const startRecording = async () => {
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true,
-      });
-      const micStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      const mixedStream = new MediaStream([
+      // 1. 화면 공유(화면/창/탭+오디오(시스템 사운드)) 스트림 요청
+      let screenStream;
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true,
+        });
+      } catch (err) {
+        // 사용자가 화면공유를 아예 취소하면 이 쪽으로
+        if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+          alert("화면 공유를 선택하거나 권한을 허용해야 녹화가 시작됩니다.");
+        } else {
+          alert("화면 공유 시작 중 오류가 발생했습니다: " + err.message);
+        }
+        setIsRecording(false);
+        return;
+      }
+
+      // 2. 마이크 스트림 시도 (없어도 무조건 녹화 진행)
+      let micStream = null;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        // 마이크 없으면 경고만, 녹화는 계속 진행
+        console.warn("마이크 없음 또는 권한 거부, 마이크 소리 없이 녹화 진행.", err);
+      }
+
+      // 3. 모든 트랙 합치기
+      const tracks = [
         ...screenStream.getVideoTracks(),
-        ...screenStream.getAudioTracks(),
-        ...micStream.getAudioTracks(),
-      ]);
+        ...screenStream.getAudioTracks()
+      ];
+      if (micStream) {
+        tracks.push(...micStream.getAudioTracks());
+      }
+      const mixedStream = new MediaStream(tracks);
       mixedStreamRef.current = mixedStream;
 
-      const mediaRecorder = new MediaRecorder(mixedStream, {
-        mimeType: "video/webm;codecs=vp9,opus",
-        bitsPerSecond: 2500000,
-      });
+      // 4. MediaRecorder 지원 포맷 찾기
+      const mimeTypes = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm"
+      ];
+      let mediaRecorder = null;
+      for (let type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mediaRecorder = new MediaRecorder(mixedStream, { mimeType: type, bitsPerSecond: 2500000 });
+          break;
+        }
+      }
+      if (!mediaRecorder) {
+        alert("이 브라우저에서 지원하는 녹화 포맷이 없습니다.");
+        setIsRecording(false);
+        return;
+      }
 
       mediaRecorderRef.current = mediaRecorder;
       recordedChunksRef.current = [];
@@ -48,8 +86,18 @@ function FullMeetingRecorder({ roomId }) {
 
       mediaRecorder.start(1000);
       setIsRecording(true);
+
+      // UI 안내(선택)
+      if (!micStream) {
+        alert("마이크 소리가 없는 화면 녹화가 시작되었습니다.\n(화면/탭/창 사운드만 녹음됩니다)");
+      }
     } catch (error) {
       console.error("녹화 시작 실패:", error);
+      if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        alert("화면 공유를 선택하거나 권한을 허용해야 녹화가 시작됩니다.");
+      } else {
+        alert("녹화 시작 중 오류가 발생했습니다: " + error.message);
+      }
       setIsRecording(false);
     }
   };
@@ -65,7 +113,6 @@ function FullMeetingRecorder({ roomId }) {
   const uploadRecording = async (blob) => {
     try {
       const formData = new FormData();
-      console.log("roomid", roomId);
       formData.append("video", blob, `recording_${Date.now()}.webm`);
       formData.append("roomId", roomId);
       const response = await fetch("https://hwasang.memoriatest.kro.kr/api/upload-recording", {

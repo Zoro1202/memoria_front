@@ -93,7 +93,7 @@ const GroupList = ({ onGroupSelect }) => {
                                 key={g.group_id}
                             >
                                 {g.name}
-                            </button>
+                            </button> 
                             <button
                                 className={`group-item-del ${selectedGroupId === g.group_id ? 'selected' : ''}`}
                                 onClick={(e) => {
@@ -102,7 +102,7 @@ const GroupList = ({ onGroupSelect }) => {
                                     setIsGroupModalOpen(true);
                                 }}
                             >
-                                <EllipsisVertical size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                                <EllipsisVertical size={14} style={{ marginBottom: 2, verticalAlign: 'middle' }} />
                             </button>
                         </div>
                     ))}

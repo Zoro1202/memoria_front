@@ -1,6 +1,6 @@
 // sidebar.js
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Network, Search, FileVideo2Icon, VideoOff, Group, File } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Network, Search, FileVideo2Icon, VideoOff, Group, File, Apple } from 'lucide-react';
 import VaultManager from '../../Components/VaultManager/VaultManager';
 // import { useMousePosition } from './util/useMousePosition'; // 마우스 위치 검사 훅
 import GroupList from './util/GroupList';
@@ -13,6 +13,9 @@ import UserWindowModal from '../UserProfile/UserProfile';
 import './Sidebar.css';
 import { useTabs } from '../../Contexts/TabsContext';
 import NoteList from './util/NoteList';
+import introJs from 'intro.js';
+import 'intro.js/introjs.css';
+import MeetingPage from '../OfflineMeeting/Meeting';
 
 export default function SidebarLayout() {
   // const navigate = useNavigate();
@@ -31,7 +34,9 @@ export default function SidebarLayout() {
   //모달 온오프
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  
+  const [isOfflineMeetingOpen, setIsOfflineMeetingOpen] = useState(false);
+
+
   const vaultRef = useRef(null);
   // const mousePosition = useMousePosition(); // 마우스 위치 추적
   
@@ -102,6 +107,19 @@ export default function SidebarLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    // ✅ 브라우저에 tutorialShown이 없으면 실행
+    const hasSeenTutorial = localStorage.getItem('tutorialShown')
+    if (!hasSeenTutorial) {
+      runIntro()
+      localStorage.setItem('tutorialShown', 'true')
+    }
+  }, [])
+
+  // ✅ ? 버튼 클릭 시 실행
+  const handleHelpClick = () => {
+    runIntro()
+  }
 
   // 마우스가 왼쪽 영역에 있는지 확인
   // const isMouseOnLeftSide = mousePosition.x < 100;
@@ -151,6 +169,60 @@ export default function SidebarLayout() {
     setIsUserModalOpen(false);
   };
 
+  const runIntro = () => {
+    const intro = introJs()
+    intro.setOptions({
+      steps: [
+        {
+          element: '.toggle-btn',
+          intro: '사이드바를 열거나 닫을 수 있습니다.',
+          position: 'right'
+        },
+        {
+          element: '.asdf-btn:nth-child(2)',
+          intro: '노트를 검색할 수 있는 버튼입니다.',
+          position: 'right'
+        },
+        {
+          element: '.asdf-btn:nth-child(3)',
+          intro: '새로운 노트를 생성합니다.',
+          position: 'right'
+        },
+        {
+          element: '.asdf-btn:nth-child(4)',
+          intro: '노트 간 관계를 시각화하는 그래프 뷰를 엽니다.',
+          position: 'right'
+        },
+        {
+          element: '.main-sidebar-header .sd-tab-button:nth-child(1)',
+          intro: '그룹 탭입니다. 그룹별로 노트를 관리할 수 있습니다.',
+          position: 'right'
+        },
+        {
+          element: '.main-sidebar-header .sd-tab-button:nth-child(2)',
+          intro: '노트 탭입니다. 그룹을 선택 후 선택한 그룹의 전체 노트를 열람할 수 있습니다.',
+          position: 'right'
+        },
+        {
+          element: '.user-profile',
+          intro: '여기서 계정 정보를 확인할 수 있습니다.',
+          position: 'right'
+        },
+        {
+          element: '.tutorial-btn',
+          intro: '언제든지 이 버튼을 클릭하여 튜토리얼을 다시 볼 수 있습니다.',
+          position: 'left'
+        },
+      ],
+      showProgress: true,
+      showBullets: false,
+      nextLabel: 'Enter',
+      prevLabel: 'Prev',
+      doneLabel: 'Done'
+    })
+  intro.start()
+}
+
   return (
     <div className="container">
       <div className="fixed-sidebar">
@@ -179,19 +251,22 @@ export default function SidebarLayout() {
         </button>
         <button
           className="asdf-btn"
-          onClick={() => (window.location.href = '/offline-meeting')}
+          onClick={() => setIsOfflineMeetingOpen(true)}
           title="오프라인 회의"
         >
           <VideoOff size={16} />
+        </button>
+        <button className='tutorial-btn' onClick={handleHelpClick}>
+          <Apple size={16}/>
         </button>
       </div>
       {/* 사이드바 */}
       {isOpen && (
         <div
-          className="sidebar"
+          className="main-sidebar"
           style={{ width: sidebarWidth }}
         >
-          <div className="sidebar-header">
+          <div className="main-sidebar-header">
             {/* <button className="toggle-btn" onClick={() => setIsOpen(false)}>
               <ChevronLeft size={20} />
             </button> */}
@@ -200,7 +275,7 @@ export default function SidebarLayout() {
             return (
               <button
                 key={tab.id}
-                className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                className={`sd-tab-button ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 <IconComponent size={16} />
@@ -210,7 +285,7 @@ export default function SidebarLayout() {
           })}
           </div>
 
-          <div className="sidebar-content">
+          <div className="main-sidebar-content">
             {activeTab === 'groups' && (
               <GroupList onGroupSelect={(group) => {
                 console.log(group);
@@ -240,7 +315,7 @@ export default function SidebarLayout() {
           </div>
 
           {user && (
-        <div className="sidebar-footer">
+        <div className="main-sidebar-footer">
           <div 
             onClick={handleUserProfileClick} // 수정된 부분
             className="user-profile"
@@ -264,7 +339,7 @@ export default function SidebarLayout() {
       )}
 
       {/* 메인 콘텐츠 */}
-      <div className="main-content">
+      <div className="main-sidebar-content">
         <VaultManager ref={vaultRef} />
       </div>
       {/* 사용자 설정 모달 */}
@@ -282,6 +357,12 @@ export default function SidebarLayout() {
         onClose={() => setIsSearchModalOpen(false)}
         notes={notes} // 실제 노트 데이터로 교체
         onNoteSelect={handleNoteSelect}
+      />
+      
+      {/* 오프라인 회의 모달 */}
+      <MeetingPage
+       open={isOfflineMeetingOpen}
+        onClose={() => setIsOfflineMeetingOpen(false)}
       />
       <Toaster />
     </div>

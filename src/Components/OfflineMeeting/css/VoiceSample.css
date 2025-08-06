@@ -1,0 +1,18 @@
+.voice-sample-box {
+  margin: 4px 0 6px 0;
+}
+
+.voice-sample-label {
+  font-size: 0.87rem;
+  color: #2545e7;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.voice-sample-audio {
+  width: 88%;
+  margin-left: 6px;
+  background: #f5f6f9;
+  border-radius: 4px;
+  outline: none;
+}

@@ -17,6 +17,7 @@ import './UserProfile.css';
 import ChangePasswordModal from './ChangePasswordModal';
 import { useGroups } from '../../Contexts/GroupContext';
 import toast from 'react-hot-toast';
+import VoiceSampleModal from './VoiceSampleModal'; 
 
 const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout }) => {
   const {checkPassword, changePassword} = useGroups();
@@ -32,7 +33,8 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
-  
+   // 음성 샘플 모달 열림
+  const [isVoiceSampleModalOpen, setIsVoiceSampleModalOpen] = useState(false);
 
   // 모달이 열릴 때 사용자 데이터로 초기화
   useEffect(() => {
@@ -199,6 +201,15 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
                   onChange={handleInputChange}
                   placeholder="닉네임을 입력하세요"
                 />
+
+              {/* 음성샘플파일 등록 버튼 */}
+                <button
+                  className="secondary-btn"
+                  style={{ marginTop: '8px', width: 'auto' }}
+                  onClick={() => setIsVoiceSampleModalOpen(true)}
+                >
+                  음성샘플파일 등록
+                </button>
               </div>
 
               {/* 자기소개 */}
@@ -355,6 +366,16 @@ const UserWindowModal = ({ isOpen, onClose, user, profileImage, onSave, onLogout
           onSave={handlePasswordSave}
         />
       </div>
+
+       {/* 음성샘플 모달 */}
+      <VoiceSampleModal 
+        isOpen={isVoiceSampleModalOpen} 
+        onClose={() => setIsVoiceSampleModalOpen(false)} 
+        subjectId={user?.subject_id}
+        onUploadSuccess={(voicePath) => {
+          toast.success(`음성샘플이 등록되었습니다: ${voicePath}`);
+        }}
+      />
     </div>
   );
 };

@@ -322,3 +322,19 @@
 .permission-select option {
     font-weight: normal;
 }
+
+.current-user-member-item {
+    background-color: #e0f2f7; /* 연한 파란색 계열 */
+    border: 1px solid #b3e5fc;
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.current-user-label {
+    font-weight: bold;
+    color: #0288d1; /* 파란색 텍스트 */
+    margin-left: 10px;
+}

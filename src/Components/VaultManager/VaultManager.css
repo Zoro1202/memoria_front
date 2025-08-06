@@ -155,7 +155,8 @@
   background-color: #f4f6f8;
   position: relative;
   /* Note 컴포넌트가 중앙에 오도록 내부 패딩 추가 */
-  padding: 20px; 
+  /* padding: 20px;  */
+  max-height: calc(100vh - 55px);
 }
 
 /* 
@@ -166,6 +167,7 @@
 .vault-tab-content {
   height: 100%;
   width: 100%;
+  overflow-y: hidden;
 }
 
 .error-message {

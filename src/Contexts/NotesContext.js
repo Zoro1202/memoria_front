@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { toast } from 'react-hot-toast';
 import { getResourceAPI } from './APIs/ResourceAPI';
-import io from 'socket.io-client';
-import ShareDBClient from 'sharedb-client';
+import ReconnectingWebSocket from 'reconnecting-websocket';
+import ShareDBClient from 'sharedb-client';// default import
 
 const NotesContext = createContext();
+
 
 export function useNotes() {
   return useContext(NotesContext);
@@ -13,10 +14,9 @@ export function useNotes() {
 export function NotesProvider({ children }) {
   // region 백엔드 REST API
   const resourceAPI = getResourceAPI();
-
-// region -------------------------------------------------------------------------------
-
-
+  
+  // region -------------------------------------------------------------------------------
+  
   // region note 관련 state
   const [notes, setNotes] = useState({});
   const [activeNoteContent, setActiveNoteContent] = useState('');
@@ -26,121 +26,22 @@ export function NotesProvider({ children }) {
   const [currentGroupId, setCurrentGroupId] = useState(null);
   
   // region Socket.IO 및 ShareDB 관련
-  const socketRef = useRef(null);
+  const docRef = useRef();
   const connectionRef = useRef(null);
-  const docRef = useRef(null);
-
-  // region Socket Connect
-  const connectSocket = useCallback(() => {
-    if (socketRef.current && socketRef.current.connected) {
-      console.log('소켓은 이미 연결되어 있습니다!');
-      return;
-    }
-
-    socketRef.current = io('https://login.memoriatest.kro.kr', {
-      transports: ['websocket', 'polling'],
-      path: '/socket.io/',
-      withCredentials: true
-    });
-
-    const stream = {
-      write: (msg) => {
-        if (socketRef.current) socketRef.current.emit('sharedb', JSON.stringify(msg));
-      },
-      on: (event, handler) => {
-        if (!socketRef.current) return;
-        if (event === 'data') socketRef.current.on('sharedb', (data) => handler(JSON.parse(data)));
-        if (event === 'close') socketRef.current.on('disconnect', handler);
-      }
+  // region -------------------------------------------------------------------------------
+  //region connect (shareDB)
+  useEffect(() => {
+    const ws = new ReconnectingWebSocket('wss://login.memoriatest.kro.kr/ws/');
+    const conn = new ShareDBClient.Connection(ws);
+    connectionRef.current = conn;
+    // setTimeout(()=>{connectNote('1723');}, 100);
+    
+    return () => {
+      ws.close();
     };
-    connectionRef.current = new ShareDBClient.Connection(stream);
-    registerSocketListeners();
-    socketRef.current.on('connect', () => console.log('Socket 연결됨'));
-    socketRef.current.on('disconnect', (reason) => console.log('Socket 연결 해제:', reason));
   }, []);
-  // region Socket Listen
-  const registerSocketListeners = useCallback(() => {
-    if (!socketRef.current || !connectionRef.current) {
-      console.error('ShareDB connection이 아직 생성되지 않음!');
-      return;
-    }
 
-    socketRef.current.on('note_loaded', (data) => {
-      if (!data || data.noteId === undefined) {
-        console.error('note_loaded ERROR : data 반환 오류');
-        return;
-      }
-      docRef.current = connectionRef.current.get('notes', data.noteId);
-      docRef.current.subscribe(function (err) {
-        if (err) throw err;
-        setNotes(prev => ({
-          ...prev,
-          [data.title || 'Untitled']: {
-            content: docRef.current.data.content,
-            note_id: data.noteId,
-            title: docRef.current.data.title
-          }
-        }));
-        setActiveNoteContent(docRef.current.data.content);
-        setCurrentNoteId(data.noteId);
-      });
-      docRef.current.on('op', function (op, source) {
-        if (!source) {
-          const noteTitle = docRef.current.data.title || 'Untitled';
-          setNotes(prev => ({
-            ...prev,
-            [noteTitle]: {
-              ...prev[noteTitle],
-              content: docRef.current.data.content,
-              title: docRef.current.data.title
-            }
-          }));
-          setActiveNoteContent(docRef.current.data.content);
-        }
-      });
-      console.log('노트 로드됨:', data.title);
-    });
 
-    socketRef.current.on('note_updated', (data) => {
-      console.log('노트 업데이트 수신:', data);
-      const noteTitle = data.title || 'Untitled';
-      setNotes(prev => ({
-        ...prev,
-        [noteTitle]: {
-          ...prev[noteTitle],
-          content: data.content,
-          title: data.title,
-          note_id: data.noteId
-        }
-      }));
-      if (data.noteId === currentNoteId) {
-        setActiveNoteContent(data.content);
-      }
-    });
-
-    socketRef.current.on('edit_error', (err) => {
-      console.error('노트 편집 에러:', err);
-      toast.error(`노트 편집 실패: ${err.message}`);
-    });
-
-    socketRef.current.on('join_error', (err) => {
-      toast.error(err.message || '노트 입장에 실패했습니다.');
-      if (socketRef.current) socketRef.current.disconnect();
-    });
-
-  }, [currentNoteId]);
-  // region Socket Disconnect
-  const disconnectSocket = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-      connectionRef.current = null;
-      docRef.current = null;
-      setCurrentNoteId(null);
-      console.log('소켓 연결 해제됨');
-    }
-  }, []);
-// region -------------------------------------------------------------------------------
   // region 노트/링크 로드
   const loadNotes = useCallback(async (groupId) => {
     if (!groupId) return;
@@ -166,7 +67,16 @@ export function NotesProvider({ children }) {
         const noteContents = await Promise.all(contentPromises);
         
         noteContents.forEach(({ note, content }) => {
-          notesObject[note.title] = { content: content || '', note_id: note.note_id, title: note.title };
+          // 모든 필드 포함하여 저장
+          notesObject[note.title] = { 
+            content: content || '', 
+            note_id: note.note_id, 
+            title: note.title,
+            created_at: note.created_at,
+            update_at: note.update_at,
+            subject_id: note.subject_id,
+            group_id: note.group_id
+          };
           noteIdToTitleMap[note.note_id] = note.title;
         });
         
@@ -187,24 +97,75 @@ export function NotesProvider({ children }) {
         toast.success(`노트 ${response.titles.length}개 로드됨`);
         return response;
       } else {
-        setNotes([]);
+        setNotes({});
         setLinks([]);
       }
     } catch (err) {
       console.error('노트 로드 실패:', err);
       toast.error('노트 목록을 불러올 수 없습니다.');
-      setNotes([]);
+      setNotes({});
       setLinks([]);
     } finally {
       setLoading(false);
     }
   }, [resourceAPI]);
+  //region connectNote
+  const connectNote = useCallback(async (noteId, callbacks) => {
+    if (!connectionRef.current) {
+      console.log('connection이 없음');
+      return;
+    }
+
+    try {
+
+      // ✅ 새로운 문서 연결 생성 (기존 연결 정리)
+      if (docRef.current) {
+        docRef.current.unsubscribe();
+        docRef.current.destroy();
+        docRef.current = null;
+      }
+      const newDoc = connectionRef.current.get('notes', noteId);
+      console.log(newDoc);
+      docRef.current = newDoc;
+
+      newDoc.subscribe(async err => {
+        if (err) {
+          console.error('문서 구독 실패', err);
+          callbacks?.onError?.(err);
+          return;
+        }
+
+        try {
+          if (!newDoc.data) {
+            throw new Error('문서 데이터 없음');
+          }
+
+          console.log('📄 최종 문서 상태:', {
+            type: newDoc.type,
+            version: newDoc.version,
+            data: newDoc.data
+          });
+
+          console.log(newDoc.data.title);
+          console.log(newDoc.data.content);
+          
+          callbacks?.onload?.(newDoc.data);
+          
+
+        } catch (error) {
+          console.error('문서 준비 실패:', error);
+        }
+      });
+    } catch (error) {
+      console.error('connectNote 오류:', error);
+    }
+  }, []);
 
   // region upsert note
   const upsertNote = useCallback(async (group_id, title, content, note_id = null, oldTitle = null) => {
     const noteIdToUpsert = (note_id === -2 || !note_id ) ? -2 : note_id;
     try {
-      const response = await resourceAPI.upsertNote(group_id, title, content, noteIdToUpsert, oldTitle); 
+      const response = await resourceAPI.upsertNote(group_id, title, content, noteIdToUpsert); 
 
       if (response && response.success) {
         const isTitleChanged = oldTitle && oldTitle !== title;
@@ -280,7 +241,7 @@ export function NotesProvider({ children }) {
     }
   }, [resourceAPI]);
 
-  // region 이건 뭐하는 함수지
+  // region 이건 뭐하는 함수지 => ai기능에 필요한듯
   const createOrAppendKeywordNote = useCallback(async (groupId, keyword, newContent) => {
     try {
       // notes state에서 기존 노트 정보를 찾습니다.
@@ -322,6 +283,7 @@ export function NotesProvider({ children }) {
       // throw error;
     }
   }, [resourceAPI, loadNotes]);
+
   // region local에서 노트 생성
   const createNoteFromTitle = useCallback((title) => {
     if (notes[title]) {
@@ -338,17 +300,64 @@ export function NotesProvider({ children }) {
     }));
     toast.success(`"${title}" 노트가 생성되었습니다. 저장(Ctrl+S)하여 서버에 등록하세요.`);
   }, [notes]);
-  // region 노트 내용 가져오기
-  const legacy_getNoteContent = async (note_id, group_id) => {
+
+  // region 개별 노트 리로드
+  const refreshSingleNote = useCallback(async (noteId, groupId, titleChangeInfo = null) => {
     try {
-      const response = await resourceAPI.getNoteContent(note_id, group_id);
-      console.log(response);
-      return response && typeof response.content === 'string' ? response.content : '';
-    } catch (err) {
-      console.error(`[Legacy] 노트 내용 조회 실패 (note_id: ${note_id}):`, err);
-      return '';
+      const response = await resourceAPI.getNoteContent(noteId, groupId);
+      
+      if (response && typeof response === 'object') {
+        setNotes(prev => {
+          const newState = { ...prev };
+          
+          // 제목 변경 정보가 있는 경우
+          if (titleChangeInfo) {
+              const { oldTitle, newTitle } = titleChangeInfo;
+            
+              // 기존 노트 삭제
+            if (oldTitle && newState[oldTitle] && newState[oldTitle].note_id === noteId) {
+                delete newState[oldTitle];
+                console.log(`제목 변경: "${oldTitle}" → "${newTitle}"`);
+            }
+            
+            // 새 제목으로 노트 설정
+            newState[newTitle] = {
+                content: response.content || '',
+                note_id: noteId,
+                title: newTitle,
+              update_at: response.update_at,
+              created_at: response.created_at,
+              subject_id: response.subject_id,
+              group_id: response.group_id
+            };
+          } else {
+            // 제목 변경 없이 메타데이터만 업데이트
+            const existingEntry = Object.entries(newState).find(([key, value]) => value.note_id === noteId);
+            
+            if (existingEntry) {
+              const [currentTitle, currentNote] = existingEntry;
+              newState[currentTitle] = {
+                ...currentNote,
+                content: response.content || currentNote.content,
+                update_at: response.update_at,
+                created_at: response.created_at || currentNote.created_at,
+                subject_id: response.subject_id || currentNote.subject_id,
+                group_id: response.group_id || currentNote.group_id
+              };
+            }
+          }
+          
+          return newState;
+        });
+      }
+    } catch (error) {
+      console.error('개별 노트 새로고침 실패:', error);
+      throw error;
     }
-  };
+  }, [resourceAPI]);
+
+
+
   // region 전체노트 가져오기
   const loadNotes_lagacy = useCallback(async (groupId) => {
     if (!groupId) return;
@@ -358,13 +367,48 @@ export function NotesProvider({ children }) {
       if (response.titles) {
         const notesObject = {};
         const noteIdToTitleMap = {};
-        const contentPromises = response.titles.map(note => 
-          legacy_getNoteContent(note.note_id, groupId).then(content => ({ note, content }))
-        );
+        
+        // 각 노트의 상세 정보 가져오기
+        const contentPromises = response.titles.map(async (note) => {
+          const contentResponse = await resourceAPI.getNoteContent(note.note_id, groupId);
+          
+          // 응답 구조에 따라 처리
+          let content = '';
+          let metadata = {};
+          
+          if (contentResponse && typeof contentResponse === 'object') {
+            // 새로운 구조: 객체로 응답
+            content = contentResponse.content || '';
+            metadata = {
+              update_at: contentResponse.update_at,
+              created_at: contentResponse.created_at || note.created_at,
+              subject_id: contentResponse.subject_id || note.subject_id,
+              group_id: contentResponse.group_id || note.group_id
+            };
+          } else if (typeof contentResponse === 'string') {
+            // 이전 구조: 문자열로 응답
+            content = contentResponse;
+            metadata = {
+              update_at: note.update_at,
+              created_at: note.created_at,
+              subject_id: note.subject_id,
+              group_id: note.group_id
+            };
+          }
+          
+          return { note, content, metadata };
+        });
+        
         const noteContents = await Promise.all(contentPromises);
         
-        noteContents.forEach(({ note, content }) => {
-          notesObject[note.title] = { content: content || '', note_id: note.note_id, title: note.title };
+        noteContents.forEach(({ note, content, metadata }) => {
+          notesObject[note.title] = { 
+            content: content || '', 
+            note_id: note.note_id, 
+            title: note.title,
+            // 메타데이터 추가
+            ...metadata
+          };
           noteIdToTitleMap[note.note_id] = note.title;
         });
         
@@ -385,10 +429,13 @@ export function NotesProvider({ children }) {
       }
     } catch (err) {
       console.error('레거시 노트 로드 실패:', err);
+      toast.error('노트 목록을 불러올 수 없습니다.');
     } finally {
       setLoading(false);
     }
   }, [resourceAPI]);
+
+
   // region GraphData 만들기(Graph에 꼭 필요함)
   const graphData = useMemo(() => {
     if (!notes || Object.keys(notes).length === 0) return { nodes: [], links: [] };
@@ -400,11 +447,8 @@ export function NotesProvider({ children }) {
       .map(id => ({ id, inactive: true }));
     return { nodes: [...realNodes, ...missingNodes], links: safeLinks };
   }, [notes, links]);
-  // region Socket 관련 UseEffect
-  useEffect(() => {
-    connectSocket();
-    return () => disconnectSocket();
-  }, [connectSocket, disconnectSocket]);
+
+
   //  region export우
   const value = {
     notes, setNotes,
@@ -415,13 +459,16 @@ export function NotesProvider({ children }) {
     currentNoteId, setCurrentNoteId,
     activeNoteContent, setActiveNoteContent,
     loadNotes,
+    connectNote,
     upsertNote,
     getNoteContent,
     deleteNote,
     createOrAppendKeywordNote,
     createNoteFromTitle,
     loadNotes_lagacy,
-    socketRef, docRef
+    refreshSingleNote,
+    docRef,
+    connectNote
   };
 
   return (

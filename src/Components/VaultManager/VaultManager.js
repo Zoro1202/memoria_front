@@ -2,7 +2,7 @@
 import React, { useState, useMemo, forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
 import './VaultManager.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import Note from '../Note/Note';
+import NoteView from '../Note/Note';
 import GraphView from '../Graph/Graph';
 // import GraphView3D from "../Graph/3D/3DGraph"; // 금지
 import { useNotes } from "../../Contexts/NotesContext";
@@ -90,6 +90,34 @@ const VaultManager = forwardRef((props, ref) => {
     reordered.splice(result.destination.index, 0, removed);
     setTabs(reordered);
   };
+  
+  const handleOnChangeNote = (md, tab) => {
+    setActiveNoteContent(String(md));
+    // upsertNote(selectedGroupId, tab.title, md, tab.noteId); // 저장 upsert인데 이거 수정해야함.
+    /**
+     * contentElement.addEventListener('input', (e) => {
+          console.log('[content input] 감지됨, 길이:', e.target.value.length);
+          const oldVal = notes[tab.title].content || '';
+          const newVal = String(md);
+          const ops = generateTextDiffOps(oldVal, newVal, ['content']);
+          console.log('[content input op]', ops);
+          if (ops.length > 0) {
+            doc.submitOp(ops, (err) => {
+              if (err) console.error('[content input] op 전송 실패', err);
+              else console.log('[content input] op 전송 성공');
+            });
+          }
+      });
+     */
+    setNotes((prevNotes) => ({
+      ...prevNotes,
+      [tab.title]: {
+        ...prevNotes[tab.title],
+        content: String(md),
+        update_at: new Date().toISOString(),
+      },
+    }));
+  };
 
   return (
     <div className={`vaultmanager-wrapper ${tabs.length === 0 ? 'no-notes' : ''}`} onClick={tabs.length === 0 ? addTab : undefined}>
@@ -164,23 +192,12 @@ const VaultManager = forwardRef((props, ref) => {
                     }}
                   />
                 ) : (
-                  <Note
+                  <NoteView
                     id={tab.title}
                     // noteId={notes[tab.title].}
                     groupId={tab.groupId || selectedGroupId}
-                    markdown={notes[tab.noteId]?.content || "error"}
-                    onChange={(md) => {
-                      setActiveNoteContent(String(md));
-                      // upsertNote(selectedGroupId, tab.title, md, tab.noteId); // 저장 upsert인데 이거 수정해야함.
-                      setNotes((prevNotes) => ({
-                        ...prevNotes,
-                        [tab.title]: {
-                          ...prevNotes[tab.title],
-                          content: String(md),
-                          update_at: new Date().toISOString(),
-                        },
-                      }));
-                    }}
+                    markdown={notes[tab.title]?.content || "error"}
+                    onChange={(md)=>handleOnChangeNote(md, tab)}
                   />
                 )}
               </div>

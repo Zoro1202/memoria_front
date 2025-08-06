@@ -1,5 +1,5 @@
 // GroupProfile.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './GroupProfile.css';
 import { X, Search } from 'lucide-react'; // Search 아이콘 추가 (초대 시 사용)
 import { toast } from 'react-hot-toast'; // 토스트 메시지 알림용
@@ -11,7 +11,7 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
     const [groupIntro, setGroupIntro] = useState(group?.group_intro || '');
     const [members, setMembers] = useState([]); // 멤버 목록 상태
     const [inviteInput, setInviteInput] = useState(''); // 초대 입력 필드
-    const { getMemberList, inviteMember, kickMember, permissionUpdate, deleteGroup } = useGroups(); // Context에서 API 함수 가져오기
+    const { getMemberList, inviteMember, kickMember, permissionUpdate, deleteGroup, currentUserId } = useGroups(); 
 
     // 모달이 열릴 때 또는 그룹이 변경될 때 멤버 목록 불러오기
     useEffect(() => {
@@ -67,13 +67,18 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
             return;
         }
 
+        if (recipientId === currentUserId) {
+            toast.error('자기 자신은 그룹에서 추방할 수 없습니다.');
+            return;
+        }
+
         try {
-            await kickMember(recipientId, group.group_id);
-            toast.success('멤버를 추방했습니다.');
+            await kickMember(group.group_id, recipientId);
+            // toast.success('멤버를 추방했습니다.');
             fetchMemberList(group.group_id); // 멤버 목록 새로고침
         } catch (error) {
-            console.error('Failed to kick member:', error);
-            toast.error(`멤버 추방 실패: ${error.message}`);
+            console.error('Failed to update permission:', error);
+            toast.error(`권한 업데이트 실패: ${error.error}`);
         }
     };
 
@@ -83,9 +88,9 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
         if (!group?.group_id) {
             toast.error('그룹 정보가 없어 그룹을 삭제할 수 없습니다.');
             return;
-        }
+        } 
 
-        if (window.confirm('정말로 그룹을 삭제하시겠습니까?')) {
+        if (window.confirm('정말로 그룹을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
             try {
                 await deleteGroup(group.group_id); // 그룹 삭제 API 호출
                 onClose(); 
@@ -103,8 +108,11 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
             toast.error('그룹 정보가 없어 권한을 변경할 수 없습니다.');
             return;
         }
+        if (recipientId === currentUserId) {
+            toast.error('자기 자신의 권한은 변경할 수 없습니다.');
+            return;
+        }
 
-        // --- 여기부터 수정된 부분입니다 ---
         let permission;
         switch (permissionValue) {
             case 'host':
@@ -123,16 +131,14 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
                 toast.error('유효하지 않은 권한입니다.');
                 return;
         }
-        // --- 여기까지 수정된 부분입니다 ---
 
         try {
             // groupId, recipient, permission 순서로 전달
             await permissionUpdate(currentGroup.group_id, recipientId, permission);
-            toast.success('멤버 권한이 업데이트되었습니다.');
             fetchMemberList(currentGroup.group_id);
         } catch (error) {
-             console.error('Failed to update permission:', error);
-            toast.error(`권한 업데이트 실패: ${error.message}`);
+            console.error('Failed to update permission:', error);
+            toast.error(`권한 업데이트 실패: ${error.error}`);
         }
     };
 
@@ -140,10 +146,13 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
     return (
         <div className="modal-overlay">
             <div className="modal-window">
-                {/* 닫기 버튼 */}
-                <button className="close-btn" onClick={onClose}>
-                    <X size={18} />
-                </button>
+
+                <div className="user-modal-header">
+                    <h2>그룹 설정</h2>
+                    <button onClick={onClose} className="close-btn" title="닫기">
+                    <X size={20} />
+                    </button>
+                </div>
 
                 {/* 상단 탭 */}
                 <div className="modal-tabs">
@@ -192,32 +201,40 @@ const GroupWindowModal = ({ onClose, group, onSave }) => {
                             <ul className="group-members-list">
                                 {members.length > 0 ? (
                                     members.map((user) => (
-                                        <li key={user.id} className="member-item">
+                                        <li
+                                            key={user.subject_id}
+                                            className={`member-item ${user.subject_id === currentUserId ? 'current-user-member-item' : ''}`}
+                                        >
                                             <span>{user.name}</span>
                                             <div className="member-actions">
-                                                <select
-                                                    className="permission-select"
-                                                    // user.permission이 숫자 값이라면, 여기서 문자열로 변환해야 UI에 올바르게 표시됩니다.
-                                                    // 예를 들어, user.permission이 0이면 "host", 1이면 "manager" 등으로 매핑
-                                                    value={
-                                                        user.permission === 0 ? 'host' :
-                                                        user.permission === 1 ? 'manager' :
-                                                        user.permission === 2 ? 'editor' :
-                                                        user.permission === 3 ? 'viewer' : ''
-                                                    }
-                                                    onChange={(e) => handlePermissionUpdate(user.subject_id, e.target.value, group)}
-                                                >
-                                                    <option value="host">호스트</option>
-                                                    <option value="manager">관리자</option>
-                                                    <option value="editor">편집자</option>
-                                                    <option value="viewer">뷰어</option>
-                                                </select>
-                                                <button
-                                                    className="kick-btn"
-                                                    onClick={() => handleKickMember(user.id)}
-                                                >
-                                                    추방
-                                                </button>
+                                                {user.subject_id === currentUserId ? (
+                                                    // 현재 사용자인 경우 권한 변경 콤보박스와 추방 버튼 숨김
+                                                    <span className="current-user-label">나 (본인)</span>
+                                                ) : (
+                                                    <>
+                                                        <select
+                                                            className="permission-select"
+                                                            value={
+                                                                user.permission === 0 ? 'host' :
+                                                                user.permission === 1 ? 'manager' :
+                                                                user.permission === 2 ? 'editor' :
+                                                                user.permission === 3 ? 'viewer' : ''
+                                                            }
+                                                            onChange={(e) => handlePermissionUpdate(user.subject_id, e.target.value, group)}
+                                                        >
+                                                            <option value="host">호스트</option>
+                                                            <option value="manager">관리자</option>
+                                                            <option value="editor">편집자</option>
+                                                            <option value="viewer">뷰어</option>
+                                                        </select>
+                                                        <button
+                                                            className="kick-btn"
+                                                            onClick={() => handleKickMember(user.subject_id)}
+                                                        >
+                                                            추방
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </li>
                                     ))

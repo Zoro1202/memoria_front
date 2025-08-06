@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
 import "./RecordingList.css";
 
-const API_HOST = "http://localhost:5001";
+const API_HOST =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5001"
+    : "https://hwasang.memoriatest.kro.kr";
+
 const CARDS_PER_ROW = 5;
 const ROWS_PER_PAGE = 2;
 const PAGE_SIZE = CARDS_PER_ROW * ROWS_PER_PAGE; // 10개
@@ -21,8 +25,8 @@ export default function RecordingList({ roomId }) {
     }
     setLoading(true);
     fetch(`${API_HOST}/api/recordings?roomId=${encodeURIComponent(roomId)}`)
-      .then(res => res.json())
-      .then(data => setRecordings(data || []))
+      .then((res) => res.json())
+      .then((data) => setRecordings(data || []))
       .finally(() => setLoading(false));
   }, [roomId]);
 
@@ -31,7 +35,10 @@ export default function RecordingList({ roomId }) {
   }, [roomId]);
 
   const totalPages = Math.ceil(recordings.length / PAGE_SIZE);
-  const pagedRecordings = recordings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pagedRecordings = recordings.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
 
   const openModal = (rec) => {
     setSelectedVideo(rec);
@@ -45,15 +52,14 @@ export default function RecordingList({ roomId }) {
 
   if (!roomId)
     return <div className="recording-list-empty">방 ID를 입력하세요.</div>;
-  if (loading)
-    return <div className="recording-list-loading">불러오는 중...</div>;
+  if (loading) return <div className="recording-list-loading">불러오는 중...</div>;
   if (!recordings.length)
     return <div className="recording-list-empty">녹화된 파일이 없습니다.</div>;
 
   return (
     <>
       <div className="recording-list-grid">
-        {pagedRecordings.map(rec => (
+        {pagedRecordings.map((rec) => (
           <div className="recording-card" key={rec.name}>
             <div className="recording-thumb">
               <video
@@ -63,7 +69,7 @@ export default function RecordingList({ roomId }) {
                 width={300}
                 height={220}
                 style={{ background: "#f2f2f2", borderRadius: 8 }}
-                onError={e => {
+                onError={(e) => {
                   e.target.style.display = "none";
                   if (!e.target.parentNode.querySelector(".default-thumb")) {
                     const fallback = document.createElement("div");
@@ -96,7 +102,9 @@ export default function RecordingList({ roomId }) {
                 재생
               </button>
               <a
-                href={`${API_HOST}/download/${encodeURIComponent(roomId)}/${encodeURIComponent(rec.name)}`}
+                href={`${API_HOST}/download/${encodeURIComponent(
+                  roomId
+                )}/${encodeURIComponent(rec.name)}`}
                 className="download-btn"
               >
                 다운로드
@@ -128,22 +136,29 @@ export default function RecordingList({ roomId }) {
                 maxWidth: "800px",
                 maxHeight: "60vh",
                 borderRadius: 8,
-                marginBottom: 16
+                marginBottom: 16,
               }}
             />
             <div style={{ display: "flex", gap: 12 }}>
-              <button onClick={closeModal} style={{
-                padding: "8px 20px",
-                borderRadius: 6,
-                border: "none",
-                background: "#1976d2",
-                color: "#fff",
-                fontWeight: 500,
-                fontSize: "1rem",
-                cursor: "pointer"
-              }}>닫기</button>
+              <button
+                onClick={closeModal}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#1976d2",
+                  color: "#fff",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                }}
+              >
+                닫기
+              </button>
               <a
-                href={`${API_HOST}/download/${encodeURIComponent(roomId)}/${encodeURIComponent(selectedVideo.name)}`}
+                href={`${API_HOST}/download/${encodeURIComponent(
+                  roomId
+                )}/${encodeURIComponent(selectedVideo.name)}`}
                 style={{
                   padding: "8px 20px",
                   borderRadius: 6,
@@ -151,7 +166,7 @@ export default function RecordingList({ roomId }) {
                   color: "#1976d2",
                   fontWeight: 500,
                   fontSize: "1rem",
-                  textDecoration: "none"
+                  textDecoration: "none",
                 }}
                 download
               >

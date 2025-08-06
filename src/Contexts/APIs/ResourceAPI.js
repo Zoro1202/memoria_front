@@ -333,7 +333,10 @@ export function getResourceAPI() {
           body: JSON.stringify({ recipient, group_id })
         });
 
-        if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        if(!response.ok) {
+          const data = await response.json();
+          throw Error(data.error);
+        }
 
         const data = await response.json();
         return data;
@@ -352,8 +355,10 @@ export function getResourceAPI() {
           },
           body: JSON.stringify({ group_id, recipient, permission})
         });
-        if(!response.success) throw Error(response.status, ':Failed to permissionUpdate');
-
+        if(!response.ok) {
+          const data = await response.json();
+          throw Error(data.error);
+        }
         const data = await response.json();
         return data;  
       } catch(err) {

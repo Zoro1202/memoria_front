@@ -11,6 +11,7 @@ import Hwasang from './Components/Hwasang/Hwasang';
 import React from 'react';
 import AiHelper from './Components/AI_Assistance/AiHelper'; // AiHelper를 import 합니다.
 import OfflineMeeting from './Components/OfflineMeeting/Meeting';
+import ColorMixDemo from './Components/Graph/Utils/MixTestpage';
 import './index.css'
 // import RecorderPage from './Components/OfflineMeeting/';
 // import TranscribePage from './Components/OfflineMeeting/TranscribePage';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/video-conference" element={<Hwasang />} />
         <Route path="/apitest" element={<APITestPage/>} />
         <Route path="/offline-meeting" element={<OfflineMeeting />} />
+        <Route path="/mixtest" element={<ColorMixDemo/>}/>
         {/* <Route path="/record" element={<RecorderPage />} />
         <Route path="/transcribe" element={<TranscribePage />} /> */}
 

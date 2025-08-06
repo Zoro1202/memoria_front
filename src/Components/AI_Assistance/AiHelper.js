@@ -5,7 +5,7 @@ import AiActionsWidget from './AiActionsWidget';
 import './AiHelper.css';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
-import memoriaLogo from './Black_White_Sub_Center.png';
+import memoriaLogo from './Black_Widget.png';
 //import { useGroups } from '../../Contexts/GroupContext';
 
 const AiIcon = () => (

@@ -1,12 +1,16 @@
 // 파일: src/Contexts/TabsContext.js
 
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+
 const TabsContext = createContext();
+
 
 export function TabsProvider({ children }) {
   const [tabs, setTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
+
 
   const openTab = (tab) => {
     const exists = tabs.find(t => t.noteId === tab.noteId && t.type === tab.type);
@@ -21,6 +25,7 @@ export function TabsProvider({ children }) {
     return newId;
   };
 
+
   useEffect(() => {
     if (!tabs.find(tab => tab.id === activeTabId)) {
       if (tabs.length > 0) {
@@ -31,9 +36,11 @@ export function TabsProvider({ children }) {
     }
   }, [tabs, activeTabId]);
 
+
   const closeTab = (id) => {
     setTabs(prev => prev.filter(t => t.id !== id));
   };
+
 
   const clostTab_noteID =(note_id) =>{
     setTabs(prev => prev.filter(t=> t.noteId !== note_id));
@@ -43,11 +50,12 @@ export function TabsProvider({ children }) {
     setTabs(prev => prev.filter(t => t.type !== 'note'));
   }
 
+
   const noteIdFromTab = (tabId) => {
     const tab = tabs.find(t => t.id === tabId && t.type === 'note');
     return tab?.noteId ?? null;
   };
-  
+ 
   // ✅ [수정] updateTitle 함수를 noteId 기준으로 동작하도록 변경합니다.
   // 이제 이 함수는 "이전 노트 ID"와 "새로운 노트 ID(제목)"를 받습니다.
   const updateTitle = (oldNoteId, newNoteId) => {
@@ -62,7 +70,7 @@ export function TabsProvider({ children }) {
       })
     );
   };
-  
+ 
   return (
     <TabsContext.Provider value={{
       tabs,
@@ -80,6 +88,7 @@ export function TabsProvider({ children }) {
     </TabsContext.Provider>
   );
 }
+
 
 export function useTabs() {
   return useContext(TabsContext);

@@ -196,94 +196,69 @@ const NoteList = ({ onNoteSelect }) => {
             </div>
 
             {/* 기존 노트들 */}
-            {notesArray.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '20px', 
-                color: '#6b7280',
-                fontSize: '14px'
-              }}>
-                {searchTerm ? '검색 결과가 없습니다' : '노트가 없습니다'}
-              </div>
-            ) : (
-              notesArray.map((note) => (
-                <div 
-                  key={note.note_id}
-                  className={`note-item-container ${selectedNoteId === note.note_id ? 'selected' : ''}`}
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    marginBottom: '2px',
-                    borderRadius: '6px',
-                    overflow: 'hidden'
-                  }}
+            {notesArray.map((note) => (
+              <div 
+                key={note.note_id}
+                className={`note-item-container ${selectedNoteId === note.note_id ? 'selected' : ''}`}
+              >
+                <button
+                  className="group-item-sel"
+                  onClick={() => handleNoteSelect(note)}
                 >
-                  <button
-                    className="group-item-sel"
-                    onClick={() => handleNoteSelect(note)}
-                    style={{ 
-                      flex: 1,
-                      textAlign: 'left',
-                      border: 'none',
-                      background: 'none',
-                      padding: '8px',
-                      cursor: 'pointer',
-                      borderRadius: '6px 0 0 6px'
-                    }}
-                  >
-                    <div className="note-info">
-                      <div className="note-title" style={{
-                        fontWeight: '500',
-                        fontSize: '14px',
-                        color: '#37352f',
-                        marginBottom: '2px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        <FileText size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-                        {note.title}
-                      </div>
-                      {note.content && (
-                        <div style={{
-                          fontSize: '11px',
-                          color: '#6b7280',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {note.content.replace(/[#\*\[\]]/g, '').slice(0, 30)}...
-                        </div>
+                  <div className="note-info">
+                    <div className="note-title">
+                      <FileText size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                      {note.title}
+                    </div>
+                    
+                    {/* 새로 추가된 정보들 표시 */}
+                    <div style={{
+                      fontSize: '10px',
+                      color: '#9ca3af',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: '2px'
+                    }}>
+                      <span>
+                        {note.created_at && new Date(note.created_at).toLocaleDateString('ko-KR', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                      {note.updated_at && (
+                        <span title={`최종 수정: ${new Date(note.updated_at).toLocaleString('ko-KR')}`}>
+                          {new Date(note.updated_at).toLocaleDateString('ko-KR', {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
                       )}
                     </div>
-                  </button>
-                  
-                  <button
-                    className="group-item-del"
-                    onClick={(e) => handleNoteDelete(note, e)}
-                    style={{
-                      border: 'none',
-                      background: 'none',
-                      padding: '8px',
-                      cursor: 'pointer',
-                      color: '#6b7280',
-                      borderRadius: '0 6px 6px 0',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#fee2e2';
-                      e.target.style.color = '#dc2626';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.color = '#6b7280';
-                    }}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))
-            )}
+                    
+                    {note.content && (
+                      <div style={{
+                        fontSize: '11px',
+                        color: '#6b7280',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        marginTop: '2px'
+                      }}>
+                        {note.content.replace(/[#\*\[\]]/g, '').slice(0, 30)}...
+                      </div>
+                    )}
+                  </div>
+                </button>
+                
+                <button
+                  className="group-item-del"
+                  onClick={(e) => handleNoteDelete(note, e)}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
 
             {/* 새 노트 추가 버튼 또는 입력폼 */}
             {!showAdd ? (

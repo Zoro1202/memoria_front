@@ -1,25 +1,199 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
 import { useGroups } from '../../Contexts/GroupContext';
 import { toast } from 'react-hot-toast';
-import memoriaIcon from './Black.png';
+import memoriaIcon from './Black_Synapsehome.png';
 import './AiActionsWidget.css';
 import {
+    loadChatHistory,
+    deleteChatSession,
+    loadAllChatSessions,
     suggestKeywords,
     generateSummaryWithKeywords,
     analyzeKeywordInContext,
     translateText,
     chatWithAI,
-    generateTitleFromContent
+    generateTitleFromContent,
+    generateContextualSummary, // [신규] generateContextualSummary 임포트
 } from '../Note/note_AIassist';
-import ReactMarkdown from 'react-markdown';
+import { createEditor, Editor, Text, Range, Path, Transforms, Node } from 'slate';
+import { withReact, Slate, Editable, useSlate, ReactEditor } from 'slate-react';
+import { withHistory } from 'slate-history';
+import { Decorations } from '../Note/Util/Decorations';
+
+const deserialize = (markdown) => {
+    if (typeof markdown !== 'string') return [{ type: 'paragraph', children: [{ text: '' }] }];
+    
+    const lines = markdown.split('\n');
+    const nodes = [];
+    let listBuffer = null;
+
+    const flushListBuffer = () => { if (listBuffer) {nodes.push(listBuffer);listBuffer = null;} };
+
+    for (const line of lines) {
+        if (line.startsWith('# ')) {
+            flushListBuffer();
+            nodes.push({ type: 'heading-one', children: [{ text: line.substring(2) || '' }] });
+        } else if (line.startsWith('## ')) {
+            flushListBuffer();
+            nodes.push({ type: 'heading-two', children: [{ text: line.substring(3) || '' }] });
+        } else if (line.startsWith('### ')) {
+            flushListBuffer();
+            nodes.push({ type: 'heading-three', children: [{ text: line.substring(4) || '' }] });
+        } else if (line.startsWith('> ')) {
+            flushListBuffer();
+            nodes.push({ type: 'block-quote', children: [{ text: line.substring(2) || '' }] });
+        } else if (line.startsWith('* ') || line.startsWith('- ')) {
+            const listItem = { type: 'list-item', children: [{ text: line.substring(2) || '' }] };
+            if (!listBuffer) {
+                listBuffer = { type: 'bulleted-list', children: [] };
+            }
+            listBuffer.children.push(listItem);
+        } else if (line.trim() === '---' || line.trim() === '___') {
+            flushListBuffer();
+            nodes.push({ type: 'divider', children: [{ text: '' }] });
+        } else {
+            flushListBuffer();
+            nodes.push({ type: 'paragraph', children: [{ text: line || '' }] });
+        }
+    }
+
+    flushListBuffer();
+
+    const sanitized = nodes.map(node => {
+        const newNode = Object.assign({}, node);
+        if (!Array.isArray(newNode.children) || newNode.children.length === 0) {
+            newNode.children = [{ text: '' }];
+        }
+        return newNode;
+    });
+
+    return sanitized.length > 0 ? sanitized : [{ type: 'paragraph', children: [{ text: '' }] }];
+};
+
+const SlatePreview = ({ content, notes, openTab, createNoteFromTitle }) => {
+    const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+    const decorate = useMemo(() => Decorations(), []);
+    const initialValue = useMemo(() => deserialize(content), [content]);
+
+    const LeafComponent = useCallback(({ attributes, children, leaf }) => {
+        let styledChildren = children;
+
+        if (leaf.bold) {
+            styledChildren = <strong>{styledChildren}</strong>;
+        }
+        if (leaf.italic) {
+            styledChildren = <em>{styledChildren}</em>;
+        }
+        if (leaf.strikethrough) {
+            styledChildren = <del>{styledChildren}</del>;
+        }
+        if (leaf.code) {
+            styledChildren = <code>{styledChildren}</code>;
+        }
+        if (leaf.highlight) {
+            styledChildren = <mark>{styledChildren}</mark>;
+        }
+
+        if (leaf.linkSyntax) {
+            // 미리보기에서는 링크 구문을 항상 숨깁니다.
+            return <span {...attributes} style={{ opacity: 0, fontSize: '0.1px', userSelect: 'none' }}>{children}</span>;
+        }
+
+        if (leaf.obsidianLink) {
+            return (
+                <a {...attributes} href="#" onClick={()=>{console.log('click!', leaf.linkValue)}} style={{color: '#1e90ff', backgroundColor: '#e6f0ff', padding: '2px 4px', borderRadius: '3px', cursor: 'default'}}>
+                    {styledChildren}
+                </a>
+            );
+        }
+
+        return <span {...attributes}>{styledChildren}</span>;
+    }, [notes, openTab, createNoteFromTitle]);
+
+    const renderLeaf = useCallback(props => <LeafComponent {...props} />, [LeafComponent]);
+
+    const renderElement = useCallback(({ attributes, children, element }) => {
+        switch (element.type) {
+            case 'heading-one': return <h1 {...attributes}>{children}</h1>;
+            case 'heading-two': return <h2 {...attributes}>{children}</h2>;
+            case 'heading-three': return <h3 {...attributes}>{children}</h3>;
+            case 'block-quote': return <blockquote {...attributes}>{children}</blockquote>;
+            case 'bulleted-list': return <ul {...attributes}>{children}</ul>;
+            case 'list-item': return <li {...attributes}>{children}</li>;
+            case 'divider': return <hr {...attributes} />;
+            default: return <p {...attributes}>{children}</p>;
+        }
+    }, []);
+
+    useEffect(() => {
+        const newNodes = deserialize(content);
+        if (JSON.stringify(editor.children) !== JSON.stringify(newNodes)) {
+            Transforms.delete(editor, {
+                at: { anchor: Editor.start(editor, []), focus: Editor.end(editor, []) },
+            });
+            Transforms.insertNodes(editor, newNodes, { at: [0] });
+        }
+    }, [content, editor]);
+
+    return (
+        <Slate editor={editor} initialValue={initialValue}>
+            <Editable
+                readOnly
+                decorate={decorate}
+                renderLeaf={renderLeaf}
+                renderElement={renderElement}
+            />
+        </Slate>
+    );
+};
 
 // 아이콘 컴포넌트
 const ActionIcon = ({ path }) => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={path}></path></svg> );
 const MinimizeIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path></svg> );
 const RefreshIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> );
 const HistoryIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>);
+const AnimatedTrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 -4 24 28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <g className="trash-base">
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+    </g>
+    <g className="trash-lid">
+      <path d="M3 6h18"></path>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </g>
+  </svg>
+);
+
+// MODIFICATION: 위젯 내 확인 대화상자 컴포넌트
+const ConfirmationView = ({ message, onConfirm, onCancel, onUndo, confirmText = '확인', cancelText = '취소' }) => (
+    <div className="confirmation-overlay" onClick={onUndo}> {/* 바깥 클릭은 onUndo */}
+        <div className="confirmation-box" onClick={(e) => e.stopPropagation()}>
+            <p className="confirmation-message">{message}</p>
+            <div className="confirmation-actions">
+                <button onClick={onCancel} className="confirmation-button cancel">{cancelText}</button> {/* 왼쪽 버튼은 onCancel */}
+                <button onClick={onConfirm} className="confirmation-button confirm">{confirmText}</button> {/* 오른쪽 버튼은 onConfirm */}
+            </div>
+        </div>
+    </div>
+);
+
+
+
+const ThreeOptionConfirmationView = ({ message, onConfirm, onNeutral, onCancel, confirmText, neutralText, cancelText }) => (
+    <div className="confirmation-overlay" onClick={onCancel}>
+      <div className="confirmation-box" onClick={(e) => e.stopPropagation()}>
+        <p className="confirmation-message">{message}</p>
+        <div className="confirmation-actions">
+          <button onClick={onCancel} className="confirmation-button cancel">{cancelText}</button>
+          <button onClick={onNeutral} className="confirmation-button neutral">{neutralText}</button>
+          <button onClick={onConfirm} className="confirmation-button confirm">{confirmText}</button>
+        </div>
+      </div>
+    </div>
+);
+
 
 // 날짜/시간 관련 헬퍼 함수
 const formatTime = (timestamp) => {
@@ -53,6 +227,15 @@ const LANGUAGES = [
   { code: 'Japanese', name: '일본어' }, { code: 'Chinese', name: '중국어' },
 ];
 
+const HEADERS = {
+    'Korean': { view_original: "원본 회의록" },
+    'English': { view_original: "Original Meeting Minutes" },
+    'Japanese': { view_original: "元の議事録" },
+    'Chinese': { view_original: "原始会议记录" }
+};
+
+
+//채팅 기록 볼러오기(local)
 const loadChatHistoriesFromStorage = () => {
     try {
         const histories = localStorage.getItem('chatHistories');
@@ -62,7 +245,7 @@ const loadChatHistoriesFromStorage = () => {
         return {};
     }
 };
-
+// 채팅 기록 저장(local)
 const saveChatHistoryToStorage = (noteId, groupId, title, history) => {
     try {
         if (!noteId || !groupId) return;
@@ -75,9 +258,9 @@ const saveChatHistoryToStorage = (noteId, groupId, title, history) => {
 };
 
 export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
-  const { notes, setNotes, setLinks, upsertNote, links, createOrAppendKeywordNote, loading: notesLoading, loadNotes } = useNotes();
-  const { activeTabId, noteIdFromTab, openTab, updateTitle } = useTabs();
-  const { selectedGroupId, setSelectedGroupId, groups } = useGroups();
+  const { notes, setNotes, setLinks, upsertNote, links, createOrAppendKeywordNote, loading: notesLoading, loadNotes, getNoteContent, createNoteFromTitle } = useNotes();
+  const { activeTabId, noteIdFromTab, openTab, updateTitle, closeAllNoteTab } = useTabs();
+  const { selectedGroupId, setSelectedGroupId, groups, user } = useGroups();
   
   const [currentNoteContent, setCurrentNoteContent] = useState('');
   const [view, setView] = useState('initial');
@@ -93,51 +276,150 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const [suggestedTitles, setSuggestedTitles] = useState([]);
   const [previewPage, setPreviewPage] = useState(0);
   const [isRegeneratingKeywords, setIsRegeneratingKeywords] = useState(false);
+  const [detectedLanguage, setDetectedLanguage] = useState('Korean'); // 언어 상태 추가
   const [forceChatViewForNote, setForceChatViewForNote] = useState(null);
+  const [customKeyword, setCustomKeyword] = useState('');
+
+  const h = HEADERS[detectedLanguage] || HEADERS['Korean'];
+
+  const [loadingMessage, setLoadingMessage] = useState('');
+
+  const handleAddCustomKeyword = () => {
+    const newKeyword = customKeyword.trim();
+    if (!newKeyword) {
+        toast.error("추가할 키워드를 입력해주세요.");
+        return;
+    }
+    if (suggestedKeywords.includes(newKeyword)) {
+        toast.error("이미 목록에 있는 키워드입니다.");
+        return;
+    }
+
+    // 새 키워드를 추천 목록과 선택된 목록에 모두 추가
+    setSuggestedKeywords(prev => [newKeyword, ...prev]);
+    setSelectedKeywords(prev => new Set(prev).add(newKeyword));
+    setCustomKeyword(''); // 입력 필드 초기화
+    toast.success(`'${newKeyword}' 키워드가 추가되었습니다.`);
+  };
+  const [focusTrigger, setFocusTrigger] = useState(0);
+
+//   const [chatHistoriesFromServer, setChatHistoriesFromServer] = useState([]);
+//   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [chatHistoriesFromServer, setChatHistoriesFromServer] = useState([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+
+
+  // MODIFICATION: window.confirm을 대체할 상태
+  const [confirmation, setConfirmation] = useState(null);
 
   const abortControllerRef = useRef(null);
   const currentLoadingToastId = useRef(null); 
   const chatContainerRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   const currentNoteId = useMemo(() => noteIdFromTab(activeTabId), [activeTabId, noteIdFromTab]);
 
-  useEffect(() => {
-    if (currentNoteId && notes && notes[currentNoteId]) {
-      setCurrentNoteContent(notes[currentNoteId].content);
-      const allHistories = loadChatHistoriesFromStorage();
-      const loadedData = allHistories[currentNoteId];
-      const validHistory = (loadedData && Array.isArray(loadedData.history)) ? loadedData.history : [];
-      setChatHistory(validHistory);
-      
-      setWasChatCleared(false);
-      
-      if (forceChatViewForNote === currentNoteId) {
-        setView('chat');
-        setForceChatViewForNote(null); // 히스토리에서 특정 채팅으로 점프할 때만 'chat' 뷰
-      } 
-      else {
-        // 그 외 모든 경우(위젯을 닫았다 다시 켜는 경우 포함)에는 무조건 'initial' 뷰로 시작
-        setView('initial');
-      }
+  const currentNote = useMemo(() => {
+    if (!notes || !currentNoteId) return null;
+    
+    // First, try to find by note_id (for existing notes loaded from DB)
+    const foundNote = Object.values(notes).find(note => String(note.note_id) === String(currentNoteId));
+    if (foundNote) {
+      return foundNote;
+    }
 
-    } else if (!notesLoading) {
-      setCurrentNoteContent('');
-      setChatHistory([]);
-      setView('initial');
-    }
-  }, [currentNoteId, notes, notesLoading, forceChatViewForNote]);
-  
+    // Fallback to finding by key (for new notes where title is the id)
+    return notes[currentNoteId] || null;
+  }, [notes, currentNoteId]);
+
+
+  const existingNoteTitles = useMemo(() => {
+    if (!notes) return new Set();
+    return new Set(Object.keys(notes));
+  }, [notes]);
+
   useEffect(() => {
-    if (chatContainerRef.current) {
-      if (view === 'chat' || view === 'history') {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-      } else {
-        chatContainerRef.current.scrollTop = 0;
-      }
-    }
-  }, [chatHistory, view, previewPage]);
+        if (view === 'history' && user?.subject_id) {
+            const fetchHistories = async () => {
+                setIsHistoryLoading(true);
+                try {
+                    // [변경] note_AIassist.js에 새로 만든 함수 호출
+                    const histories = await loadAllChatSessions(user.subject_id);
+                    setChatHistoriesFromServer(histories);
+                } catch (error) {
+                    toast.error(`채팅 기록을 불러오는 데 실패했습니다: ${error.message}`);
+                } finally {
+                    setIsHistoryLoading(false);
+                }
+            };
+            fetchHistories();
+        }
+    }, [view, user?.subject_id]);
+
+
+    useEffect(() => {
+        if (currentNote && selectedGroupId && user && user.subject_id) {
+            setCurrentNoteContent(currentNote.content);
+            
+            const fetchHistory = async () => {
+                try {
+                    const { messages, session_id } = await loadChatHistory(currentNote.note_id, selectedGroupId, user.subject_id);
+                    
+                    const formattedMessages = messages.map(msg => ({
+                        type: msg.sender_type,
+                        text: msg.message_text,
+                        timestamp: msg.timestamp
+                    }));
+                    setChatHistory(formattedMessages);
+                    setCurrentSessionId(session_id);
+
+                } catch (error) {
+                    toast.error("이전 대화 내용을 불러오는 데 실패했습니다.");
+                    setChatHistory([]);
+                    setCurrentSessionId(null);
+                }
+            };
+            fetchHistory();
+        } else if (!notesLoading) {
+            setCurrentNoteContent('');
+            setChatHistory([]);
+            setCurrentSessionId(null);
+        }
+    }, [currentNoteId, selectedGroupId, user]);
+
+    useEffect(() => {
+        if (forceChatViewForNote && forceChatViewForNote === currentNoteId) {
+            setView('chat');
+            setForceChatViewForNote(null);
+        }
+    }, [forceChatViewForNote, currentNoteId]);
+
+    useEffect(() => {
+        if (focusTrigger > 0 && chatInputRef.current) {
+            chatInputRef.current.focus();
+        }
+    }, [focusTrigger]);
+
+    useEffect(() => {
+        if (chatContainerRef.current) {
+            if (view === 'chat' || view === 'history') {
+                setTimeout(() => {
+                    if (chatContainerRef.current) {
+                        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                    }
+                }, 0);
+            } else {
+                chatContainerRef.current.scrollTop = 0;
+            }
+        }
+    }, [chatHistory, view, previewPage]);
 
   const handleGoBack = () => {
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -156,90 +438,174 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     setSuggestedTitles([]);
     setPreviewPage(0);
     setIsRegeneratingKeywords(false);
-
+    setWasChatCleared(false);
     setView('initial');
   };
 
   const handleMinimizeClick = () => onMinimize();
 
-  // ▼▼▼ 수정된 부분 ▼▼▼
   const handleCloseClick = () => {
-    handleGoBack(); // 모든 상태를 초기화하는 함수를 먼저 호출
-    onClose();      // 그 다음에 위젯을 닫습니다.
+    handleGoBack();
+    onClose();
   };
-  // ▲▲▲ 여기까지 ▲▲▲
 
   const handleChatSubmit = async (e) => {
     if (e.key === 'Enter' && !e.shiftKey && chatInput.trim() !== '' && !isLoading) {
         e.preventDefault();
         const question = chatInput.trim();
         setChatInput('');
+        if (chatInputRef.current) {
+            chatInputRef.current.style.height = 'auto';
+        }
         setView('chat');
-        setWasChatCleared(false);
-        
-        const currentHistory = Array.isArray(chatHistory) ? chatHistory : [];
-        
-        const newHistoryWithUser = [...currentHistory, { 
-            type: 'user', 
-            text: question,
-            timestamp: new Date().toISOString()
-        }];
+
+        const newHistoryWithUser = [...chatHistory, { type: 'user', text: question, timestamp: new Date().toISOString() }];
         setChatHistory(newHistoryWithUser);
         
         setIsLoading(true);
         setLoadingType('chat');
         currentLoadingToastId.current = toast.loading('Synapse가 생각 중입니다...');
         abortControllerRef.current = new AbortController();
-        const signal = abortControllerRef.current.signal;
-        
+
         try {
-            const answer = await chatWithAI(question, currentNoteContent, signal);
+            // currentNote가 없으면 실행 불가
+            if (!currentNote || !user?.subject_id || !selectedGroupId) {
+                throw new Error("채팅에 필요한 정보가 부족합니다.");
+            }
+
+            const result = await chatWithAI(
+                question,
+                currentNoteContent,
+                currentNote.note_id,
+                selectedGroupId,
+                user.subject_id,
+                abortControllerRef.current.signal
+            );
             
-            setChatHistory(prev => {
-                const prevHistory = Array.isArray(prev) ? prev : [];
-                const newHistoryWithAI = [...prevHistory, { 
-                    type: 'ai', 
-                    text: answer,
-                    timestamp: new Date().toISOString()
-                }];
-                saveChatHistoryToStorage(currentNoteId, selectedGroupId, currentNoteId, newHistoryWithAI);
-                return newHistoryWithAI;
-            });
+            setChatHistory(prev => [...prev, { type: 'ai', text: result.answer, timestamp: new Date().toISOString() }]);
+            setCurrentSessionId(result.session_id);
 
             toast.success('답변 생성 완료!', { id: currentLoadingToastId.current });
         } catch (error) {
             if (error.name !== 'AbortError') toast.error(`AI 작업 실패: ${error.message}`, { id: currentLoadingToastId.current });
+            setChatHistory(prev => prev.slice(0, -1)); // 실패 시 사용자 질문 제거
         } finally {
             setIsLoading(false);
             setLoadingType(null);
             abortControllerRef.current = null;
-            currentLoadingToastId.current = null;
+            setFocusTrigger(prev => prev + 1); // 포커스 트리거
         }
     }
   }
 
-  const handleClearChat = () => {
-    setChatHistory([]);
-    saveChatHistoryToStorage(currentNoteId, selectedGroupId, currentNoteId, []);
-    setView('initial');
-    setWasChatCleared(true);
-    toast.success('대화 내용이 초기화되었습니다.');
-  };
-
-  const handleLoadHistory = (noteToLoadId, groupId) => {
-    setForceChatViewForNote(noteToLoadId);
-
-    if (String(groupId) === String(selectedGroupId)) {
-      openTab({ title: noteToLoadId, type: 'note', noteId: noteToLoadId });
-    } else {
-      const groupName = groupNameMap[groupId] || `ID: ${groupId}`;
-      toast(`'${groupName}' 그룹으로 이동합니다...`, { icon: '➡️' });
-      setSelectedGroupId(groupId);
-      loadNotes(groupId).then(() => {
-        openTab({ title: noteToLoadId, type: 'note', noteId: noteToLoadId });
-      });
+  const handleChatInputChange = (e) => {
+    setChatInput(e.target.value);
+    if (chatInputRef.current) {
+        const textarea = chatInputRef.current;
+        textarea.style.height = 'auto';
+        const scrollHeight = textarea.scrollHeight;
+        textarea.style.height = `${scrollHeight}px`;
     }
   };
+
+  const handleClearChat = async () => {
+        if (!currentSessionId) {
+            toast.error("삭제할 채팅 세션이 없습니다.");
+            return;
+        }
+        if (!user?.subject_id) { // 사용자 ID 확인
+            toast.error("사용자 정보가 없어 삭제할 수 없습니다.");
+            return;
+        }
+
+        const toastId = toast.loading('대화 기록 삭제 중...');
+        try {
+            // [변경] 백엔드에 세션 삭제 요청 (subject_id와 함께)
+            await deleteChatSession(currentSessionId, user.subject_id);
+
+            setChatHistory([]);
+            setChatInput('');
+            setCurrentSessionId(null); // 세션 ID 초기화
+            setView('initial');
+            setWasChatCleared(true);
+            toast.success('대화 내용이 초기화되었습니다.', { id: toastId });
+        } catch(error) {
+            toast.error(`삭제 실패: ${error.message}`, { id: toastId });
+        }
+    };
+
+
+    const handleLoadHistory = async (noteToLoadId, noteTitle, groupId) => {
+    setForceChatViewForNote(noteToLoadId);
+    if (String(groupId) === String(selectedGroupId)) {
+        openTab({ title: noteTitle, type: 'note', noteId: noteToLoadId });
+    } else {
+        closeAllNoteTab();
+        const groupName = groupNameMap[groupId] || `ID: ${groupId}`;
+        toast(`'${groupName}' 그룹으로 이동합니다...`, { icon: '➡️' });
+
+        setSelectedGroupId(groupId);
+        await loadNotes(groupId); // Ensure notes are loaded for the new group
+        openTab({ title: noteTitle, type: 'note', noteId: noteToLoadId }); // Open tab after notes are loaded
+    }
+
+    // Explicitly load the content of the selected historical note
+    try {
+      const noteData = await getNoteContent(noteToLoadId, groupId);
+      if (noteData && typeof noteData.content === 'string') {
+        setCurrentNoteContent(noteData.content); // 직접 상태 업데이트
+      }
+    } catch (error) {
+      toast.error(`노트 내용을 불러오는 데 실패했습니다: ${error.message}`);
+    }
+
+    // Explicitly load chat history for the selected note
+    if (user && user.subject_id) {
+        try {
+            const { messages, session_id } = await loadChatHistory(noteToLoadId, groupId, user.subject_id);
+            const formattedMessages = messages.map(msg => ({
+                type: msg.sender_type,
+                text: msg.message_text,
+                timestamp: msg.timestamp
+            }));
+            setChatHistory(formattedMessages);
+            setCurrentSessionId(session_id);
+        } catch (error) {
+            toast.error("대화 내용을 불러오는 데 실패했습니다.");
+            setChatHistory([]);
+            setCurrentSessionId(null);
+        }
+    }
+  };
+
+  const handleDeleteHistory = async (e, sessionIdToDelete) => {
+        e.stopPropagation();
+        if (!sessionIdToDelete) return;
+        if (!user?.subject_id) { // 사용자 ID 확인
+            toast.error("사용자 정보가 없어 삭제할 수 없습니다.");
+            return;
+        }
+
+        const toastId = toast.loading('기록 삭제 중...');
+        try {
+            // [변경] 백엔드에 세션 삭제 요청 (subject_id와 함께)
+            await deleteChatSession(sessionIdToDelete, user.subject_id);
+            
+            // UI에서 즉시 반영
+            setChatHistoriesFromServer(prev => prev.filter(h => h.session_id !== sessionIdToDelete));
+
+            // 만약 현재 열린 채팅이 삭제된 세션이라면, 현재 채팅창도 초기화
+            if (currentSessionId === sessionIdToDelete) {
+                setChatHistory([]);
+                setCurrentSessionId(null);
+            }
+
+            toast.success('채팅 기록이 삭제되었습니다.', { id: toastId });
+        } catch (error) {
+            console.error("채팅 기록 삭제 실패:", error);
+            toast.error(`기록 삭제 중 오류: ${error.message}`, { id: toastId });
+        }
+    };
 
   const groupNameMap = useMemo(() => {
     const map = {};
@@ -252,39 +618,61 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   }, [groups]);
 
   const historyLogData = useMemo(() => {
-    if (view !== 'history') return [];
-    const allHistories = loadChatHistoriesFromStorage();
-    return Object.entries(allHistories)
-      .filter(([, data]) => data.history && data.history.length > 0)
-      .map(([noteId, data]) => {
-        const firstUserQuestion = data.history.find(msg => msg.type === 'user');
-        let title = firstUserQuestion ? firstUserQuestion.text : data.title;
-        if (title.length > 30) {
-          title = title.substring(0, 30) + '...';
-        }
-        const groupName = groupNameMap[data.groupId] || `ID: ${data.groupId}`;
-        return { noteId, title, groupId: data.groupId, groupName };
-      })
-      .reverse();
-  }, [view, groupNameMap]);
+        if (view !== 'history' || !chatHistoriesFromServer) return [];
+        return chatHistoriesFromServer.map(session => ({ 
+            ...session, // session_id, note_id, group_id 등 모든 정보 포함
+            displayTitle: session.note_title || `노트 ID: ${session.note_id}`,
+            displayGroupName: session.group_name || `그룹 ID: ${session.group_id}`,
+            note_title: session.note_title // Explicitly include note_title
+        }));
+    }, [view, chatHistoriesFromServer]);
+
+  const [isContextualSummary, setIsContextualSummary] = useState(false);
+  const [referenceNotes, setReferenceNotes] = useState([]);
 
   const handleStartSummaryProcess = async () => {
     if (!currentNoteContent) {
         toast.error("요약할 노트 내용이 없습니다.");
         return;
     }
+
+    // [신규] 맥락 요약 여부 질문
+    setConfirmation({
+        message: "다른 노트를 참조하여 더 깊이 있는 요약을 생성할까요?",
+        confirmText: "예, 참조하기",
+        cancelText: "아니오",
+        onConfirm: () => {
+            setIsContextualSummary(true);
+            setConfirmation(null);
+            setView('note-selection'); // 노트 선택 뷰로 전환
+        },
+        onCancel: () => {
+            setIsContextualSummary(false);
+            setConfirmation(null);
+            proceedToKeywordExtraction(); // 기존 요약 프로세스 진행
+        }
+    });
+  };
+
+  const proceedToKeywordExtraction = async () => {
     setView('loading');
     setLoadingType('summary');
+    setLoadingMessage('AI가 키워드를 추천 중입니다...');
     
-    currentLoadingToastId.current = toast.loading('AI가 키워드를 추천 중입니다...'); 
+    currentLoadingToastId.current = toast.loading(loadingMessage);  
 
     abortControllerRef.current = new AbortController();
     try {
-        const data = await suggestKeywords(currentNoteContent, abortControllerRef.current.signal);
+        const textForKeywords = isContextualSummary 
+            ? [currentNoteContent, ...referenceNotes.map(n => n.content)].join('\n\n---\n\n')
+            : currentNoteContent;
+
+        const data = await suggestKeywords(textForKeywords, abortControllerRef.current.signal);
         setSuggestedKeywords(data.all_keywords || []);
         const recommended = new Set(data.recommended_keywords || []);
         setAiRecommendedKeywords(recommended);
         setSelectedKeywords(recommended);
+        setDetectedLanguage(data.detectedLanguage || 'Korean');
         setView('keyword-selection');
         toast.success('키워드 추천 완료!', { id: currentLoadingToastId.current });
     } catch (error) {
@@ -322,12 +710,31 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
       }
   };
 
+  // MODIFICATION: window.confirm을 ConfirmationView로 대체
   const handleKeywordToggle = (keyword) => {
-    setSelectedKeywords(prev => {
-        const newSet = new Set(prev);
-        newSet.has(keyword) ? newSet.delete(keyword) : newSet.add(keyword);
-        return newSet;
-    });
+    const isExisting = existingNoteTitles.has(keyword);
+    const isAdding = !selectedKeywords.has(keyword);
+
+    const performToggle = () => {
+        setSelectedKeywords(prev => {
+            const newSet = new Set(prev);
+            newSet.has(keyword) ? newSet.delete(keyword) : newSet.add(keyword);
+            return newSet;
+        });
+    };
+
+    if (isAdding && isExisting) {
+        setConfirmation({
+            message: `'${keyword}' 노트는 이미 존재합니다. 선택 시 기존 노트의 내용에 AI 분석 결과가 추가될 수 있습니다. 계속하시겠습니까?`,
+            onConfirm: () => {
+                performToggle();
+                setConfirmation(null);
+            },
+            onCancel: () => setConfirmation(null)
+        });
+    } else {
+        performToggle();
+    }
   };
 
   const handleSelectAllKeywords = () => {
@@ -337,56 +744,112 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
         setSelectedKeywords(new Set(suggestedKeywords));
     }
   };
-
-  const handleConfirmKeywords = async () => {
-    if (selectedKeywords.size === 0) {
-      toast.error("하나 이상의 키워드를 선택해주세요.");
-      return;
-    }
-    setView('loading');
-    setLoadingType('summary');
-    
-    currentLoadingToastId.current = toast.loading('AI가 요약 및 분석 내용을 생성 중입니다...'); 
-    
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-
-    try {
-        const finalKeywords = Array.from(selectedKeywords);
-        const summaryResult = await generateSummaryWithKeywords(currentNoteContent, finalKeywords, signal);
-        const sourceNoteTitle = notes[currentNoteId]?.title || currentNoteId;
-        const keywordContentPromises = finalKeywords.map(keyword =>
-            analyzeKeywordInContext(currentNoteContent, keyword, 'Korean', null, signal, sourceNoteTitle)
-        );
-        const keywordContents = await Promise.all(keywordContentPromises);
-        
-        const keywordDataMap = {};
-        finalKeywords.forEach((keyword, index) => {
-            keywordDataMap[keyword] = keywordContents[index];
-        });
-
-        setResultDataForApply({
-            type: 'summary',
-            summaryContent: summaryResult.summary,
-            keywordMap: keywordDataMap
-        });
-        setPreviewPage(0);
-
-        toast.success('AI 생성 완료! 결과를 확인하고 적용하세요.', { id: currentLoadingToastId.current });
-        setView('result');
-
-    } catch (error) {
-        if (error.name !== 'AbortError') toast.error(`AI 생성 실패: ${error.message}`, { id: currentLoadingToastId.current });
-        handleGoBack();
-    } finally {
-        setLoadingType(null);
-        currentLoadingToastId.current = null;
-    }
+  
+  const handleReferenceNoteToggle = (note) => {
+    setReferenceNotes(prev => {
+        const isSelected = prev.some(n => n.note_id === note.note_id);
+        if (isSelected) {
+            return prev.filter(n => n.note_id !== note.note_id);
+        } else {
+            if (prev.length < 2) {
+                return [...prev, note];
+            }
+            toast.error('참조 노트는 최대 2개까지 선택할 수 있습니다.');
+            return prev;
+        }
+    });
   };
 
+  // MODIFICATION: 실제 요약 생성 로직을 별도 함수로 분리
+  const proceedWithSummaryGeneration = async (shouldFillContent) => {
+      setConfirmation(null);
+      setView('loading');
+      setLoadingType('summary');
+      setLoadingMessage('요약 및 분석 내용을 생성 중입니다...');
+      
+      currentLoadingToastId.current = toast.loading(loadingMessage); 
+      
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
+      try {
+          const finalKeywords = Array.from(selectedKeywords);
+          
+          const summaryResult = isContextualSummary 
+              ? await generateContextualSummary(
+                    currentNoteContent, 
+                    referenceNotes.map(n => n.content),
+                    finalKeywords, 
+                    detectedLanguage, 
+                    signal,
+                    referenceNotes.map(n => n.title) // 참조 노트 제목 전달
+                )
+              : await generateSummaryWithKeywords(currentNoteContent, finalKeywords, detectedLanguage, signal);
+
+          const keywordDataMap = {};
+          if (finalKeywords.length > 0 && shouldFillContent) {
+              const sourceNoteTitle = notes[currentNoteId]?.title || currentNoteId;
+              const textForKeywordAnalysis = isContextualSummary 
+                  ? [currentNoteContent, ...referenceNotes.map(n => n.content)].join('\n\n---\n\n')
+                  : currentNoteContent;
+              const keywordContentPromises = finalKeywords.map(keyword =>
+                  analyzeKeywordInContext(textForKeywordAnalysis, keyword, detectedLanguage, null, signal, sourceNoteTitle)
+              );
+              const keywordContents = await Promise.all(keywordContentPromises);
+              
+              finalKeywords.forEach((keyword, index) => {
+                  keywordDataMap[keyword] = keywordContents[index];
+              });
+          } else {
+              finalKeywords.forEach(keyword => {
+                  keywordDataMap[keyword] = '';
+              });
+          }
+
+          setResultDataForApply({
+              type: 'summary',
+              summaryContent: summaryResult.summary,
+              keywordMap: keywordDataMap
+          });
+          setPreviewPage(0);
+
+          toast.success('AI 생성 완료! 결과를 확인하고 적용하세요.', { id: currentLoadingToastId.current });
+          setView('result');
+
+      } catch (error) {
+          if (error.name !== 'AbortError') toast.error(`AI 생성 실패: ${error.message}`, { id: currentLoadingToastId.current });
+          handleGoBack();
+      } finally {
+          setLoadingType(null);
+          currentLoadingToastId.current = null;
+      }
+  };
+
+  // MODIFICATION: 확인 로직을 ConfirmationView로 대체
+  const handleConfirmKeywords = () => {
+    if (selectedKeywords.size === 0) {
+        setConfirmation({
+            message: "선택된 키워드가 없습니다.\n키워드 노트 없이 요약문만 생성하시겠습니까?",
+            confirmText: "예, 생성",
+            cancelText: "취소",
+            onConfirm: () => proceedWithSummaryGeneration(false),
+            onCancel: () => setConfirmation(null),
+            onUndo: () => setConfirmation(null), // 이 경우 바깥 클릭도 취소
+        });
+    } else {
+        setConfirmation({
+            message: "생성되는 키워드 노드의 내용을 AI로 채우시겠습니까?",
+            confirmText: "예 (내용 채우기)",
+            cancelText: "아니요 (빈 노트)",
+            onConfirm: () => proceedWithSummaryGeneration(true),
+            onCancel: () => proceedWithSummaryGeneration(false), // "빈 노트로 진행"
+            onUndo: () => setConfirmation(null), // "뒤로가기/Undo"
+        });
+    }
+};
+
   const handleApplyAndCreateNotes = async () => {
-    const oldNoteKey = noteIdFromTab(activeTabId);
-    const oldNote = notes[oldNoteKey];
+    const oldNote = currentNote;
 
     if (!oldNote || !resultDataForApply || !selectedGroupId) {
         toast.error("적용할 노트, 데이터 또는 그룹을 찾을 수 없습니다.");
@@ -399,40 +862,62 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     try {
         const { summaryContent, keywordMap } = resultDataForApply;
         
-        await upsertNote(selectedGroupId, oldNote.title, summaryContent, oldNote.note_id, oldNote.title);
+        const plainTextContent = (oldNote.content || '').replace(/<[^>]*>?/gm, '');
+
+        // Markdown 구분선과 제목으로 원본 회의록을 깔끔하게 추가
+        const originalContentBlock = `
+
+---
+
+## ${h.view_original}
+
+${plainTextContent}`;
+        
+        const finalContent = `${summaryContent}${originalContentBlock}`;
+
+        await upsertNote(selectedGroupId, oldNote.title, finalContent, oldNote.note_id, oldNote.title);
         toast.success(`"${oldNote.title}" 노트 업데이트 완료!`, { id: currentLoadingToastId.current });
 
-        const newNotesData = {};
         const keywords = Object.keys(keywordMap);
-        currentLoadingToastId.current = toast.loading(`${keywords.length}개의 키워드 노트 생성/업데이트 중...`); 
+        if (keywords.length > 0) {
+            const newNotesData = {};
+            currentLoadingToastId.current = toast.loading(`${keywords.length}개의 키워드 노트 생성/업데이트 중...`); 
 
-        for (const keyword of keywords) {
-            const newSegmentContent = keywordMap[keyword];
-            const keywordResponse = await createOrAppendKeywordNote(selectedGroupId, keyword, newSegmentContent);
+            for (const keyword of keywords) {
+                const newSegmentContent = keywordMap[keyword];
+                const keywordResponse = await createOrAppendKeywordNote(selectedGroupId, keyword, newSegmentContent);
 
-            newNotesData[keyword] = {
-                content: keywordResponse.content, 
-                note_id: keywordResponse.noteId,
-                title: keyword
-            };
+                newNotesData[keyword] = {
+                    content: keywordResponse.content, 
+                    note_id: keywordResponse.noteId,
+                    title: keyword
+                };
+            }
+            toast.success(`모든 키워드 노트 처리 완료!`, { id: currentLoadingToastId.current });
+            
+            setNotes(prevNotes => ({
+                ...prevNotes,
+                [oldNote.title]: { ...prevNotes[oldNote.title], content: finalContent },
+                ...newNotesData
+            }));
+            
+            const newLinksFromSummary = Object.keys(keywordMap).map(keyword => ({
+                source: oldNote.title,
+                target: keyword
+            }));
+
+            setLinks(prevLinks => {
+                const filteredLinks = prevLinks.filter(link => link.source !== oldNote.title);
+                return [...filteredLinks, ...newLinksFromSummary];
+            });
+
+        } else {
+             setNotes(prevNotes => ({
+                ...prevNotes,
+                [oldNote.title]: { ...prevNotes[oldNote.title], content: finalContent },
+            }));
+            setLinks(prevLinks => prevLinks.filter(link => link.source !== oldNote.title));
         }
-        toast.success(`모든 키워드 노트 처리 완료!`, { id: currentLoadingToastId.current });
-
-        setNotes(prevNotes => ({
-            ...prevNotes,
-            [oldNote.title]: { ...prevNotes[oldNote.title], content: summaryContent },
-            ...newNotesData
-        }));
-        
-        const newLinksFromSummary = Object.keys(keywordMap).map(keyword => ({
-            source: oldNote.title,
-            target: keyword
-        }));
-
-        setLinks(prevLinks => {
-            const filteredLinks = prevLinks.filter(link => link.source !== oldNote.title);
-            return [...filteredLinks, ...newLinksFromSummary];
-        });
 
         onClose();
 
@@ -446,8 +931,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
 
 
   const handleGenerateTitle = async () => {
-    const currentNoteKey = noteIdFromTab(activeTabId);
-    if (!currentNoteKey || !notes[currentNoteKey]) {
+    if (!currentNote) {
         toast.error("제목을 적용할 노트가 없습니다.");
         return;
     }
@@ -472,8 +956,8 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   };
   
   const handleSelectTitle = async (selectedTitle) => {
-    const oldNoteKey = noteIdFromTab(activeTabId);
-    const noteToUpdate = notes[oldNoteKey];
+    const noteToUpdate = currentNote;
+    const oldNoteKey = Object.keys(notes).find(key => notes[key].note_id === noteToUpdate?.note_id) || noteToUpdate?.title;
 
     if (!noteToUpdate || !selectedGroupId) {
       toast.error("오류: 제목을 변경할 노트를 찾거나 그룹을 찾을 수 없습니다.");
@@ -509,36 +993,24 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
     
-    currentLoadingToastId.current = toast.loading('번역할 노트 목록을 찾는 중...'); 
+    currentLoadingToastId.current = toast.loading('노트를 번역하는 중...'); 
 
     try {
-        const currentNoteKey = noteIdFromTab(activeTabId);
-        if (!currentNoteKey || !notes[currentNoteKey]) {
+        if (!currentNote) {
             throw new Error("번역할 현재 노트를 찾을 수 없습니다.");
         }
 
-        const linkedKeywordTitles = links
-            .filter(link => link.source === currentNoteKey)
-            .map(link => link.target);
-        const notesToTranslate = [currentNoteKey, ...new Set(linkedKeywordTitles)];
-        
-        toast.loading(`${notesToTranslate.length}개의 노트를 번역 중...`, { id: currentLoadingToastId.current }); 
-
-        const translationPromises = notesToTranslate.map(title => {
-            const content = notes[title]?.content || '';
-            return translateText(title, content, targetLanguage, signal)
-                .then(result => ({
-                    originalTitle: title,
-                    translatedTitle: result.translated_title,
-                    translatedContent: result.translated_content
-                }));
-        });
-
-        const translationResults = await Promise.all(translationPromises);
+        const translationResult = await translateText(currentNote.title, currentNoteContent, targetLanguage, signal);
         
         setResultDataForApply({
             type: 'translation',
-            translations: translationResults
+            translations: [
+              {
+                originalTitle: currentNote.title,
+                translatedTitle: translationResult.translated_title,
+                translatedContent: translationResult.translated_content
+              }
+            ]
         });
         setPreviewPage(0);
 
@@ -557,71 +1029,80 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   };
 
   const handleApplyTranslations = async () => {
-      if (!resultDataForApply || resultDataForApply.type !== 'translation' || !selectedGroupId) {
-          toast.error("적용할 번역 데이터가 없거나 그룹이 선택되지 않았습니다.");
-          return;
-      }
+    if (!resultDataForApply || resultDataForApply.type !== 'translation') return;
 
-      setIsLoading(true);
-      currentLoadingToastId.current = toast.loading(`${resultDataForApply.translations.length}개의 새로운 번역 노드를 생성 중...`); 
+    setConfirmation({
+        message: "번역 결과를 어떻게 적용할까요?",
+        confirmText: "새 노트로 생성",
+        cancelText: "현재 노트에 덮어쓰기",
+        onConfirm: () => applyTranslation(true), // 새 노트로 생성
+        onCancel: () => applyTranslation(false), // 덮어쓰기
+        onUndo: () => setConfirmation(null),
+    });
+  };
 
-      try {
-          const newNotesData = {};
-          const titleTranslationMap = new Map();
-          resultDataForApply.translations.forEach(item => titleTranslationMap.set(item.originalTitle, item.translatedTitle));
+  const applyTranslation = async (createNew) => {
+    setConfirmation(null);
+    if (!resultDataForApply || resultDataForApply.type !== 'translation' || !selectedGroupId) {
+        toast.error("적용할 번역 데이터가 없거나 그룹이 선택되지 않았습니다.");
+        return;
+    }
 
-          const processedTranslations = resultDataForApply.translations.map(item => {
-              let correctedContent = item.translatedContent;
-              titleTranslationMap.forEach((newTitle, oldTitle) => {
-                  const oldLinkRegex = new RegExp(`\\[\\[${oldTitle.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\]\\]`, 'g');
-                  correctedContent = correctedContent.replace(oldLinkRegex, `[[${newTitle}]]`);
-              });
-              return { ...item, translatedContent: correctedContent };
-          });
+    setIsLoading(true);
+    const translationItem = resultDataForApply.translations[0];
+    const { originalTitle, translatedTitle, translatedContent } = translationItem;
+    
+    const toastId = toast.loading(createNew ? `'${translatedTitle}' 노트 생성 중...` : `'${originalTitle}' 노트 업데이트 중...`);
 
-          for (const item of processedTranslations) {
-              const { translatedTitle, translatedContent } = item;
-              const { noteId: newNoteId } = await upsertNote(
-                  selectedGroupId,
-                  translatedTitle,
-                  translatedContent,
-                  null
-              );
-              newNotesData[translatedTitle] = {
-                  content: translatedContent,
-                  note_id: newNoteId,
-                  title: translatedTitle
-              };
-          }
-          toast.success('모든 번역 노트 생성 완료!', { id: currentLoadingToastId.current });
+    try {
+        const noteToUpdate = notes[originalTitle];
+        const noteIdToUpsert = createNew ? null : noteToUpdate?.note_id;
 
-          currentLoadingToastId.current = toast.loading('새로운 링크를 생성 중...'); 
-          
-          const originalSummaryTitle = resultDataForApply.translations[0].originalTitle;
-          const newSummaryTitle = titleTranslationMap.get(originalSummaryTitle);
+        const { noteId: finalNoteId } = await upsertNote(
+            selectedGroupId,
+            createNew ? translatedTitle : originalTitle, // 덮어쓰기 시에는 원본 제목 유지
+            translatedContent,
+            noteIdToUpsert,
+            createNew ? null : originalTitle
+        );
 
-          const newLinks = links
-            .filter(link => link.source === originalSummaryTitle && titleTranslationMap.has(link.target))
-            .map(link => ({
-                source: newSummaryTitle,
-                target: titleTranslationMap.get(link.target)
-            }))
-            .filter(link => link.source && link.target);
+        if (createNew) {
+            setNotes(prev => ({ 
+                ...prev, 
+                [translatedTitle]: {
+                    content: translatedContent,
+                    note_id: finalNoteId,
+                    title: translatedTitle
+                }
+            }));
+            openTab({ title: translatedTitle, type: 'note', noteId: finalNoteId });
+            toast.success('새로운 번역 노트 생성 완료!', { id: toastId });
+        } else {
+            setNotes(prev => {
+                const newState = { ...prev };
+                const oldNoteData = newState[originalTitle];
+                if (oldNoteData) {
+                    delete newState[originalTitle];
+                    newState[translatedTitle] = {
+                        ...oldNoteData,
+                        content: translatedContent,
+                        title: translatedTitle,
+                        update_at: new Date().toISOString(),
+                    };
+                }
+                return newState;
+            });
+            updateTitle(originalTitle, translatedTitle);
+            toast.success(`'${originalTitle}' 노트가 업데이트되었습니다.`, { id: toastId });
+        }
+        
+        onClose();
 
-          setNotes(prev => ({ ...prev, ...newNotesData }));
-          setLinks(prev => [ ...prev, ...newLinks ]);
-          
-          toast.success('새로운 링크 생성 완료!', { id: currentLoadingToastId.current });
-
-          openTab({ title: newSummaryTitle, type: 'note', noteId: newSummaryTitle });
-          onClose();
-
-      } catch (error) {
-          toast.error(`번역 적용 실패: ${error.message}`, { id: currentLoadingToastId.current });
-      } finally {
-          setIsLoading(false);
-          currentLoadingToastId.current = null;
-      }
+    } catch (error) {
+        toast.error(`번역 적용 실패: ${error.message}`, { id: toastId });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handlePrevPage = () => {
@@ -646,16 +1127,17 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
         const keywordIndex = previewPage - 1;
         if (keywordIndex < orderedKeywords.length) {
             const keyword = orderedKeywords[keywordIndex];
-            return { title: `키워드: ${keyword}`, content: resultDataForApply.keywordMap[keyword], totalPages };
+            const content = resultDataForApply.keywordMap[keyword] || '*(빈 노트로 생성됩니다)*';
+            return { title: `키워드: ${keyword}`, content, totalPages };
         }
     }
 
     if (resultDataForApply.type === 'translation') {
-        const totalPages = resultDataForApply.translations.length;
-        const translationItem = resultDataForApply.translations[previewPage];
+        const totalPages = 1; // Only one page for the current note translation
+        const translationItem = resultDataForApply.translations[0];
         if (translationItem) {
-            const title = previewPage === 0 ? "메인 노트 번역" : `키워드 '${translationItem.originalTitle}' 번역`;
-            return { title: title, content: `## ${translationItem.translatedTitle}\n\n${translationItem.translatedContent}`, totalPages };
+            const title = `번역 미리보기: ${translationItem.translatedTitle}`;
+            return { title: title, content: translationItem.translatedContent, totalPages };
         }
     }
 
@@ -667,7 +1149,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   return (
     <div className={`ai-actions-widget ${isVisible ? 'visible' : ''}`}>
       <div className="widget-header">
-        {view !== 'initial' && (
+        {(view !== 'initial' || wasChatCleared) && (
           <button className="widget-back-button" onClick={handleGoBack}>←</button>
         )}
         <h4 className="widget-title">AI Assistance</h4>
@@ -688,13 +1170,15 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
       
       <div className="widget-content-wrapper">
         <div className="main-content-area" ref={chatContainerRef}>
+            {/* ... (이전 뷰들은 동일) ... */}
             
             {view === 'initial' && (
               <div className={`initial-view-container ${wasChatCleared ? 'cleared-mode' : ''} fade-in`}>
                 {wasChatCleared ? (
                   <div className="ai-greeting centered">
-                      <div className="typing-effect cleared-text">
-                        대화가 초기화 되었습니다.<br/>다시 질문해주세요.
+                      <div className="cleared-text-container">
+                        <div className="cleared-text-line">대화가 초기화 되었습니다.</div>
+                        <div className="cleared-text-line">다시 질문해주세요.</div>
                       </div>
                   </div>
                 ) : (
@@ -739,7 +1223,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                             <div className={`chat-message-wrapper ${msg.type}`}>
                                 {msg.type === 'ai' && <span className="chat-message-time">{formatTime(msg.timestamp)}</span>}
                                 <div className={`chat-message ${msg.type}`}>
-                                    {msg.type === 'ai' ? <ReactMarkdown>{msg.text}</ReactMarkdown> : <p>{msg.text}</p>}
+                                    {msg.type === 'ai' ? <SlatePreview content={msg.text} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} /> : <p>{msg.text}</p>}
                                 </div>
                                 {msg.type === 'user' && <span className="chat-message-time">{formatTime(msg.timestamp)}</span>}
                             </div>
@@ -765,38 +1249,89 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
             )}
             
             {view === 'history' && (
-                <div className="history-log-view fade-in">
-                    {historyLogData && historyLogData.length > 0 ? (
-                        <ul className="history-log-list">
-                            {historyLogData.map(({ noteId, title, groupId, groupName }) => (
-                                <li key={noteId} className="history-log-item">
-                                    <button onClick={() => handleLoadHistory(noteId, groupId)}>
-                                        <span className="history-log-title">{title}</span>
-                                        <span className="history-log-noteId">{noteId} (그룹: {groupName})</span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="history-log-empty">
-                            <p>채팅 로그가 없습니다.</p>
-                            <p>Synapse와 대화를 시작하세요!</p>
-                        </div>
-                    )}
+        <div className="history-log-view fade-in">
+            {isHistoryLoading ? <p>로딩 중...</p> : (
+            historyLogData && historyLogData.length > 0 ? (
+                <ul className="history-log-list">
+                    {historyLogData.map(({ session_id, note_id, group_id, displayTitle, displayGroupName, note_title }) => (
+                        <li key={session_id} className="history-log-item">
+                            <div
+                                className="history-log-content"
+                                onClick={() => handleLoadHistory(note_id, note_title, group_id)}
+                            >
+                                <span className="history-log-title">{displayTitle}</span>
+                                <span className="history-log-noteId">그룹: {displayGroupName}</span>
+                            </div>
+                            <button
+                                className="history-delete-button"
+                                onClick={(e) => handleDeleteHistory(e, session_id)}
+                                title="Synapse 채팅 기록 삭제"
+                            >
+                                <AnimatedTrashIcon />
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <div className="history-log-empty">
+                    <p>채팅 로그가 없습니다.</p>
+                    <p>Synapse와 대화를 시작하세요!</p>
+                </div>
+            ))}
+        </div>
+    )}
+    
+            {view === 'note-selection' && (
+                <div className="note-selection-view fade-in">
+                    <p className="selection-guide">참조할 노트를 최대 2개까지 선택하세요.</p>
+                    <div className="note-list">
+                        {Object.values(notes).filter(note => note.note_id !== currentNote.note_id).map(note => (
+                            <div 
+                                key={note.note_id}
+                                className={`note-item ${referenceNotes.some(n => n.note_id === note.note_id) ? 'selected' : ''}`}
+                                onClick={() => handleReferenceNoteToggle(note)}
+                            >
+                                {note.title}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="selection-actions">
+                        <button 
+                            className="confirm-button"
+                            onClick={proceedToKeywordExtraction}
+                        >
+                            {referenceNotes.length}개 노트 선택 완료
+                        </button>
+                    </div>
                 </div>
             )}
-    
+
             {view === 'keyword-selection' && (
                 <div className="keyword-selection-view fade-in">
-                    <p className="selection-guide">AI 추천(노란색)을 참고하여 요약에 포함할 핵심 단어를 선택하세요.</p>
+                    <p className="selection-guide">AI 추천(노란색) 및 기존 노트(*)를 참고하여 키워드를 선택하거나, 직접 추가하세요.</p>
+                    
+                    {/* 사용자 키워드 추가 UI */}
+                    <div className="custom-keyword-input-container">
+                        <input
+                            type="text"
+                            value={customKeyword}
+                            onChange={(e) => setCustomKeyword(e.target.value)}
+                            placeholder="추가할 키워드 입력..."
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddCustomKeyword()}
+                        />
+                        <button onClick={handleAddCustomKeyword}>추가</button>
+                    </div>
+
                     <div className={`keyword-list ${isRegeneratingKeywords ? 'regenerating' : ''}`}>
                         {suggestedKeywords.map((keyword, index) => {
                             const isSelected = selectedKeywords.has(keyword);
                             const isRecommended = aiRecommendedKeywords.has(keyword);
+                            const isExisting = existingNoteTitles.has(keyword);
                             
                             let chipClass = 'keyword-chip';
                             if (isRecommended) chipClass += ' ai-recommended';
                             if (isSelected) chipClass += ' selected';
+                            if (isExisting) chipClass += ' existing';
 
                             return (
                                 <button
@@ -804,8 +1339,10 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                                 className={chipClass}
                                 onClick={() => handleKeywordToggle(keyword)}
                                 disabled={isRegeneratingKeywords}
+                                title={isExisting ? `"${keyword}" 노트가 이미 존재합니다. 선택 시 내용이 추가됩니다.` : ''}
                                 >
                                 {keyword}
+                                {isExisting && <span className="existing-indicator">*</span>}
                                 </button>
                             );
                             })}
@@ -829,7 +1366,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                         <button
                             className="confirm-button"
                             onClick={handleConfirmKeywords}
-                            disabled={selectedKeywords.size === 0 || isRegeneratingKeywords}
+                            disabled={isRegeneratingKeywords}
                         >
                             {selectedKeywords.size}개 선택 완료
                         </button>
@@ -871,8 +1408,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                         <button onClick={handleNextPage} disabled={previewPage >= currentPreviewData.totalPages - 1}>{'다음 >'}</button>
                     </div>
                     
-                    <h4>{currentPreviewData.title}</h4>
-                    <div className="result-markdown-preview"><ReactMarkdown>{currentPreviewData.content}</ReactMarkdown></div>
+                    <h4>{currentPreviewData.title}</h4>                    <div className="result-markdown-preview">                        <SlatePreview content={currentPreviewData.content} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} />                        {resultDataForApply.type === 'summary' && previewPage === 0 && (                            <details className="original-content-collapser">                                <summary>{h.view_original} (미리보기: {(currentNoteContent || '').trim().split('\n')[0].substring(0, 50)}...)</summary>                                <div className="original-content-body">                                    <SlatePreview content={currentNoteContent} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} />                                </div>                            </details>                        )}                    </div>
                     
                     <div className="result-apply-button-container">
                       {resultDataForApply.type === 'summary' && (
@@ -893,7 +1429,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                 <div className={`loading-view-full fade-in`}>
                     { (loadingType === 'summary' || loadingType === 'chat') && (
                         <div className="summary-loader">
-                            <div className="loader-text">{loadingType === 'summary' ? 'AI 분석 중...' : '생각 중...'}</div>
+                            <div className="loader-text">{loadingMessage}</div>
                             <div className="bar"></div>
                             <div className="bar"></div>
                             <div className="bar"></div>
@@ -901,8 +1437,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
                     )}
                     { loadingType === 'title' && (
                         <div className="title-loader-wrapper">
-                            <div className="loader-text">Synapse가 제목을 구상 중입니다...</div>
-                            <div className="typing-effect">Thinking of a good title...</div>
+                            <div className="retro-typing-effect">제목 생성 중...</div>
                         </div>
                     )}
                     { loadingType === 'translate' && (
@@ -925,22 +1460,28 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
             <button className="history-button" onClick={() => setView('history')} title="대화 기록 보기">
                 <HistoryIcon />
             </button>
-            <textarea
-                className="chat-input"
-                placeholder="Synapse에게 노트에 대해 물어보세요 (Enter)"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={handleChatSubmit}
-                rows={1}
-                disabled={!currentNoteContent || isLoading}
-                onClick={() => {
-                  setWasChatCleared(false);
-                  setView('chat');
-                }}
-            />
+            <div className="chat-input-wrapper">
+                <textarea
+                    ref={chatInputRef}
+                    className="chat-input"
+                    placeholder="Synapse에게 노트에 대해 물어보세요 (Enter)"
+                    value={chatInput}
+                    onChange={handleChatInputChange}
+                    onKeyDown={handleChatSubmit}
+                    rows={1}
+                    disabled={!currentNoteContent || isLoading}
+                    onClick={() => {
+                      setWasChatCleared(false);
+                      setView('chat');
+                    }}
+                />
+            </div>
         </div>
         )}
       </div>
-    </div>
+
+      {confirmation && <ConfirmationView {...confirmation} />}
+
+      </div>
   );
 }

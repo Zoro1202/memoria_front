@@ -1,32 +1,39 @@
-/* RecordingList.css - 최종 수정본 */
+/* === RecordingList.css - 최종 완성본 === */
 
-/* 카드들을 감싸는 그리드 컨테이너 */
-.recording-list-grid {
-  display: grid;
-  /* 
-    [핵심 수정 1] 화면 크기에 맞춰 자동으로 컬럼 수를 조절하는 반응형 그리드
-    - 한 줄에 최소 220px 크기의 카드를 최대한 채우고, 남는 공간은 균등하게 배분합니다. 
-  */
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px; /* 카드 사이의 간격 */
+/* 녹화카드 외곽 컨테이너(랩) */
+.recording-list-wrap {
+  min-height: 700px;                      /* ✅ 충분한 높이 (10개+페이지네이션) */
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  border: 1px dashed #ddd;
+  border-radius: 12px;
+  background: var(--bg-primary, #fff);    /* CSS 변수 또는 fallback */
+  padding: 32px 0 40px 0;                 /* ✅ 아래 padding으로 페이지네이션 절대 안짤림 */
+  overflow: visible;                      /* 하위 내용 잘림 X */
 }
 
-/* 개별 녹화 카드 */
+/* 카드 그리드 */
+.recording-list-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);  /* ★ 5열 카드 고정 */
+  gap: 24px;
+  width: 100%;
+  margin-bottom: 0;   /* 아래 여백은 pagination에서 줌 */
+}
+
+/* 각 녹화카드 */
 .recording-card {
   display: flex;
   flex-direction: column;
   border-radius: 12px;
-  overflow: hidden; /* 카드를 벗어나는 내용을 깔끔하게 잘라냄 */
-  
-  /* [핵심 수정 2] 테마 시스템과 연동되도록 CSS 변수 사용 */
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background-color: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* 다크모드일 때 카드 그림자 조정 */
 .app-layout.dark .recording-card {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -39,8 +46,8 @@
 /* 동영상 썸네일 영역 */
 .recording-thumb {
   width: 100%;
-  aspect-ratio: 16 / 10; /* [핵심 수정 3] 고정 크기 대신 비율을 유지하여 반응형으로 만듦 */
-  background-color: var(--bg-secondary);
+  aspect-ratio: 16 / 10;
+  background-color: var(--bg-secondary, #f9f9f9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,13 +57,13 @@
 .recording-thumb video {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* 썸네일 영역을 영상으로 꽉 채움 */
+  object-fit: cover;
 }
 
-/* 녹화 정보 (제목, 날짜) */
+/* 녹화 정보 */
 .recording-info {
   padding: 12px 16px;
-  flex-grow: 1; /* 카드 내에서 남는 세로 공간을 모두 차지 */
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
@@ -64,30 +71,29 @@
 .recording-title {
   font-weight: 600;
   font-size: 1.05rem;
-  color: var(--text-primary); /* 변수 사용 */
+  color: var(--text-primary, #1a1a1a);
   margin: 0 0 4px 0;
-  word-break: break-word; /* 긴 제목이 카드를 벗어나지 않도록 줄바꿈 */
+  word-break: break-word;
 }
 
 .recording-date {
-  color: var(--text-secondary); /* 변수 사용 */
+  color: var(--text-secondary, #666);
   font-size: 0.9rem;
-  margin-top: auto; /* 날짜 정보를 항상 카드 하단에 위치시킴 */
+  margin-top: auto;
 }
 
-/* 재생/다운로드 버튼 영역 */
 .recording-actions {
-  display: grid; /* 두 버튼을 50:50으로 나누기 위해 그리드 사용 */
+  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
-  background-color: var(--border-color);
-  border-top: 1px solid var(--border-color);
+  background-color: var(--border-color, #e0e0e0);
+  border-top: 1px solid var(--border-color, #e0e0e0);
 }
 
 .play-btn, .download-btn {
   padding: 10px;
-  background-color: var(--bg-primary); /* 변수 사용 */
-  color: var(--text-primary); /* 변수 사용 */
+  background-color: var(--bg-primary, #fff);
+  color: var(--text-primary, #1a1a1a);
   font-weight: 500;
   text-decoration: none;
   font-size: 0.95rem;
@@ -98,58 +104,76 @@
 }
 
 .play-btn:hover, .download-btn:hover {
-  background-color: var(--bg-secondary); /* 변수 사용 */
+  background-color: var(--bg-secondary, #f4f7fa);
 }
 
-/* 재생 버튼에만 포인트 색상 적용 */
 .play-btn {
-  color: var(--accent-color); /* 변수 사용 */
+  color: var(--accent-color, #1976d2);
 }
 
 /* 페이지네이션 버튼 */
 .pagination {
   display: flex;
   justify-content: center;
-  margin-top: 32px; /* 카드 목록과의 간격 */
+  margin-top: 32px;
+  margin-bottom: 32px;             /* ✅ 하단 여백 넉넉! */
   gap: 8px;
 }
 
 .pagination button {
   padding: 8px 16px;
   border-radius: 6px;
-  border: 1px solid var(--border-color); /* 변수 사용 */
-  background: var(--bg-primary); /* 변수 사용 */
-  color: var(--text-primary); /* 변수 사용 */
+  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #1a1a1a);
   font-weight: 500;
   cursor: pointer;
   font-size: 1rem;
 }
 
 .pagination button:hover {
-  background: var(--bg-secondary); /* 변수 사용 */
+  background: var(--bg-secondary, #f4f7fa);
 }
 
 .pagination button.active {
-  background: var(--accent-color); /* 변수 사용 */
+  background: var(--accent-color, #1976d2);
   color: #fff;
-  border-color: var(--accent-color);
+  border-color: var(--accent-color, #1976d2);
 }
-
-/* 다크모드 활성 페이지 버튼 글자색 조정 */
 .app-layout.dark .pagination button.active {
   color: #1e1e1e;
 }
 
-/* 로딩 또는 데이터 없음 안내 메시지 */
+/* 로딩/데이터없음 안내 */
 .recording-list-empty, .recording-list-loading {
   width: 100%;
   padding: 40px;
   text-align: center;
   font-size: 1.1rem;
-  color: var(--text-secondary); /* 변수 사용 */
+  color: var(--text-secondary, #888);
 }
 
-/* 
-  기존의 미디어 쿼리는 grid-template-columns의 auto-fill, minmax로 대체되어
-  더 이상 필요하지 않으므로 제거했습니다.
-*/
+/* 반응형 - 모바일에서는 최소 1~2열로 자동 바뀌게(추천 옵션) */
+@media (max-width: 1100px) {
+  .recording-list-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .recording-list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .recording-list-wrap {
+    min-height: 400px;
+    padding: 9vw 0 50px 0;
+  }
+}
+@media (max-width: 500px) {
+  .recording-list-grid {
+    grid-template-columns: 1fr;
+  }
+  .recording-list-wrap {
+    min-height: 260px;
+    padding: 12vw 0 60px 0;
+  }
+}

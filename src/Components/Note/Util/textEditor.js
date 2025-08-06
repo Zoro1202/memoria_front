@@ -194,7 +194,7 @@ const Element = ({ attributes, children, element }) => {
         transition: 'opacity 0.2s ease',
       }}
     >
-      <button
+      {/* <button
         onClick={handleAddBlock}
         style={{
           width: '24px',
@@ -204,7 +204,7 @@ const Element = ({ attributes, children, element }) => {
         }}
       >
         +
-      </button>
+      </button> */}
     </div>
     
       {(() => {

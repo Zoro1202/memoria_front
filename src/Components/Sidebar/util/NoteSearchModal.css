@@ -275,7 +275,7 @@
 
 
 /* 다크모드 지원 (선택사항) */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .search-modal-container {
     background: #1f2937;
     border: 1px solid #374151;
@@ -307,4 +307,192 @@
     background: #111827;
     border-top-color: #374151;
   }
+} */
+
+/* 검색어 하이라이트 */
+.result-title mark,
+.result-preview mark {
+  background-color: #fef08a;
+  color: #92400e;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+/* 메타 정보 */
+.result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.result-date {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.result-id {
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: normal;
+}
+
+/* 빈 콘텐츠 처리 */
+.result-preview:empty {
+  display: none;
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .search-modal-container {
+    width: 95vw;
+    margin: 20px auto;
+  }
+  
+  .result-meta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+}
+
+/* 결과 아이템 레이아웃 개선 */
+.result-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  gap: 12px;
+}
+
+.result-main {
+  flex: 1;
+  min-width: 0; /* 텍스트 오버플로우를 위해 */
+}
+
+.result-dates {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.date-info {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.date-info.created {
+  /* background-color: #f0f9ff; */
+  color: #2383E2;
+  /* border: 1px solid #e0f2fe; */
+}
+
+.date-info.updated {
+  /* background-color: #fef3c7; */
+  color: #111827;
+  /* border: 1px solid #fde68a; */
+}
+
+/* 기존 오른쪽 날짜 스타일 제거 */
+.result-meta {
+  display: none; /* 기존 오른쪽 날짜 숨기기 */
+}
+
+/* 호버 효과 */
+.result-item:hover .created-date {
+  background-color: #e0f2fe;
+  border-color: #bae6fd;
+}
+
+.result-item:hover .updated-date {
+  background-color: #fde68a;
+  border-color: #f59e0b;
+}
+
+/* 선택된 상태 */
+.result-item.selected .created-date {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.result-item.selected .updated-date {
+  background-color: #fed7aa;
+  color: #c2410c;
+}
+
+/* 미리보기 텍스트 길이 조정 */
+.result-preview {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 4px 0 0 20px;
+  max-width: 300px; /* 날짜 영역 확보 */
+}
+
+/* 반응형 - 모바일 */
+@media (max-width: 640px) {
+  .result-item-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .result-dates {
+    align-self: flex-start;
+  }
+  
+  .date-info {
+    flex-direction: row;
+    gap: 6px;
+  }
+  
+  .result-preview {
+    max-width: none;
+  }
+}
+
+/* 검색어 하이라이트 개선 */
+.result-title mark,
+.result-preview mark {
+  background-color: #fef08a;
+  color: #92400e;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 결과 아이템 헤더 정리 */
+.result-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.result-title {
+  flex: 1;
+  font-weight: 500;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-id {
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: normal;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 8px;
 }

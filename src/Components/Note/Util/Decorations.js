@@ -1,15 +1,57 @@
-// Decorations.js
 import Prism from 'prismjs'
 import 'prismjs/components/prism-markdown'
 import { Text } from 'slate'
 
 export const Decorations = () => {
   return ([node, path]) => {
-    const ranges = []
-    if (!Text.isText(node)) return ranges
+    const ranges = [];
+    
+    if (!Text.isText(node)) {
+      return ranges;
+    }
 
-    const text = node.text
-    let offset = 0
+    const text = node.text;
+    
+    const patterns = [
+      { regex: /(\*\*)([^*]+)(\*\*)/g, type: 'bold' },
+      { regex: /(__)([^*]+)(__)/g, type: 'italic' },
+      { regex: /(`)([^`]+)(`)/g, type: 'code' },
+    ];
+
+    patterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.regex.exec(text)) !== null) {
+        const [fullMatch, before, content] = match;
+        const start = match.index;
+        const end = start + fullMatch.length;
+        
+        const markdownRange = {
+          anchor: { path, offset: start },
+          focus: { path, offset: end },
+        };
+
+        ranges.push({
+          [`${pattern.type}Syntax`]: true,
+          anchor: { path, offset: start },
+          focus: { path, offset: start + before.length },
+          markdownRange,
+        });
+        
+        ranges.push({
+          [pattern.type]: true,
+          anchor: { path, offset: start + before.length },
+          focus: { path, offset: start + before.length + content.length },
+          markdownRange,
+        });
+        
+        ranges.push({
+          [`${pattern.type}Syntax`]: true,
+          anchor: { path, offset: start + before.length + content.length },
+          focus: { path, offset: end },
+          markdownRange,
+        });
+      }
+    });
 
     const getLength = token => {
       if (typeof token === 'string') return token.length
@@ -17,208 +59,59 @@ export const Decorations = () => {
       return token.content.reduce((l, t) => l + getLength(t), 0)
     }
 
-    const tokens = Prism.tokenize(text, Prism.languages.markdown)
-
+    const tokens = Prism.tokenize(node.text, Prism.languages.markdown)
+    let start = 0
     for (const token of tokens) {
       const length = getLength(token)
-      const end = offset + length
-
-      if (typeof token === 'string') {
-        offset = end
-        continue
-      }
-
-      const { type, content } = token
-
-      // ✅ Bold (ex: **bold** or __bold__)
-      if (type === 'bold') {
-        const match = /(\*\*|__)(.+?)\1/.exec(text.slice(offset))
-        if (match) {
-          const matchStart = offset + match.index
-          const matchEnd = matchStart + match[0].length
+      const end = start + length
+      if (typeof token !== 'string') {
+        if (!['bold', 'italic', 'code'].includes(token.type)) {
           ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchStart },
-            focus: { path, offset: matchStart + match[1].length },
-          })
-          ranges.push({
-            bold: true,
-            anchor: { path, offset: matchStart + match[1].length },
-            focus: { path, offset: matchEnd - match[1].length },
-          })
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchEnd - match[1].length },
-            focus: { path, offset: matchEnd },
-          })
-          offset = matchEnd
-          continue
-        }
-      }
-
-      // ✅ Italic (ex: *italic* or _italic_)
-      if (type === 'italic') {
-        const match = /(\*|_)([^*_]+?)\1/.exec(text.slice(offset))
-        if (match) {
-          const matchStart = offset + match.index
-          const matchEnd = matchStart + match[0].length
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchStart },
-            focus: { path, offset: matchStart + 1 },
-          })
-          ranges.push({
-            italic: true,
-            anchor: { path, offset: matchStart + 1 },
-            focus: { path, offset: matchEnd - 1 },
-          })
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchEnd - 1 },
-            focus: { path, offset: matchEnd },
-          })
-          offset = matchEnd
-          continue
-        }
-      }
-
-      // ✅ Strikethrough (ex: ~~strike~~)
-      if (type === 'strikethrough') {
-        const match = /~~(.+?)~~/.exec(text.slice(offset))
-        if (match) {
-          const matchStart = offset + match.index
-          const matchEnd = matchStart + match[0].length
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchStart },
-            focus: { path, offset: matchStart + 2 },
-          })
-          ranges.push({
-            strikethrough: true,
-            anchor: { path, offset: matchStart + 2 },
-            focus: { path, offset: matchEnd - 2 },
-          })
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchEnd - 2 },
-            focus: { path, offset: matchEnd },
-          })
-          offset = matchEnd
-          continue
-        }
-      }
-
-      // ✅ Highlight (==highlight==)
-      if (type === 'highlight') {
-        const match = /==(.+?)==/.exec(text.slice(offset))
-        if (match) {
-          const matchStart = offset + match.index
-          const matchEnd = matchStart + match[0].length
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchStart },
-            focus: { path, offset: matchStart + 2 },
-          })
-          ranges.push({
-            highlight: true,
-            anchor: { path, offset: matchStart + 2 },
-            focus: { path, offset: matchEnd - 2 },
-          })
-          ranges.push({
-            syntaxToken: true,
-            anchor: { path, offset: matchEnd - 2 },
-            focus: { path, offset: matchEnd },
-          })
-          offset = matchEnd
-          continue
-        }
-      }
-
-      // ✅ Heading 처리 (이미 존재하는 코드는 유지)
-      if (type === 'heading' && typeof content === 'string') {
-        const match = /^(#{1,6})(\s*)(.+)/.exec(content)
-        if (match) {
-          const hashes = match[1]
-          const spaces = match[2]
-          // eslint-disable-next-line
-          const headingText = match[3]
-          const hashLen = hashes.length
-          const spaceLen = spaces.length
-          const start = offset
-
-          ranges.push({
-            syntaxToken: true,
+            [token.type]: true,
             anchor: { path, offset: start },
-            focus: { path, offset: start + hashLen },
+            focus: { path, offset: end },
           })
-
-          if (spaceLen > 0) {
-            ranges.push({
-              syntaxToken: true,
-              anchor: { path, offset: start + hashLen },
-              focus: { path, offset: start + hashLen + spaceLen },
-            })
-          }
-
-          ranges.push({
-            heading: true,
-            anchor: { path, offset: start + hashLen + spaceLen },
-            focus: { path, offset: start + getLength(token) },
-          })
-          offset += getLength(token)
-          continue
         }
       }
-
-      // ✅ Horizontal rule (--- or ***)
-      if (type === 'hr' || text.trim() === '---' || text.trim() === '***') {
-        ranges.push({
-          syntaxToken: true,
-          anchor: { path, offset },
-          focus: { path, offset: end },
-        })
-        offset = end
-        continue
-      }
-
-      // fallback: 그대로 강조
-      ranges.push({
-        [type]: true,
-        anchor: { path, offset },
-        focus: { path, offset: end },
-      })
-
-      offset = end
+      start = end 
     }
 
-    // ✅ [[Obsidian]] 링크 감지
-    const regex = /\[\[([^\]]+)\]\]/g;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      const full = match[0];
-      const linkText = match[1];
-      const startIdx = match.index;
-      const endIdx = startIdx + full.length;
+    const linkRegex = /\[\[([^\]]+)\]\]/g
+    let linkMatch
+    while ((linkMatch = linkRegex.exec(node.text)) !== null) {
+      const fullMatch = linkMatch[0]
+      const linkText = linkMatch[1]
+      const startIdx = linkMatch.index
+      const endIdx = startIdx + fullMatch.length
 
-      // [[ 부분
+      const markdownRange = {
+        anchor: { path, offset: startIdx },
+        focus: { path, offset: endIdx },
+      };
+
       ranges.push({
-        syntaxToken: true,
+        linkSyntax: true,
         anchor: { path, offset: startIdx },
         focus: { path, offset: startIdx + 2 },
-      });
-      // 링크 본문
+        markdownRange,
+      })
+
       ranges.push({
         obsidianLink: true,
         linkValue: linkText,
+        linkId: `link-${path.join('-')}-${startIdx}`,
+        className: `link-${path.join('-')}-${startIdx}`,
         anchor: { path, offset: startIdx + 2 },
         focus: { path, offset: endIdx - 2 },
-      });
-      // ]] 부분
+        markdownRange,
+      })
+
       ranges.push({
-        syntaxToken: true,
+        linkSyntax: true,
         anchor: { path, offset: endIdx - 2 },
         focus: { path, offset: endIdx },
-      });
+        markdownRange,
+      })
     }
 
     return ranges

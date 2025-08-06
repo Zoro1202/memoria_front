@@ -111,12 +111,12 @@ export default function GraphView({ data, onSelect }) {
         }}
         onNodeClick={(node) => { // 노드 클릭 시 해당 노드의 노트를 onSelect(콜백)으로 넘김 -> 부모쪽에서 opentab으로 노트 열기
           // fgRef.current.zoom(1, 300);
-          fgRef.current.centerAt(node.x, node.y, 1000); // center at 으로 노드에 카메라 맞추기 1초
-          fgRef.current.zoom(2, 1000); // // zoom하기 1.5초
+          // fgRef.current.centerAt(node.x, node.y, 1000); // center at 으로 노드에 카메라 맞추기 1초
+          // fgRef.current.zoom(2, 1000); // // zoom하기 1.5초
           toast.success(`${node.id} 클릭!`); // 1.5초 후에 노트 열기
           // fgRef.current.d3ReheatSimulation();
-          setTimeout(() => onSelect(node.id), 1000); // 1.5초 후에 노트 열기(노트 오류..)
-          // onSelect(node.id);
+          // setTimeout(() => onSelect(node.id), 1000); // 1.5초 후에 노트 열기(노트 오류..)
+          onSelect(node.id); // 노트열기
         }}
         // hovernode state로 어쩌고 저쩌고
         nodeCanvasObject={(node, ctx, globalScale) => { // 노드 그리기 설정

@@ -1,0 +1,132 @@
+/*바꿔야됨*/
+/* body {
+  background: #f6f7fa;
+  font-family: 'Apple SD Gothic Neo', 'Segoe UI', 'Malgun Gothic', sans-serif;
+  color: #222a4a;
+} */
+
+/* 전체 카드 컨테이너 */
+.meeting-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 3px 24px rgba(44, 59, 95, 0.10);
+  max-width: 440px;
+  margin: 38px auto;
+  padding: 32px 24px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* 탭 바 */
+.meeting-mode-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+}
+.meeting-mode-btn {
+  flex: 1;
+  padding: 14px 0;
+  border-radius: 10px 10px 0 0;
+  font-weight: 600;
+  border: none;
+  font-size: 1.11rem;
+  background: #f4f6fa;
+  color: #2643e9;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  border-bottom: 2px solid #c7d6ff;
+}
+.meeting-mode-btn.selected {
+  background: #2643e9;
+  color: #fff;
+  border-bottom: 2px solid #2643e9;
+}
+
+/* 카드 내 서브 구역(그룹선택/업로드/녹음) */
+.group-select-container,
+.file-upload-stt-box,
+.record-stt-box {
+  background: #fafbfc;
+  border-radius: 13px;
+  box-shadow: 0 1px 8px rgba(90,120,160,.026);
+  width: 100%;
+  margin-bottom: 17px;
+  padding: 17px 16px 15px 16px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* 제목 라벨 */
+.group-select-container h4,
+.file-upload-stt-box h4,
+.record-stt-box h4 {
+  font-size: 1.08rem;
+  color: #2b44b8;
+  font-weight: 700;
+  margin: 0 0 11px 0;
+  letter-spacing: -0.01em;
+}
+
+/* 드롭다운, 입력박스, 버튼 공통 스타일 */
+/* select,
+input[type="file"],
+button {
+  font-size: 1.01rem;
+  border-radius: 8px;
+  border: 1px solid #dae2f3;
+  padding: 10px 11px;
+  background: #f4f7fc;
+  margin-bottom: 13px;
+  width: 100%;
+  box-sizing: border-box;
+} */
+
+/* 파란색 버튼 스타일 */
+.file-stt-button,
+.record-stt-mainbtn,
+.record-stt-transcribe-btn {
+  background: #355be7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.08rem;
+  padding: 13px 0;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 5px;
+  margin-bottom: 9px;
+  box-shadow: 0 3px 9px rgba(53, 91, 231, 0.09);
+  transition: background 0.14s;
+}
+.file-stt-button:disabled,
+.record-stt-transcribe-btn:disabled {
+  background: #b6cbff;
+  color: #fff;
+  cursor: not-allowed;
+}
+.file-stt-button:hover:enabled,
+.record-stt-mainbtn:hover:enabled,
+.record-stt-transcribe-btn:hover:enabled {
+  background: #2147c9;
+}
+
+/* 라벨 스타일 */
+.group-dropdown,
+.record-stt-label {
+  font-size: 1rem;
+  color: #2a3f8d;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+/* 안내 텍스트, 에러 */
+.error-text,
+.record-stt-error {
+  color: #eb2323;
+  font-size: 0.97rem;
+  font-weight: 700;
+  margin: 7px 0 0 0;
+}

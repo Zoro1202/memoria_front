@@ -255,20 +255,24 @@ export function GroupsProvider({ children }) {
   const kickMember = useCallback(async (groupId, recipient) => {
     try {
         const data = await resourceAPI.kickMember(groupId, recipient);
+        if(data.success)
+          toast.success('멤버가 추방었습니다.');
         return data;
     } catch (err) {
         console.error('GroupContext - 멤버 추방 실패:', err);
-        throw err;
+        toast.error(`멤버 추방 실패: ${err}`);
     } 
   }, [resourceAPI]);
   // region 그룹 멤버 권한 변경 
   const permissionUpdate = useCallback(async (groupId, recipient, permission) => {
     try {
         const data = await resourceAPI.permissionUpdate(groupId, recipient, permission);
+        if(data.success)
+          toast.success('멤버 권한이 업데이트되었습니다.');
         return data;
     } catch (err) {
         console.error('GroupContext - 멤버 권한 업데이트 실패:', err);
-        throw err;
+        toast.error(`권한 업데이트 실패: ${err}`);
     }
   }, [resourceAPI]);
 
