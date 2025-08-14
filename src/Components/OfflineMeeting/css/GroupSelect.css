@@ -1,52 +1,39 @@
 .group-select-container {
   margin-bottom: 32px;
-  background: #fafbfc;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 5px rgba(90,120,160,.03);
-
-  /* 세로 스크롤 */
+  background: #f7fafd;
+  border-radius: 13px;
+  padding: 22px 20px;
+  box-shadow: 0 1px 7px rgba(90,120,160,.07);
   overflow-y: auto;
   max-height: 260px;
 }
-
 .group-dropdown {
-  margin-bottom: 12px;
+  margin-bottom: 13px;
 }
-
 .group-dropdown select {
-  padding: 5px 10px;
-  border-radius: 5px;
-  border: 1px solid #d9deec;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid #d7e0f0;
 }
-
 .member-list-label {
   font-weight: bold;
-  margin-bottom: 8px;
+  color: #2743e9;
+  margin-bottom: 10px;
 }
-
 .member-checkbox-row {
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
   gap: 9px;
   margin: 10px 0;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #eee;
-  transition: opacity 0.3s;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #ececec;
 }
-.member-checkbox-row:last-child {
-  border-bottom: none;
-}
-
+.member-checkbox-row:last-child { border-bottom: none; }
 .member-checkbox-row.select-all-row {
-  margin: 0 0 10px 0;
-  font-weight: 600;
-  border-bottom: 1px solid #ccc;
+  font-weight: 700; border-bottom: 1px solid #bbb; margin-bottom:7px;
 }
-
 .no-sample-msg {
-  color: #999;
-  font-size: 0.9rem;
+  color: #c9c9c9;
+  font-size: 0.93rem;
   font-style: italic;
   margin-left: 6px;
 }

@@ -82,7 +82,7 @@ export default function MeetingPage({ open, onClose }) {
           <FileUploadSTT selectedSpeakerInfos={selectedSpeakerInfos} />
         )}
         {mode === 'mic' && (
-          <RecordSTT selectedSpeakerIds={selectedSpeakerInfos} />
+          <RecordSTT selectedSpeakerInfos={selectedSpeakerInfos} />
         )}
       </div>
     </div>

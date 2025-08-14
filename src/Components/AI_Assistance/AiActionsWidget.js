@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNotes } from '../../Contexts/NotesContext';
-import { useTabs } from '../../Contexts/TabsContext';
+import { TabsProvider, useTabs } from '../../Contexts/TabsContext';
 import { useGroups } from '../../Contexts/GroupContext';
 import { toast } from 'react-hot-toast';
+import { HelpCircle, Copy } from 'lucide-react';
 import memoriaIcon from './Black_Synapsehome.png';
 import './AiActionsWidget.css';
 import {
@@ -21,6 +22,7 @@ import { createEditor, Editor, Text, Range, Path, Transforms, Node } from 'slate
 import { withReact, Slate, Editable, useSlate, ReactEditor } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Decorations } from '../Note/Util/Decorations';
+
 
 const deserialize = (markdown) => {
     if (typeof markdown !== 'string') return [{ type: 'paragraph', children: [{ text: '' }] }];
@@ -181,12 +183,11 @@ const ConfirmationView = ({ message, onConfirm, onCancel, onUndo, confirmText = 
 
 
 
-const ThreeOptionConfirmationView = ({ message, onConfirm, onNeutral, onCancel, confirmText, neutralText, cancelText }) => (
+const ThreeOptionConfirmationView = ({ message, onConfirm, onNeutral, onCancel, confirmText, neutralText }) => (
     <div className="confirmation-overlay" onClick={onCancel}>
       <div className="confirmation-box" onClick={(e) => e.stopPropagation()}>
         <p className="confirmation-message">{message}</p>
         <div className="confirmation-actions">
-          <button onClick={onCancel} className="confirmation-button cancel">{cancelText}</button>
           <button onClick={onNeutral} className="confirmation-button neutral">{neutralText}</button>
           <button onClick={onConfirm} className="confirmation-button confirm">{confirmText}</button>
         </div>
@@ -228,10 +229,10 @@ const LANGUAGES = [
 ];
 
 const HEADERS = {
-    'Korean': { view_original: "원본 회의록" },
-    'English': { view_original: "Original Meeting Minutes" },
-    'Japanese': { view_original: "元の議事録" },
-    'Chinese': { view_original: "原始会议记录" }
+    'Korean': { view_original: "원본 회의록", preview: "미리보기" },
+    'English': { view_original: "Original Meeting Minutes", preview: "Preview" },
+    'Japanese': { view_original: "元の議事録", preview: "プレビュー" },
+    'Chinese': { view_original: "原始会议记录", preview: "预览" }
 };
 
 
@@ -259,7 +260,7 @@ const saveChatHistoryToStorage = (noteId, groupId, title, history) => {
 
 export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const { notes, setNotes, setLinks, upsertNote, links, createOrAppendKeywordNote, loading: notesLoading, loadNotes, getNoteContent, createNoteFromTitle } = useNotes();
-  const { activeTabId, noteIdFromTab, openTab, updateTitle, closeAllNoteTab } = useTabs();
+  const { tabs, activeTabId, noteIdFromTab, openTab, updateTitle, closeAllNoteTab } = useTabs();
   const { selectedGroupId, setSelectedGroupId, groups, user } = useGroups();
   
   const [currentNoteContent, setCurrentNoteContent] = useState('');
@@ -276,6 +277,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const [suggestedTitles, setSuggestedTitles] = useState([]);
   const [previewPage, setPreviewPage] = useState(0);
   const [isRegeneratingKeywords, setIsRegeneratingKeywords] = useState(false);
+  const [isRegeneratingTitles, setIsRegeneratingTitles] = useState(false);
   const [detectedLanguage, setDetectedLanguage] = useState('Korean'); // 언어 상태 추가
   const [forceChatViewForNote, setForceChatViewForNote] = useState(null);
   const [customKeyword, setCustomKeyword] = useState('');
@@ -321,7 +323,9 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const chatContainerRef = useRef(null);
   const chatInputRef = useRef(null);
 
-  const currentNoteId = useMemo(() => noteIdFromTab(activeTabId), [activeTabId, noteIdFromTab]);
+  const currentNoteId = useMemo(() => {const currenttab = tabs.find(t => t.id === activeTabId);
+    return currenttab ? currenttab.title : null;
+  }, [activeTabId, noteIdFromTab]);
 
   const currentNote = useMemo(() => {
     if (!notes || !currentNoteId) return null;
@@ -334,13 +338,16 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
 
     // Fallback to finding by key (for new notes where title is the id)
     return notes[currentNoteId] || null;
-  }, [notes, currentNoteId]);
+  }, [notes, currentNoteId]); // FIXME : 노트 실시간 업데이트가 안돼서 요약하면 이전 노트 내용으로 요약됨
 
 
   const existingNoteTitles = useMemo(() => {
     if (!notes) return new Set();
     return new Set(Object.keys(notes));
   }, [notes]);
+
+
+
 
   useEffect(() => {
         if (view === 'history' && user?.subject_id) {
@@ -359,7 +366,6 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
             fetchHistories();
         }
     }, [view, user?.subject_id]);
-
 
     useEffect(() => {
         if (currentNote && selectedGroupId && user && user.subject_id) {
@@ -447,6 +453,17 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const handleCloseClick = () => {
     handleGoBack();
     onClose();
+  };
+
+  const handleCopy = (textToCopy) => {
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      toast.success('AI 답변이 복사되었습니다.', {
+        duration: 1500,
+        position: 'bottom-center',
+      });
+    }, () => {
+      toast.error('복사에 실패했습니다.');
+    });
   };
 
   const handleChatSubmit = async (e) => {
@@ -576,6 +593,8 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
             setCurrentSessionId(null);
         }
     }
+
+    setView('chat');
   };
 
   const handleDeleteHistory = async (e, sessionIdToDelete) => {
@@ -639,17 +658,20 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     // [신규] 맥락 요약 여부 질문
     setConfirmation({
         message: "다른 노트를 참조하여 더 깊이 있는 요약을 생성할까요?",
-        confirmText: "예, 참조하기",
-        cancelText: "아니오",
+        confirmText: "다른 노트 참조",
+        neutralText: "일반 요약",
         onConfirm: () => {
             setIsContextualSummary(true);
             setConfirmation(null);
             setView('note-selection'); // 노트 선택 뷰로 전환
         },
-        onCancel: () => {
+        onNeutral: () => {
             setIsContextualSummary(false);
             setConfirmation(null);
             proceedToKeywordExtraction(); // 기존 요약 프로세스 진행
+        },
+        onCancel: () => {
+            setConfirmation(null);
         }
     });
   };
@@ -657,9 +679,10 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
   const proceedToKeywordExtraction = async () => {
     setView('loading');
     setLoadingType('summary');
-    setLoadingMessage('AI가 키워드를 추천 중입니다...');
+    const msg = 'Synapse가 키워드를 추천 중입니다...';
+    setLoadingMessage(msg);
     
-    currentLoadingToastId.current = toast.loading(loadingMessage);  
+    currentLoadingToastId.current = toast.loading(msg);  
 
     abortControllerRef.current = new AbortController();
     try {
@@ -688,7 +711,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
       if (!currentNoteContent || isRegeneratingKeywords) return;
 
       setIsRegeneratingKeywords(true);
-      const toastId = toast.loading('AI가 키워드를 다시 추천 중입니다...');
+      const toastId = toast.loading('Synapse가 키워드를 다시 추천 중입니다...');
       abortControllerRef.current = new AbortController();
 
       try {
@@ -710,6 +733,29 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
       }
   };
 
+  const handleRegenerateTitles = async () => {
+      if (!currentNoteContent || isRegeneratingTitles) return;
+
+      setIsRegeneratingTitles(true);
+      const toastId = toast.loading('Synapse가 제목을 다시 구상 중입니다...');
+      abortControllerRef.current = new AbortController();
+
+      try {
+          const titles = await generateTitleFromContent(currentNoteContent, abortControllerRef.current.signal);
+          setSuggestedTitles(titles);
+          toast.success('새로운 제목을 추천했습니다!', { id: toastId });
+      } catch (error) {
+          if (error.name !== 'AbortError') {
+              toast.error(`AI 제목 생성 실패: ${error.message}`, { id: toastId });
+          } else {
+              toast.dismiss(toastId);
+          }
+      } finally {
+          setIsRegeneratingTitles(false);
+          abortControllerRef.current = null;
+      }
+  };
+
   // MODIFICATION: window.confirm을 ConfirmationView로 대체
   const handleKeywordToggle = (keyword) => {
     const isExisting = existingNoteTitles.has(keyword);
@@ -725,7 +771,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
 
     if (isAdding && isExisting) {
         setConfirmation({
-            message: `'${keyword}' 노트는 이미 존재합니다. 선택 시 기존 노트의 내용에 AI 분석 결과가 추가될 수 있습니다. 계속하시겠습니까?`,
+            message: `'${keyword}' 노트는 이미 존재합니다. 선택 시 기존 노트의 내용 하단에 AI 분석 결과가 추가될 수 있습니다. 계속하시겠습니까?`,
             onConfirm: () => {
                 performToggle();
                 setConfirmation(null);
@@ -765,9 +811,10 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
       setConfirmation(null);
       setView('loading');
       setLoadingType('summary');
-      setLoadingMessage('요약 및 분석 내용을 생성 중입니다...');
+      const msg = '요약문을 생성 중입니다...';
+      setLoadingMessage(msg);
       
-      currentLoadingToastId.current = toast.loading(loadingMessage); 
+      currentLoadingToastId.current = toast.loading(msg); 
       
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
@@ -809,7 +856,8 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
           setResultDataForApply({
               type: 'summary',
               summaryContent: summaryResult.summary,
-              keywordMap: keywordDataMap
+              keywordMap: keywordDataMap,
+              textType: isContextualSummary ? 'meeting_transcript' : summaryResult.textType
           });
           setPreviewPage(0);
 
@@ -830,7 +878,7 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     if (selectedKeywords.size === 0) {
         setConfirmation({
             message: "선택된 키워드가 없습니다.\n키워드 노트 없이 요약문만 생성하시겠습니까?",
-            confirmText: "예, 생성",
+            confirmText: "확인",
             cancelText: "취소",
             onConfirm: () => proceedWithSummaryGeneration(false),
             onCancel: () => setConfirmation(null),
@@ -839,8 +887,8 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     } else {
         setConfirmation({
             message: "생성되는 키워드 노드의 내용을 AI로 채우시겠습니까?",
-            confirmText: "예 (내용 채우기)",
-            cancelText: "아니요 (빈 노트)",
+            confirmText: " 노드 내용 채우기",
+            cancelText: "빈 노드만 생성",
             onConfirm: () => proceedWithSummaryGeneration(true),
             onCancel: () => proceedWithSummaryGeneration(false), // "빈 노트로 진행"
             onUndo: () => setConfirmation(null), // "뒤로가기/Undo"
@@ -860,18 +908,17 @@ export default function AiActionsWidget({ onClose, onMinimize, isVisible }) {
     currentLoadingToastId.current = toast.loading('현재 노트에 요약문을 적용 중입니다...'); 
 
     try {
-        const { summaryContent, keywordMap } = resultDataForApply;
+        const { summaryContent, keywordMap, textType } = resultDataForApply;
         
+        toast.success(`디버그: 적용된 요약 타입은 '${textType}' 입니다.`);
+
         const plainTextContent = (oldNote.content || '').replace(/<[^>]*>?/gm, '');
 
+        // textType에 따라 레이블을 동적으로 결정
+        const originalContentLabel = textType === 'plain_text_article' ? '원본 문서' : h.view_original;
+
         // Markdown 구분선과 제목으로 원본 회의록을 깔끔하게 추가
-        const originalContentBlock = `
-
----
-
-## ${h.view_original}
-
-${plainTextContent}`;
+        const originalContentBlock = `\n\n---\n\n## ${originalContentLabel}\n\n${plainTextContent}`;
         
         const finalContent = `${summaryContent}${originalContentBlock}`;
 
@@ -1105,13 +1152,28 @@ ${plainTextContent}`;
     }
   };
 
+  const [isPageTurning, setIsPageTurning] = useState(false);
+
+  const [pageTurnDirection, setPageTurnDirection] = useState('next');
+
   const handlePrevPage = () => {
-    setPreviewPage(prev => Math.max(0, prev - 1));
+    if (isPageTurning) return;
+    setPageTurnDirection('prev');
+    setIsPageTurning(true);
+    setTimeout(() => {
+        setPreviewPage(prev => Math.max(0, prev - 1));
+        setIsPageTurning(false);
+    }, 300); // 애니메이션 시간과 일치
   };
 
   const handleNextPage = () => {
-    if (!currentPreviewData) return;
-    setPreviewPage(prev => Math.min(currentPreviewData.totalPages - 1, prev + 1));
+    if (isPageTurning || !currentPreviewData) return;
+    setPageTurnDirection('next');
+    setIsPageTurning(true);
+    setTimeout(() => {
+        setPreviewPage(prev => Math.min(currentPreviewData.totalPages - 1, prev + 1));
+        setIsPageTurning(false);
+    }, 300); // 애니메이션 시간과 일치
   };
   
   const currentPreviewData = useMemo(() => {
@@ -1152,7 +1214,7 @@ ${plainTextContent}`;
         {(view !== 'initial' || wasChatCleared) && (
           <button className="widget-back-button" onClick={handleGoBack}>←</button>
         )}
-        <h4 className="widget-title">AI Assistance</h4>
+        <h4 className="widget-title">AI Assistant</h4>
         <div className="widget-header-right">
           {view === 'chat' && isValidChatHistory && chatHistory.length > 0 && !isLoading && (
             <button className="widget-refresh-button" onClick={handleClearChat} title="대화 내용 초기화">
@@ -1221,11 +1283,15 @@ ${plainTextContent}`;
                                 </div>
                             )}
                             <div className={`chat-message-wrapper ${msg.type}`}>
-                                {msg.type === 'ai' && <span className="chat-message-time">{formatTime(msg.timestamp)}</span>}
                                 <div className={`chat-message ${msg.type}`}>
                                     {msg.type === 'ai' ? <SlatePreview content={msg.text} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} /> : <p>{msg.text}</p>}
                                 </div>
-                                {msg.type === 'user' && <span className="chat-message-time">{formatTime(msg.timestamp)}</span>}
+                                {msg.type === 'ai' && (
+                                    <button className="chat-copy-button" onClick={() => handleCopy(msg.text)} title="답변 복사">
+                                        <Copy size={14} />
+                                    </button>
+                                )}
+                                <span className="chat-message-time">{formatTime(msg.timestamp)}</span>
                             </div>
                         </React.Fragment>
                     );
@@ -1241,8 +1307,8 @@ ${plainTextContent}`;
                   )
                 )}
                 {isLoading && loadingType === 'chat' && (
-                  <div className="chat-message ai">
-                    <p>Synapse가 생각 중입니다...</p>
+                  <div className="chat-message ai thinking-message">
+                    <p>Synapse가 생각 중입니다<span className="thinking-ellipsis"></span></p>
                   </div>
                 )}
               </div>
@@ -1375,11 +1441,22 @@ ${plainTextContent}`;
             )}
             
             {view === 'title-suggestions' && (
-                <div className="title-suggestions-view fade-in">
-                    <p className="translate-guide">Synapse가 추천하는 제목입니다.</p>
-                    <div className="action-button-group vertical">
+                <div className="keyword-selection-view fade-in">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 8px' }}>
+                        <p className="selection-guide" style={{ margin: 0, textAlign: 'left', flexGrow: 1 }}>Synapse가 추천하는 제목입니다.</p>
+                        <button
+                            className="regenerate-keywords-button"
+                            onClick={handleRegenerateTitles}
+                            disabled={isRegeneratingTitles}
+                            title="제목 다시 생성"
+                            style={{ marginRight: 0 }}
+                        >
+                            <RefreshIcon />
+                        </button>
+                    </div>
+                    <div className="action-button-group vertical" style={{ width: '100%', padding: '0', gap: '10px', display: 'flex', flexDirection: 'column' }}>
                         {suggestedTitles.map((title, index) => (
-                          <button key={index} className="action-button" onClick={() => handleSelectTitle(title)}>
+                          <button key={index} className="action-button" onClick={() => handleSelectTitle(title)} style={{width: '100%'}}>
                             {title}
                           </button>
                         ))}
@@ -1401,24 +1478,38 @@ ${plainTextContent}`;
             )}
 
             {view === 'result' && resultDataForApply && currentPreviewData && (
-              <div className="result-only-view fade-in">
+              <div className={`result-only-view fade-in`}>
                     <div className="preview-pagination">
-                        <button onClick={handlePrevPage} disabled={previewPage === 0}>{'< 이전'}</button>
+                        <button onClick={handlePrevPage} disabled={previewPage === 0 || isPageTurning} title="이전 페이지">‹</button>
                         <span>페이지 {previewPage + 1} / {currentPreviewData.totalPages}</span>
-                        <button onClick={handleNextPage} disabled={previewPage >= currentPreviewData.totalPages - 1}>{'다음 >'}</button>
+                        <button onClick={handleNextPage} disabled={previewPage >= currentPreviewData.totalPages - 1 || isPageTurning} title="다음 페이지">›</button>
                     </div>
                     
-                    <h4>{currentPreviewData.title}</h4>                    <div className="result-markdown-preview">                        <SlatePreview content={currentPreviewData.content} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} />                        {resultDataForApply.type === 'summary' && previewPage === 0 && (                            <details className="original-content-collapser">                                <summary>{h.view_original} (미리보기: {(currentNoteContent || '').trim().split('\n')[0].substring(0, 50)}...)</summary>                                <div className="original-content-body">                                    <SlatePreview content={currentNoteContent} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} />                                </div>                            </details>                        )}                    </div>
+                    <div 
+                        key={previewPage} 
+                        className={`result-markdown-preview ${isPageTurning ? `page-turn-out-${pageTurnDirection}` : `page-turn-in-${pageTurnDirection}`}`}>
+                        <h4>{currentPreviewData.title}</h4>
+                        <SlatePreview content={currentPreviewData.content} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} />
+                        {resultDataForApply.type === 'summary' && previewPage === 0 && (
+                            <details className="original-content-collapser">
+                                <summary>{resultDataForApply.textType === 'plain_text_article' ? '원본 문서' : h.view_original} ({h.preview}: {(currentNoteContent || '').trim().split('\n')[0].substring(0, 50)}...)</summary>
+                                <div className="original-content-body">
+                                    <SlatePreview content={currentNoteContent} notes={notes} openTab={openTab} createNoteFromTitle={createNoteFromTitle} />
+                                </div>
+                            </details>
+                        )}
+                    </div>
                     
-                    <div className="result-apply-button-container">
+                    <div className="result-actions">
+                      <button className="confirmation-button cancel" onClick={handleGoBack}>취소</button>
                       {resultDataForApply.type === 'summary' && (
-                        <button className="apply-to-note-button" onClick={handleApplyAndCreateNotes} disabled={isLoading}>
-                            {isLoading ? '적용 중...' : '현재 노트에 적용 및 생성'}
+                        <button className="confirmation-button confirm" onClick={handleApplyAndCreateNotes} disabled={isLoading}>
+                            {isLoading ? '적용 중...' : '적용 및 생성'}
                         </button>
                       )}
                       {resultDataForApply.type === 'translation' && (
-                        <button className="apply-to-note-button" onClick={handleApplyTranslations} disabled={isLoading}>
-                            {isLoading ? '적용 중...' : '새로운 번역 노트 생성'}
+                        <button className="confirmation-button confirm" onClick={handleApplyTranslations} disabled={isLoading}>
+                            {isLoading ? '적용 중...' : '번역 노트 생성'}
                         </button>
                       )}
                     </div>
@@ -1436,8 +1527,25 @@ ${plainTextContent}`;
                         </div>
                     )}
                     { loadingType === 'title' && (
-                        <div className="title-loader-wrapper">
-                            <div className="retro-typing-effect">제목 생성 중...</div>
+                        <div className="title-loader">
+                            <div className="loader-text">Synapse가 제목을 구상 중입니다...</div>
+                            <svg className="synapse-svg-loader" viewBox="0 0 100 100">
+                                {/* Neurons (dots) */}
+                                <circle className="neuron-dot" cx="50" cy="10" r="4" />
+                                <circle className="neuron-dot" cx="85" cy="35" r="4" />
+                                <circle className="neuron-dot" cx="85" cy="65" r="4" />
+                                <circle className="neuron-dot" cx="50" cy="90" r="4" />
+                                <circle className="neuron-dot" cx="15" cy="65" r="4" />
+                                <circle className="neuron-dot" cx="15" cy="35" r="4" />
+
+                                {/* Synapses (lines) */}
+                                <line className="synapse-line" x1="50" y1="10" x2="85" y2="35" />
+                                <line className="synapse-line" x1="85" y1="35" x2="85" y2="65" />
+                                <line className="synapse-line" x1="85" y1="65" x2="50" y2="90" />
+                                <line className="synapse-line" x1="50" y1="90" x2="15" y2="65" />
+                                <line className="synapse-line" x1="15" y1="65" x2="15" y2="35" />
+                                <line className="synapse-line" x1="15" y1="35" x2="50" y2="10" />
+                            </svg>
                         </div>
                     )}
                     { loadingType === 'translate' && (
@@ -1480,7 +1588,11 @@ ${plainTextContent}`;
         )}
       </div>
 
-      {confirmation && <ConfirmationView {...confirmation} />}
+      {confirmation && (
+        confirmation.neutralText ? 
+        <ThreeOptionConfirmationView {...confirmation} /> : 
+        <ConfirmationView {...confirmation} />
+      )}
 
       </div>
   );

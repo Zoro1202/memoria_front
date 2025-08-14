@@ -1,33 +1,16 @@
 body {
   margin: 0;
-  background: #f6f7fa;
-  font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'sans-serif';
-  color: #262832;
-
-  /* 전체 페이지 스크롤 보장 */
-  overflow: auto;
-  height: 100%;
+  background: linear-gradient(140deg, #e7efff 23%, #f7fafd 100%);
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Segoe UI', 'Malgun Gothic', sans-serif;
+  color: #242a42;
 }
-
-html, body {
-  height: 100%;
-}
-
+html, body { height: 100%; }
 #root {
   min-height: 100vh;
-  height: auto; /* flex 영향으로 100%에서 auto로 변경 */
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  overflow: auto; /* 전체 화면 스크롤 가능 */
+  overflow: auto;
 }
-
-button, input, select {
-  font-family: inherit;
-  outline: none;
-}
-
-h2, h4, h5 {
-  color: #273467;
-  margin: 0;
-}
+button, input, select { font-family: inherit; outline: none; }
+h2, h4, h5 { color: #2947ed; margin: 0; }

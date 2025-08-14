@@ -22,7 +22,7 @@ export default function VaultApp() {
     if (activeTabId && tabs.length > 0) {
       const activeTab = tabs.find(tab => tab.id === activeTabId);
       if (activeTab && activeTab.type === 'note') {
-        const noteContent = notes[activeTab.noteId]?.content || '';
+        const noteContent = notes[activeTab.title]?.content || '';
         setActiveNoteContent(noteContent);
       } else {
         setActiveNoteContent('');
@@ -113,18 +113,18 @@ export default function VaultApp() {
                   data={graphData}
                   onSelect={(id) => {
                     createNoteFromTitle(id);
-                    openTab({ title: id, type: "note", noteId: id });
+                    openTab({ title: id, type: "note", noteId: notes[id] });
                   }}
                 />
               ) : (
                 <NoteView
-                  id={tab.noteId}
-                  markdown={notes[tab.noteId]?.content || ""}
+                  id={tab.title}
+                  markdown={notes[tab.title]?.content || ""}
                   onChange={(md) => {
                     setActiveNoteContent(String(md));
                     setNotes((prevNotes) => ({
                       ...prevNotes,
-                      [tab.noteId]: { ...prevNotes[tab.noteId], content: String(md) },
+                      [tab.title]: { ...prevNotes[tab.title], content: String(md) },
                     }));
                   }}
                 />

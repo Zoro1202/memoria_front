@@ -7,8 +7,11 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@google/generative-ai": "^0.24.1",
+    "@hocuspocus/provider": "^3.2.3",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
+    "@slate-yjs/core": "^1.0.2",
+    "@slate-yjs/react": "^1.1.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -20,7 +23,6 @@
     "fabric": "^6.7.1",
     "ffmpeg-static": "^5.2.0",
     "highlight.js": "^11.11.1",
-    "intro.js": "^8.3.2",
     "lucide-react": "^0.513.0",
     "marked": "^15.0.12",
     "mediasoup-client": "^3.11.0",
@@ -29,6 +31,7 @@
     "prismjs": "^1.30.0",
     "prosemirror-inputrules": "^1.5.0",
     "prosemirror-markdown": "^1.13.2",
+    "randomcolor": "^0.6.2",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",
@@ -50,7 +53,8 @@
     "slate-react": "^0.117.2",
     "socket.io-client": "^4.8.1",
     "three": "^0.178.0",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "yjs": "^13.6.27"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -79,6 +83,7 @@
   },
   "devDependencies": {
     "@csstools/normalize.css": "^12.1.1",
+    "@types/randomcolor": "^0.5.9",
     "autoprefixer": "^10.4.21",
     "html-webpack-plugin": "^5.6.3",
     "postcss": "^8.5.4",

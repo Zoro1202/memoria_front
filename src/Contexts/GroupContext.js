@@ -1,8 +1,10 @@
 //groupcontext.js - 이상영
 //그룹 & 유저 정보 관리 context
-import React, { createContext, useContext, useState, useCallback } from "react";
-import {toast} from 'react-hot-toast';
-import {getResourceAPI} from './APIs/ResourceAPI';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import { toast } from 'react-hot-toast';
+import { getResourceAPI } from './APIs/ResourceAPI';
+import { io } from 'socket.io-client';
+
 
 const GroupsContext = createContext();
 
@@ -17,37 +19,42 @@ export function GroupsProvider({ children }) {
 
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
+  // Socket.IO 관련 상태
+  const [socketStatus, setSocketStatus] = useState('연결 안됨');
+  const [groupMemberList, setGroupMemberList] = useState([]);
+  const ioSocketRef = useRef(null);
+
   const [sid, setSid] = useState();
   const [provider, setProvider] = useState();
   const [remainTime, setRemainTime] = useState();
-  
-  const [user, setUser]                 = useState(null); // 사용자 정보 상태
+
+  const [user, setUser] = useState(null); // 사용자 정보 상태
   const [profileImage, setProfileImage] = useState(null); // 프로필 이미지 상태
   //region 유저 정보
-  const tokenInfo = async() => {
-    try{
+  const tokenInfo = async () => {
+    try {
       const info = await resourceAPI.token_info();
       console.log('token info : ', info);
       setSid(info.data.subject_id);
       setProvider(info.data.provider);
       setRemainTime(info.data.remainingTime);
       return 1;
-    }catch(err){
+    } catch (err) {
       console.log('token load faild:', err);
       return -1;
     }
   };
   //region 토큰 새로고침
-  const tokenRefresh = async() =>{
-    try{
+  const tokenRefresh = async () => {
+    try {
       const data = await resourceAPI.token_refresh();
       console.log(`토큰 : ${data}`);
-    } catch (err){
+    } catch (err) {
       console.log('token refresh faild:', err);
     }
   }
   // region 사용자정보
-  const fetchUser = async () => { 
+  const fetchUser = async () => {
     try {
       const userData = await resourceAPI.get_user();
       setUser(userData);
@@ -68,12 +75,12 @@ export function GroupsProvider({ children }) {
     }
   };
   // region 로그아웃
-  const logout = async () =>{
+  const logout = async () => {
     let popup = null;
     // let isNaver = false;
-    try{
+    try {
       const res = await resourceAPI.postLogout();
-      
+
       console.log('되돌아갈 곳 =', res.redirect)
 
       // 3. 네이버 로그아웃인 경우
@@ -83,7 +90,7 @@ export function GroupsProvider({ children }) {
         // 팝업을 "동기적으로" 띄워야 브라우저가 차단하지 않음
         popup = window.open('about:blank', 'naverLogout', 'width=500,height=600,scrollbars=yes');
         // 팝업에 네이버 로그아웃 URL로 이동
-        popup.location.href = 'https://login.memoriatest.kro.kr'+res.redirect;
+        popup.location.href = 'https://login.memoriatest.kro.kr' + res.redirect;
         // 부모창은 즉시 로그인 페이지로 이동
         setTimeout(() => {
           popup.close();
@@ -91,71 +98,71 @@ export function GroupsProvider({ children }) {
         }, 300);
       } else if (res.redirect) {
         console.log('카카오/로컬/구글 리다이렉트 실행');
-        window.location.href = 'https://login.memoriatest.kro.kr'+res.redirect;
+        window.location.href = 'https://login.memoriatest.kro.kr' + res.redirect;
       } else {
         alert('로그아웃되었습니다.');
         window.location.href = 'https://login.memoriatest.kro.kr';
       }
-    } catch (err){
+    } catch (err) {
       console.error(`로그아웃에 실패했습니다.`, err);
       //그냥 로그아웃 처리
       window.location.href = '/';
     }
   }
   // region 비밀번호 체크
-  const checkPassword = useCallback(async (password)=>{
+  const checkPassword = useCallback(async (password) => {
     try {
       const res = await resourceAPI.check_password(password);
       return res;
-    } catch(err){
+    } catch (err) {
       console.error(`비밀번호 체크에 실패했습니다.`, err);
       toast.error(`비밀번호가 일치하지 않습니다!`);
     }
-  },[resourceAPI]);
+  }, [resourceAPI]);
   // region 비밀번호 변경
-  const changePassword = useCallback(async (password)=>{
-    try{
+  const changePassword = useCallback(async (password) => {
+    try {
       const res = await resourceAPI.change_password(password);
       return res;
-    }catch(err){
-      console.error(`비밀벊 변경에 실패했습니다.`, err); 
+    } catch (err) {
+      console.error(`비밀벊 변경에 실패했습니다.`, err);
       toast.error(`비밀번호 변경에 실해했습니다!`);
     }
-  },[resourceAPI]);
+  }, [resourceAPI]);
   //region 사용자 프사 변경
-  const changeProfileImage = useCallback(async (file)=>{
-    try{
-      const data = await resourceAPI.uploadProfile(file); 
-      if(data.success){
+  const changeProfileImage = useCallback(async (file) => {
+    try {
+      const data = await resourceAPI.uploadProfile(file);
+      if (data.success) {
         console.log(`프사 업로드 성공!`);
         const imgUrl = URL.createObjectURL(file);
         setProfileImage(imgUrl);
       }
-    } catch (err){
+    } catch (err) {
       console.log(`파일 업로드 실패!`, err);
     }
   }, [resourceAPI]);
   //region 사용자 닉네임 변경
-  const changeNickname = useCallback(async (nickname)=>{
-    try{
+  const changeNickname = useCallback(async (nickname) => {
+    try {
       const data = await resourceAPI.change_nickname(nickname);
-      if (data.success){
-        console.log('닉네임 변경 성공1!'); 
+      if (data.success) {
+        console.log('닉네임 변경 성공1!');
         let temp = user;
         temp.nickname = nickname;
         setUser(temp);
       }
-    }catch(err){
+    } catch (err) {
       console.log(`닉네임 변경 실패!`, err);
     }
-  },[resourceAPI]);
+  }, [resourceAPI]);
   // region 그룹 목록 로드
   const loadGroups = useCallback(async () => {
     setLoading(true);
     try {
       const data = await resourceAPI.getGroups();
       console.log('초기 데이터:', data);
-      
+
       // 배열을 객체로 변환 (group_id를 키로 사용)
       const groupsObject = data.data.reduce((acc, group) => {
         acc[group.group_id] = {
@@ -165,7 +172,7 @@ export function GroupsProvider({ children }) {
         };
         return acc;
       }, {});
-      
+
       setGroups(groupsObject);
       return data.data;
     } catch (err) {
@@ -181,19 +188,19 @@ export function GroupsProvider({ children }) {
   const createGroup = useCallback(async (groupName) => {
     try {
       const data = await resourceAPI.createGroup(groupName);
-      
+
       // 로컬 상태 업데이트
       const newGroup = {
         name: groupName,
         group_id: data.group_id,
         permission: data.permission || 0 // 기본값 설정
       };
-      
+
       setGroups(prevGroups => ({
         ...prevGroups,
         [data.group_id]: newGroup
       }));
-      
+
       toast.success(`그룹 "${groupName}"이(가) 생성되었습니다.`);
       return data;
     } catch (err) {
@@ -207,74 +214,225 @@ export function GroupsProvider({ children }) {
   const deleteGroup = useCallback(async (groupId) => {
     try {
       await resourceAPI.deleteGroup(groupId);
-      
+
       // 로컬 상태에서 제거
       setGroups(prevGroups => {
         const newGroups = { ...prevGroups };
         delete newGroups[groupId];
         return newGroups;
       });
-       
+
       toast.success('그룹이 삭제되었습니다1.');
     } catch (err) {
       console.error('그룹 삭제 실패:', err);
       toast.error('그룹 삭제에 실패했습니다.');
       throw err;
-    } 
+    }
   }, [resourceAPI]);
   // region 그룹 멤버 목록
-  const getMemberList = useCallback(async (groupId) => { 
+  const getMemberList = useCallback(async (groupId) => {
     try {
-        // ResourceAPI에서 이미 에러 처리를 하고 있으므로, 여기서는 단순히 호출하고 반환합니다.
-        const data = await resourceAPI.getMemberList(groupId);
-        // API 응답 구조에 따라 data.data 또는 data 자체가 멤버 배열일 수 있습니다.
-        // ResourceAPI의 getMemberList는 `return data;`로 되어 있으므로,
-        // 여기서는 `data`가 멤버 배열이라고 가정합니다.
-        return data.members;
+      // ResourceAPI에서 이미 에러 처리를 하고 있으므로, 여기서는 단순히 호출하고 반환합니다.
+      const data = await resourceAPI.getMemberList(groupId);
+      // API 응답 구조에 따라 data.data 또는 data 자체가 멤버 배열일 수 있습니다.
+      // ResourceAPI의 getMemberList는 `return data;`로 되어 있으므로,
+      // 여기서는 `data`가 멤버 배열이라고 가정합니다.
+      return data.members;
     } catch (err) {
-        console.error('GroupContext - 멤버 목록을 가져오는데 실패했습니다:', err);
-        // GroupProfile.js에서 toast 메시지를 띄울 것이므로 여기서는 throw만 해도 됩니다.
-        throw err;
+      console.error('GroupContext - 멤버 목록을 가져오는데 실패했습니다:', err);
+      // GroupProfile.js에서 toast 메시지를 띄울 것이므로 여기서는 throw만 해도 됩니다.
+      throw err;
     }
-  }, [resourceAPI]); 
+  }, [resourceAPI]);
   // region 그룹 멤버 초대
   const inviteMember = useCallback(async (recipient, groupId, permission) => {
     try {
-        const data = await resourceAPI.inviteMember(recipient, groupId, permission);
-        if (!data.success) throw new Error(`멤버 초대 실패${data?.message}`);
-        toast.success(`${recipient}님을 그룹에 초대했습니다.`);
-        return data;
-        // setInviteInput('');
-        // fetchMemberList(group.group_id);
+      const data = await resourceAPI.inviteMember(recipient, groupId, permission);
+      if (!data.success) throw new Error(`멤버 초대 실패${data?.message}`);
+      toast.success(`${recipient}님을 그룹에 초대했습니다.`);
+      return data;
+      // setInviteInput('');
+      // fetchMemberList(group.group_id);
     } catch (error) {
-        console.error('Failed to invite member:', error);
-        toast.error(`멤버 초대 실패: ${error.err}`);
+      console.error('Failed to invite member:', error);
+      toast.error(`멤버 초대 실패: ${error.err}`);
     }
   }, [resourceAPI]);
   // region 그룹 멤버 추방
   const kickMember = useCallback(async (groupId, recipient) => {
     try {
-        const data = await resourceAPI.kickMember(groupId, recipient);
-        if(data.success)
-          toast.success('멤버가 추방었습니다.');
-        return data;
+      const data = await resourceAPI.kickMember(groupId, recipient);
+      if (data.success)
+        toast.success('멤버가 추방었습니다.');
+      return data;
     } catch (err) {
-        console.error('GroupContext - 멤버 추방 실패:', err);
-        toast.error(`멤버 추방 실패: ${err}`);
-    } 
+      console.error('GroupContext - 멤버 추방 실패:', err);
+      toast.error(`멤버 추방 실패: ${err}`);
+    }
   }, [resourceAPI]);
   // region 그룹 멤버 권한 변경 
   const permissionUpdate = useCallback(async (groupId, recipient, permission) => {
     try {
-        const data = await resourceAPI.permissionUpdate(groupId, recipient, permission);
-        if(data.success)
-          toast.success('멤버 권한이 업데이트되었습니다.');
-        return data;
+      const data = await resourceAPI.permissionUpdate(groupId, recipient, permission);
+      if (data.success)
+        toast.success('멤버 권한이 업데이트되었습니다.');
+      return data;
     } catch (err) {
-        console.error('GroupContext - 멤버 권한 업데이트 실패:', err);
-        toast.error(`권한 업데이트 실패: ${err}`);
+      console.error('GroupContext - 멤버 권한 업데이트 실패:', err);
+      toast.error(`권한 업데이트 실패: ${err}`);
     }
   }, [resourceAPI]);
+
+  //region Socket.IO 초기화
+  useEffect(() => {
+    if (!ioSocketRef.current) {
+      ioSocketRef.current = io('https://login.memoriatest.kro.kr', {
+        autoConnect: false,
+        transports: ['polling', 'websocket'],
+        path: '/socket.io/',
+        withCredentials: true,
+        upgrade: true
+      });
+    }
+
+    return () => {
+      if (ioSocketRef.current) {
+        ioSocketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  //region Socket.IO 연결 함수
+  const connectIoSocket = useCallback(() => {
+    const ioSocket = ioSocketRef.current;
+
+    if (ioSocket && ioSocket.connected) {
+      toast.success('Socket.IO는 이미 연결되어 있습니다!');
+      return;
+    }
+
+    console.log('Socket.IO 연결 시도 중...');
+
+    // 초기에는 polling만 사용
+    ioSocket.io.opts.transports = ['polling'];
+
+    if (!ioSocket.connected) {
+      ioSocket.connect();
+    }
+
+    // 연결 성공 이벤트
+    ioSocket.on('connect', () => {
+      console.log('Socket.IO 연결 성공');
+      toast.success('SocketIO 연결 성공!');
+      setSocketStatus('연결됨');
+
+      // 1초 후 WebSocket 업그레이드 시도
+      setTimeout(() => {
+        if (ioSocket.connected) {
+          ioSocket.io.opts.transports = ['polling', 'websocket'];
+          console.log('WebSocket 업그레이드 시도');
+        }
+      }, 1000);
+
+      // 소켓 리스너 등록
+      registerSocketListeners();
+    });
+
+
+
+    // 연결 실패 이벤트
+    ioSocket.on('connect_error', (error) => {
+      console.error('Socket.IO 연결 실패:', error);
+
+      if (error.message.includes('websocket')) {
+        console.log('WebSocket 실패, polling만 사용');
+        ioSocket.io.opts.transports = ['polling'];
+        setSocketStatus('연결됨 (polling only)');
+      } else {
+        setSocketStatus('연결 실패');
+        toast.error(`소켓 연결 실패: ${error.message}`);
+      }
+    });
+  }, []);
+
+  //region Socket.IO 리스너 등록 함수
+  const registerSocketListeners = useCallback(() => {
+    const ioSocket = ioSocketRef.current;
+
+    if (!ioSocket) {
+      console.error('ioSocket이 생성되지 않음!');
+      return;
+    }
+
+    // 그룹 참여 성공 응답
+    ioSocket.on('join_group_ack', ({ userId, userName, groupMemberList }) => {
+      toast.success(`join_group 성공: ${userId}`);
+      setGroupMemberList(groupMemberList);
+      setSocketStatus('연결됨');
+    });
+
+    // 그룹 참여 실패 응답
+    ioSocket.on('join_group_err', (err) => {
+      toast.error(`join_group 실패: ${err}`);
+    });
+
+    // 그룹 탈퇴 성공 응답
+    ioSocket.on('leave_group_ack', ({ userId, userName, groupMemberList }) => {
+      toast(`${userName}님이 그룹을 떠났습니다`);
+      setGroupMemberList(groupMemberList);
+    });
+
+    // 그룹 탈퇴 실패 응답
+    ioSocket.on('leave_group_err', (err) => {
+      toast.error(`leave_group 실패: ${err}`);
+    });
+
+    // 업데이트된 내용 받기
+    ioSocket.on('updated_note', async ({ noteObject }) => {
+      console.log('testing_shareDB:', noteObject);
+      // 여기에  로직 추가
+    });
+
+    
+  }, []);
+
+
+  //region Socket.IO 연결 해제 함수
+  const disconnectSocket = useCallback(() => {
+    const ioSocket = ioSocketRef.current;
+    if (ioSocket) {
+      ioSocket.disconnect();
+      setSocketStatus('연결 안됨');
+      toast.success('소켓 연결 해제됨');
+    }
+  }, []);
+
+  //region Socket.IO 그룹 참여 함수
+  const joinSocketGroup = useCallback(async (groupId) => {
+    const ioSocket = ioSocketRef.current;
+
+    if (!groupId) {
+      toast.error('그룹 ID가 필요합니다');
+      return;
+    }
+
+    if (!ioSocket.connected) {
+      connectIoSocket();
+    }
+    
+    setTimeout(() => {
+      
+    }, 100);
+    
+    try {
+      ioSocket.emit('join_group', String(groupId));
+    } catch (err) {
+      toast.error(`소켓IO로 그룹 참여 실패: ${err.message}`);
+    }
+  }, [connectIoSocket]);
+
+
+
 
   //region export
   const value = {
@@ -286,13 +444,13 @@ export function GroupsProvider({ children }) {
     deleteGroup,
     setGroups,
     //선택한 그룹
-    selectedGroupId, 
+    selectedGroupId,
     setSelectedGroupId,
     // 인증
     sid,
     provider,
     remainTime,
-    setRemainTime, 
+    setRemainTime,
     tokenInfo,
     tokenRefresh,
     //유저 정보
@@ -302,7 +460,7 @@ export function GroupsProvider({ children }) {
     fetchProfileImage,
     logout,
     checkPassword,
-    changePassword, 
+    changePassword,
     changeProfileImage,
     changeNickname,
     // 그룹관리
@@ -310,8 +468,15 @@ export function GroupsProvider({ children }) {
     inviteMember,
     kickMember,
     permissionUpdate,
+    //SocketIO 관리
+    socketStatus,
+    groupMemberList,
+    connectIoSocket,
+    disconnectSocket,
+    joinSocketGroup,
+    ioSocket: ioSocketRef.current,
   };
-  
+
   return (
     <GroupsContext.Provider value={value}>
       {children}

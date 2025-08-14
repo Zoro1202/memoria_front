@@ -1,0 +1,692 @@
+.tutorial-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000; /* 다른 요소 위에 표시 */
+  backdrop-filter: blur(5px);
+  animation: fadeInOverlay 0.3s ease-out forwards;
+}
+
+.tutorial-modal-content {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  width: 90%;
+  max-width: 1200px; /* 최대 너비 확장 */
+  height: 90%;
+  max-height: 800px; /* 최대 높이 확장 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: slideInModal 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.tutorial-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  z-index: 10001;
+  transition: color 0.2s ease;
+}
+
+.tutorial-close-btn:hover {
+  color: #333;
+}
+
+.tutorial-header {
+  padding: 20px 30px 0;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.tutorial-main-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.tutorial-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.tutorial-tab-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background-color: #f0f2f5;
+  color: #555;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tutorial-tab-btn:hover {
+  background-color: #e0e2e5;
+}
+
+.tutorial-tab-btn.active {
+  background-color: #2f80ed;
+  color: white;
+  box-shadow: 0 4px 12px rgba(47, 128, 237, 0.2);
+}
+
+.tutorial-body {
+  flex-grow: 1;
+  padding: 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.tutorial-step-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.tutorial-step-description {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 25px;
+  max-width: 600px;
+}
+
+.tutorial-step-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  background-color: #f8f8f8;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.tutorial-navigation {
+  flex-shrink: 0;
+  padding: 20px 30px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9f9f9;
+}
+
+.tutorial-nav-btn {
+  background-color: #e0e2e5;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-nav-btn:hover {
+  background-color: #d0d2d5;
+}
+
+.tutorial-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tutorial-step-indicator {
+  font-size: 16px;
+  font-weight: 600;
+  color: #444;
+}
+
+/* 애니메이션 */
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInModal {
+  from { transform: translateY(50px) scale(0.9); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes fadeContentIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeContentOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+.tutorial-body.in {
+  animation: fadeContentIn 0.3s ease-out forwards;
+}
+
+.tutorial-body.out {
+  animation: fadeContentOut 0.3s ease-in forwards;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .tutorial-modal-content {
+    width: 95%;
+    height: 95%;
+    max-width: unset;
+    max-height: unset;
+  }
+
+  .tutorial-main-title {
+    font-size: 22px;
+  }
+
+  .tutorial-tabs {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .tutorial-tab-btn {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .tutorial-body {
+    padding: 20px;
+  }
+
+  .tutorial-step-title {
+    font-size: 20px;
+  }
+
+  .tutorial-step-description {
+    font-size: 14px;
+  }
+
+  .tutorial-navigation {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tutorial-nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Demo Specific Styles */
+.tutorial-content-demo {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  background-color: #f0f2f5;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.tutorial-content-demo p {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Sidebar Demo */
+.sidebar-demo {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+}
+
+.sidebar-mock {
+  width: 280px; /* 가로 폭 증가 */
+  height: 250px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header-mock {
+  display: flex;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.sidebar-tab-mock {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  font-size: 9px; /* 폰트 크기 증가 */
+  font-weight: 600;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.sidebar-tab-mock.active {
+  color: #2f80ed;
+  border-bottom: 2px solid #2f80ed;
+}
+
+.sidebar-content-mock {
+  flex-grow: 1;
+  padding: 15px;
+  text-align: left;
+  font-size: 13px;
+  color: #444;
+}
+
+.sidebar-content-mock ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-content-mock li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.sidebar-footer-mock {
+  padding: 10px 15px;
+  border-top: 1px solid #eee;
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-buttons-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-buttons-mock button {
+  background-color: #e0e2e5;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-buttons-mock button:hover {
+  background-color: #d0d2d5;
+}
+
+/* Note Editor Demo */
+.note-editor-demo {
+  width: 100%;
+  max-width: 600px;
+}
+
+.toolbar-mock {
+  background-color: #e0e2e5;
+  padding: 8px 15px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  gap: 15px;
+  font-weight: bold;
+  color: #555;
+  font-size: 14px;
+}
+
+.toolbar-mock span, .toolbar-mock i, .toolbar-mock u {
+  cursor: pointer;
+}
+
+.code-mock {
+  font-family: monospace;
+  background-color: #ccc;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.editor-mock {
+  width: 100%;
+  height: 200px;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 15px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+  background-color: #ffffff;
+}
+
+/* AI Assistance Demo */
+.ai-assistance-demo {
+  width: 100%;
+  max-width: 500px;
+}
+
+.chat-window-mock {
+  width: 100%;
+  height: 200px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+}
+
+.message-mock {
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 80%;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.message-mock.user {
+  background-color: #2f80ed;
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+
+.message-mock.ai {
+  background-color: #e0e2e5;
+  color: #333;
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+.chat-window-mock input {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+/* Graph View Demo */
+.graph-view-demo {
+  width: 100%;
+  max-width: 600px; /* GraphView 컴포넌트가 더 넓게 표시될 수 있도록 max-width 증가 */
+  height: 350px; /* 그래프가 표시될 공간 확보 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.graph-view-demo .graph-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.graph-view-demo .floating-panel-wrapper {
+  display: none; /* 튜토리얼에서는 설정 패널 숨김 */
+}
+
+
+/* Video Conference Demo */
+.video-conference-demo {
+  width: 100%;
+  max-width: 600px;
+}
+
+.video-grid-mock {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  height: 250px;
+  background-color: #333;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.video-mock {
+  background-color: #555;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+}
+
+.video-mock.user-video {
+  border: 2px solid #2f80ed;
+}
+
+.controls-mock {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.controls-mock button {
+  background-color: #2f80ed;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.controls-mock button:hover {
+  background-color: #2563eb;
+}
+
+/* Offline Meeting Demo */
+.offline-meeting-demo {
+  width: 100%;
+  max-width: 550px;
+}
+
+.upload-area-mock {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  color: #777;
+  font-size: 14px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+}
+
+.upload-area-mock button {
+  background-color: #2f80ed;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  margin-top: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.upload-area-mock button:hover {
+  background-color: #2563eb;
+}
+
+.transcription-mock {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: left;
+  border: 1px solid #e0e0e0;
+}
+
+.transcription-mock p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* User Profile Demo */
+.user-profile-demo {
+  width: 100%;
+  max-width: 400px;
+}
+
+.profile-card-mock {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e0e0e0;
+}
+
+.avatar-mock {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #2f80ed;
+}
+
+.profile-card-mock h4 {
+  margin: 10px 0 5px;
+  color: #333;
+  font-size: 18px;
+}
+
+.profile-card-mock p {
+  color: #666;
+  font-size: 13px;
+}
+
+.profile-card-mock button {
+  background-color: #e0e2e5;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.profile-card-mock button:hover {
+  background-color: #d0d2d5;
+}
+
+/* Vault Manager Demo */
+.vault-manager-demo {
+  width: 100%;
+  max-width: 500px;
+}
+
+.file-list-mock {
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  height: 180px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.file-item-mock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  color: #333;
+}
+
+.file-item-mock:last-child {
+  border-bottom: none;
+}
+
+.search-bar-mock {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.search-bar-mock input {
+  flex-grow: 1;
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.search-bar-mock button {
+  background-color: #2f80ed;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-bar-mock button:hover {
+  background-color: #2563eb;
+}

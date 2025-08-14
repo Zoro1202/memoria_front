@@ -33,11 +33,11 @@ export default function LinkedNotes() {
   //#region 현재 열려있는 노트
   const activeNoteTitle = useMemo(() => {
     if (!activeTab) return null;        // 내부에서 처리
-    const found = Object.entries(notes).find(
-      ([, v]) => v.note_id === activeTab.noteId
-    );
-    return found ? found[0] : activeTab.title;
-  }, [notes, activeTab]);
+    // const found = Object.entries(notes).find(
+    //   ([, v]) => v.note_id === activeTab.noteId
+    // ); // found ? found[0] : 
+    return activeTab.title;
+  }, [notes, activeTabId]);
   //#region 노트에 연결된 링크들
   const { outboundTitles, inboundTitles } = useMemo(() => {
     if (!activeTab) return { outboundTitles: [], inboundTitles: [] };
@@ -58,10 +58,9 @@ export default function LinkedNotes() {
     const note = notes[title];
     if (!note) return; // 아직 로컬에 없는 노트일 수도 있음
     openTab({
-      id      : title,
       type    : 'note',
       title,
-      noteId  : title
+      noteId  : note.note_id
     });
   };
 
@@ -109,10 +108,10 @@ export default function LinkedNotes() {
                   {isOpen && note && (
                     <div
                       style={{
-                        marginTop: 2, fontSize: 14, color: '#333',
+                        marginTop: 2, fontSize: 13, color: '#333',
                         background: '#fafbff', border: '1px solid #eee',
                         borderRadius: 4, padding: '0.5rem',
-                        maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-line'
+                        maxHeight: 300, overflowY: 'auto', whiteSpace: 'pre-line'
                       }}
                     >
                       {note.content}
@@ -165,10 +164,10 @@ export default function LinkedNotes() {
                   {isOpen && note && (
                     <div
                       style={{
-                        marginTop: 2, fontSize: 14, color: '#333',
+                        marginTop: 2, fontSize: 13, color: '#333',
                         background: '#fafbff', border: '1px solid #eee',
                         borderRadius: 4, padding: '0.5rem',
-                        maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-line'
+                        maxHeight: 300, overflowY: 'auto', whiteSpace: 'pre-line'
                       }}
                     >
                       {note.content}

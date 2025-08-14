@@ -39,6 +39,7 @@
 }
 
 .tab-bar {
+  height: 39px;
   /* [수정됨] 높이가 내용에 따라 변하지 않도록 고정 */
   flex-shrink: 0; 
   display: flex;
@@ -64,6 +65,7 @@
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: #ccc transparent;
+  height: 39px;
 }
 
 .tabs-container::-webkit-scrollbar {
@@ -76,6 +78,7 @@
 }
 
 .tab {
+  height: 38px;
   background-color: #f5f5f5;
   border-radius: 4px;
   padding: 6px 10px;
@@ -88,9 +91,11 @@
   transition: background-color 0.2s ease, border-color 0.2s ease;
   border: 1.5px solid transparent;
   white-space: nowrap; /* 탭 이름 줄바꿈 방지 */
+  margin-bottom: 7px; 
 }
 
 .tab.active {
+  height: 35px;
   background-color: #e9eef7;
   border-color: #007bff;
   color: #007bff;

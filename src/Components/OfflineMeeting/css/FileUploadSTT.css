@@ -1,10 +1,14 @@
-.file-upload-stt-box,
-.group-select-container {
+.file-upload-stt-box {
+ max-width: 700px !important;
+  min-width: 320px !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  margin-left: auto !important;
+  margin-right: auto !important;
+
   background: #f9fbff;
   border-radius: 15px;
-  box-shadow: 0 1px 6px rgba(140, 155, 220, 0.05);
-  max-width: 440px;
-  width: 100%;
+  box-shadow: 0 1px 6px rgba(140,155,220,0.05);
   margin: 0 auto 16px auto;
   padding: 20px 22px 24px 22px;
   display: flex;
@@ -12,7 +16,6 @@
   gap: 14px;
   font-family: 'Apple SD Gothic Neo', 'Segoe UI', 'Malgun Gothic', sans-serif;
   color: #222a4a;
-  box-sizing: border-box;
 }
 
 .file-upload-stt-box h4 {
@@ -23,7 +26,6 @@
   letter-spacing: -0.02em;
   align-self: flex-start;
 }
-
 .file-upload-input {
   font-size: 1rem;
   padding: 6px 10px;
@@ -45,7 +47,7 @@
 }
 .file-lang-select:focus {
   border-color: #2643e9;
-  box-shadow: 0 0 6px rgba(38, 67, 233, 0.35);
+  box-shadow: 0 0 6px rgba(38,67,233,0.35);
 }
 .file-stt-button {
   background-color: #3c73e7;
@@ -56,7 +58,7 @@
   font-weight: 600;
   font-size: 1.03rem;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(60, 115, 231, 0.12);
+  box-shadow: 0 3px 10px rgba(60,115,231,0.12);
   transition: background-color 0.14s, box-shadow 0.12s;
   align-self: flex-start;
   outline: none;
@@ -71,26 +73,27 @@
   margin: 8px 0 0 0;
 }
 
-/* 모달 오버레이 */
+/* ====== 공통 모달 스타일 ====== */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0,0,0,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   padding: 16px;
 }
-/* 모달 콘텐츠 */
 .modal-content {
+  max-width: 700px;    /* 박스와 동일하게 */
+  min-width: 320px;
+  width: 100%;
+  box-sizing: border-box;
+
   background: #fff;
   border-radius: 12px;
-  min-width: 320px;
   min-height: 180px;
-  max-width: 700px;
-  max-height: 80vh;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.11);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.11);
   padding: 30px;
   display: flex;
   flex-direction: column;
@@ -106,16 +109,14 @@
   margin-bottom: 12px;
   text-align: center;
 }
-/* 로딩 스피너 래퍼(중앙정렬) */
 .modal-loading-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 }
-/* 원형 스피너 */
 .modal-spinner {
-  border: 4px solid rgba(56, 135, 234, 0.2);
+  border: 4px solid rgba(56,135,234,0.2);
   border-top-color: #3887ea;
   border-radius: 50%;
   width: 42px;
@@ -144,6 +145,7 @@
   padding: 12px;
   background: #f7f7fa;
   border-radius: 8px;
+  font-size: 1em;
   white-space: pre-wrap;
 }
 .modal-textarea {
@@ -177,7 +179,6 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 1rem;
-  user-select: none;
   outline: none;
   transition: background-color 0.2s ease;
 }
@@ -194,11 +195,19 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 1rem;
-  user-select: none;
   outline: none;
   transition: background-color 0.2s ease;
 }
 .modal-save-btn:hover,
 .modal-save-btn:focus {
   background-color: #22863a;
+}
+
+/* 반응형 */
+@media (max-width: 800px) {
+  .file-upload-stt-box,
+  .modal-content {
+    max-width: 98vw;
+    padding: 12px;
+  }
 }

@@ -1,20 +1,19 @@
 // sidebar.js
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Network, Search, FileVideo2Icon, VideoOff, Group, File, Apple } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Network, Search, FileVideo2Icon, VideoOff, Group, File, HelpCircle } from 'lucide-react';
 import VaultManager from '../../Components/VaultManager/VaultManager';
 // import { useMousePosition } from './util/useMousePosition'; // 마우스 위치 검사 훅
 import GroupList from './util/GroupList';
 import { useNotes } from '../../Contexts/NotesContext';
 import { useGroups } from '../../Contexts/GroupContext';
 // import { useNavigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import NoteSearchModal from './util/NoteSearchModal';
 import UserWindowModal from '../UserProfile/UserProfile';
 import './Sidebar.css';
 import { useTabs } from '../../Contexts/TabsContext';
 import NoteList from './util/NoteList';
-import introJs from 'intro.js';
-import 'intro.js/introjs.css';
+import MemoriaTutorialModal from '../Tutorials/MemoriaTutorialModal';
 import MeetingPage from '../OfflineMeeting/Meeting';
 
 export default function SidebarLayout() {
@@ -35,6 +34,7 @@ export default function SidebarLayout() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isOfflineMeetingOpen, setIsOfflineMeetingOpen] = useState(false);
+  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
 
   const vaultRef = useRef(null);
@@ -55,7 +55,7 @@ export default function SidebarLayout() {
     changeNickname,
   } = useGroups();
   
-  const { notes, loadNotes_lagacy } = useNotes();
+  const { notes, loadNotes } = useNotes();
   const {openTab} = useTabs();
 
   useEffect(() => {
@@ -107,20 +107,6 @@ export default function SidebarLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    // ✅ 브라우저에 tutorialShown이 없으면 실행
-    const hasSeenTutorial = localStorage.getItem('tutorialShown')
-    if (!hasSeenTutorial) {
-      runIntro()
-      localStorage.setItem('tutorialShown', 'true')
-    }
-  }, [])
-
-  // ✅ ? 버튼 클릭 시 실행
-  const handleHelpClick = () => {
-    runIntro()
-  }
-
   // 마우스가 왼쪽 영역에 있는지 확인
   // const isMouseOnLeftSide = mousePosition.x < 100;
   // const isMouseOnTabs = mousePosition.y < 65;
@@ -149,7 +135,7 @@ export default function SidebarLayout() {
     console.log('Selected note:', note);
     // 노트 열기 로직 구현
     // vaultRef.current?.openNote(note);
-    openTab({ title: note.title, type: 'note', noteId: note.title });
+    openTab({ title: note.title, type: 'note', noteId: note.note_id });
   };
 
   //-----------------------------사용자 정보창 모달----------------------------
@@ -169,95 +155,52 @@ export default function SidebarLayout() {
     setIsUserModalOpen(false);
   };
 
-  const runIntro = () => {
-    const intro = introJs()
-    intro.setOptions({
-      steps: [
-        {
-          element: '.toggle-btn',
-          intro: '사이드바를 열거나 닫을 수 있습니다.',
-          position: 'right'
-        },
-        {
-          element: '.asdf-btn:nth-child(2)',
-          intro: '노트를 검색할 수 있는 버튼입니다.',
-          position: 'right'
-        },
-        {
-          element: '.asdf-btn:nth-child(3)',
-          intro: '새로운 노트를 생성합니다.',
-          position: 'right'
-        },
-        {
-          element: '.asdf-btn:nth-child(4)',
-          intro: '노트 간 관계를 시각화하는 그래프 뷰를 엽니다.',
-          position: 'right'
-        },
-        {
-          element: '.main-sidebar-header .sd-tab-button:nth-child(1)',
-          intro: '그룹 탭입니다. 그룹별로 노트를 관리할 수 있습니다.',
-          position: 'right'
-        },
-        {
-          element: '.main-sidebar-header .sd-tab-button:nth-child(2)',
-          intro: '노트 탭입니다. 그룹을 선택 후 선택한 그룹의 전체 노트를 열람할 수 있습니다.',
-          position: 'right'
-        },
-        {
-          element: '.user-profile',
-          intro: '여기서 계정 정보를 확인할 수 있습니다.',
-          position: 'right'
-        },
-        {
-          element: '.tutorial-btn',
-          intro: '언제든지 이 버튼을 클릭하여 튜토리얼을 다시 볼 수 있습니다.',
-          position: 'left'
-        },
-      ],
-      showProgress: true,
-      showBullets: false,
-      nextLabel: 'Enter',
-      prevLabel: 'Prev',
-      doneLabel: 'Done'
-    })
-  intro.start()
-}
-
   return (
     <div className="container">
       <div className="fixed-sidebar">
-        <button
-          className="toggle-btn"
-          onClick={() => setIsOpen((prev) => !prev)}
-          title={isOpen ? "사이드바 닫기" : "사이드바 열기"}
-        >
-          {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-        </button>
-        <button className="asdf-btn" onClick={handleSearchClick} title="노트 검색">
-          <Search size={16} />
-        </button>
-        <button className="asdf-btn" onClick={handleAddNote} title="새 노트">
-          <Plus size={16} />
-        </button>
-        <button className="asdf-btn" onClick={handleAddGraph} title="그래프 뷰">
-          <Network size={16} />
-        </button>
-        <button
-          className="asdf-btn"
-          onClick={() => (window.location.href = '/video-conference')}
-          title="화상회의"
-        >
-          <FileVideo2Icon size={16} />
-        </button>
-        <button
-          className="asdf-btn"
-          onClick={() => setIsOfflineMeetingOpen(true)}
-          title="오프라인 회의"
-        >
-          <VideoOff size={16} />
-        </button>
-        <button className='tutorial-btn' onClick={handleHelpClick}>
-          <Apple size={16}/>
+        <div>
+          <button
+            className="toggle-btn"
+            onClick={() => setIsOpen((prev) => !prev)}
+            title={isOpen ? "사이드바 닫기" : "사이드바 열기"}
+          >
+            {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+          </button>
+          <button className="asdf-btn" onClick={handleSearchClick} title="노트 검색">
+            <Search size={16} />
+          </button>
+          <button className="asdf-btn" onClick={handleAddNote} title="새 노트">
+            <Plus size={16} />
+          </button>
+          <button className="asdf-btn" onClick={handleAddGraph} title="그래프 뷰">
+            <Network size={16} />
+          </button>
+          <button
+            className="asdf-btn"
+            onClick={() => (window.location.href = '/video-conference')}
+            title="화상회의"
+          >
+            <FileVideo2Icon size={16} />
+          </button>
+          <button
+            className="asdf-btn"
+            onClick={() => {
+            if (!selectedGroupId) {
+            toast.error('오프라인 회의를 시작하려면 그룹을 먼저 선택해 주세요.', {
+            duration: 3000,
+          });
+          return;
+          }
+          setIsOfflineMeetingOpen(true);
+  }}
+  title="오프라인 회의"
+>
+  <VideoOff size={16} />
+</button>
+
+        </div>
+        <button className='tutorial-btn' onClick={() => setIsTutorialModalOpen(true)}>
+          <HelpCircle size={16}/>
         </button>
       </div>
       {/* 사이드바 */}
@@ -290,7 +233,7 @@ export default function SidebarLayout() {
               <GroupList onGroupSelect={(group) => {
                 console.log(group);
                 handleAddGraph();
-                loadNotes_lagacy(group.group_id); //이거 바꿔야함!!!
+                loadNotes(group.group_id); //이거 바꿔야함!!!
               }} />
             )}
             {/* {activeTab === 'search' && (
@@ -308,7 +251,7 @@ export default function SidebarLayout() {
             {activeTab === 'notes' && (
               <NoteList
               onNoteSelect={(note)=>{
-                      openTab({ title: note.title, type: 'note', noteId: note.title });
+                      openTab({ title: note.title, type: 'note', noteId: note.note_id });
                     }}
               />
             )}
@@ -363,6 +306,10 @@ export default function SidebarLayout() {
       <MeetingPage
        open={isOfflineMeetingOpen}
         onClose={() => setIsOfflineMeetingOpen(false)}
+      />
+      <MemoriaTutorialModal
+        isOpen={isTutorialModalOpen}
+        onClose={() => setIsTutorialModalOpen(false)}
       />
       <Toaster />
     </div>

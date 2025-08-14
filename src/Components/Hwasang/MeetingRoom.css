@@ -1,227 +1,133 @@
-/* MeetingRoom.css (최종 수정본) */
-/* 이 스타일은 MeetingRoom 컴포넌트의 최상위 요소에 className="meeting-room-ui"를 추가해야 적용됩니다. */
+/* MeetingRoom.css (피드백 반영 최종 수정) */
 
-/*
-  [안내]
-  html, body에 대한 전역 스타일은 다른 컴포넌트에 영향을 줄 수 있어 주석 처리되었습니다.
-  관련 기능은 MeetingRoom.js 컴포넌트 내부에서 useEffect로 제어하는 것을 권장합니다.
-*/
-/*
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: #313338;
+/* 기존 다크 테마 색상 변수 */
+:root {
+  --primary-accent: #5865f2;
+  --primary-accent-hover: #4752c4;
+  --background-primary: #313338;
+  --background-secondary: #2b2d31;
+  --background-tertiary: #232428;
+  --text-normal: #dbdee1;
+  --text-muted: #b5bac1;
+  --input-background: #383a40;
+  --success-color: #44b700;
+  --danger-color: #c62828;
+  --border-color: #232428; /* 경계선 색상을 가장 어두운 배경색과 통일 */
+}
+
+/* 전체적인 다크 테마와 글꼴 설정 */
+.meeting-room-ui {
   font-family: 'Segoe UI', 'Apple SD Gothic Neo', Arial, sans-serif;
+  background-color: var(--background-tertiary);
+  color: var(--text-normal);
+  height: 100vh;
   overflow: hidden;
 }
-*/
 
-/* 메인 컨테이너 */
+/* 메인 레이아웃 */
 .meeting-room-ui .meeting-root {
   display: flex;
-  height: 100vh;
-  background: #313338;
-  font-family: inherit;
-  overflow: hidden;
+  height: 100%;
+  background: var(--background-primary);
 }
 
-/* 메인 컨텐츠 */
 .meeting-room-ui .main-content {
-  flex: 1 1 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-width: 0;
-  height: 100vh;
-  background: #232428;
-  overflow: hidden;
+  background: var(--background-tertiary);
 }
 
-/* 중앙 영역 */
 .meeting-room-ui .zoom-center-area {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 16px;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #232428;
+  padding: 20px;
+  /* position: relative; */ /* Context moved to parent */
   overflow: hidden;
-  position: relative;
-}
-
-/* 발표자료 열기+미디어 컨트롤 토글 버튼 묶음 */
-.meeting-room-ui .slide-upload-controls {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  z-index: 10;
-}
-
-/* 발표자료 열기 버튼 */
-.meeting-room-ui .upload-slide-btn {
-  background: #5865f2;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-.meeting-room-ui .upload-slide-btn:hover {
-  background: #4752c4;
-}
-.meeting-room-ui .close-slide-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(43, 45, 49, 0.7);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 100;
-  transition: background 0.18s;
-}
-.meeting-room-ui .close-slide-btn:hover {
-    background: rgba(20, 21, 23, 0.8);
-}
-
-/* 미디어 컨트롤 토글 버튼 (옆에 붙음) */
-.meeting-room-ui .media-controls-toggle {
-  background: #5865f2;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-.meeting-room-ui .media-controls-toggle:hover {
-  background: #4752c4;
 }
 
 /* 슬라이드/캠 래퍼 */
 .meeting-room-ui .slide-cam-wrapper {
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 24px;
   width: 100%;
   height: 100%;
-  position: relative;
-  overflow: hidden;
+  gap: 24px;
 }
 
-/* 슬라이드 전체 박스 */
+/* 슬라이드 컨테이너 */
 .meeting-room-ui .zoom-slide-wrapper {
   position: relative;
-  background: #2b2d31;
+  background: var(--background-secondary);
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  z-index: 10;
   transition: all 0.3s ease;
-  flex: 1 1 70%;
-  max-width: 1400px;
+  flex-grow: 1;
   height: 100%;
+  max-width: 1400px;
 }
 
-/* 슬라이드 이미지 */
 .meeting-room-ui .zoom-slide-img {
   position: absolute;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  user-select: none;
-  pointer-events: auto;
-  z-index: 1;
 }
 
-/* 캔버스 */
 .meeting-room-ui .zoom-slide-canvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: auto;
-  user-select: none;
-  z-index: 2;
   cursor: crosshair;
-  background: transparent;
+  z-index: 2;
 }
 
 /* 슬라이드 컨트롤 */
 .meeting-room-ui .zoom-slide-controls {
   position: absolute;
-  bottom: 10px;
+  bottom: 15px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  z-index: 100;
   background: rgba(49,51,56, 0.92);
-  padding: 6px 16px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.13);
-}
-.meeting-room-ui .zoom-slide-controls button {
-  padding: 5px 12px;
-  font-size: 13px;
-  border-radius: 8px;
-  border: none;
-  background-color: #5865f2;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.18s;
-  z-index: 101;
-}
-.meeting-room-ui .zoom-slide-controls button:disabled {
-  background-color: #444;
-  cursor: default;
-}
-.meeting-room-ui .zoom-slide-controls button:hover:not(:disabled) {
-  background-color: #4752c4;
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 100;
 }
 
-/* [수정] 발표자 캠 */
+/* 발표자 캠 */
 .meeting-room-ui .presenter-cam-box {
-  position: relative;
-  flex: 0 0 280px; /* 너비 약간 증가 */
+  flex: 0 0 280px;
   width: 280px;
-  aspect-ratio: 4 / 3; /* 세로 비율을 늘려 더 길게 만듭니다. */
+  aspect-ratio: 16 / 9;
   background: #18191c;
   border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   overflow: hidden;
-  z-index: 3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  position: relative;
 }
-.meeting-room-ui .presenter-cam-box video {
+
+.meeting-room-ui .presenter-cam-box video,
+.meeting-room-ui .remote-video-container {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* 모든 캠(발표자, 참가자) 닉네임 */
+/* 닉네임 표시 */
 .meeting-room-ui .zoom-nickname {
   position: absolute;
   bottom: 8px;
@@ -234,321 +140,52 @@ html, body {
   font-size: 14px;
   text-align: left;
   z-index: 2;
-  user-select: none;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* 참가자 바 (하단 스크롤) */
+/* 하단 갤러리 바 */
 .meeting-room-ui .zoom-gallery-bar {
-  flex: 0 0 160px;
+  flex-shrink: 0;
   height: 160px;
   background: #1e1f22;
   display: flex;
-  gap: 16px;
-  padding: 0 16px;
-  justify-content: center;
   align-items: center;
-  overflow: hidden;
-  user-select: none;
-  box-sizing: border-box;
+  padding: 0 16px;
+  gap: 16px;
   width: 100%;
-}
-/* 참가자 바 내부 콘텐츠 래퍼 */
-.meeting-room-ui .gallery-bar-content {
-    display: flex;
-    flex: 1;
-    gap: 16px;
-    align-items: center;
-    overflow-x: auto;
-    padding: 10px 0;
-    scrollbar-width: thin;
-    scrollbar-color: #5865f2 #313338;
+  box-sizing: border-box;
 }
 
-/* 참가자 바의 비디오 타일 */
+.meeting-room-ui .gallery-bar-content {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 10px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-accent) var(--background-primary);
+}
+
 .meeting-room-ui .zoom-gallery-bar .zoom-video-tile {
   width: 200px;
   height: 120px;
-  background: #2b2d31;
+  background: var(--background-secondary);
   border-radius: 10px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
+
 .meeting-room-ui .zoom-gallery-bar .zoom-video-tile video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #000;
 }
 
-/* 발표자료 없음 (Placeholder) */
-.meeting-room-ui .zoom-presenter-placeholder {
-  width: 400px;
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #232428;
-  color: #fff;
-  font-size: 20px;
-  border-radius: 10px;
-}
-
-/* ==============================
-    우측 패널(채팅/자막/참여자)
- ============================== */
-.meeting-room-ui .right-panel {
-  width: 320px;
-  background: #2b2d31;
-  border-left: 1px solid #232428;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  height: 100vh;
-  overflow: hidden;
-  box-shadow: -2px 0 12px rgba(0,0,0,0.10);
-}
-.meeting-room-ui .tabs {
-  display: flex;
-  border-bottom: 1px solid #232428;
-  flex-shrink: 0;
-  background: #232428;
-}
-.meeting-room-ui .tabs button {
-  flex: 1;
-  padding: 10px 0;
-  background: none;
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  color: #b5bac1;
-  font-weight: 500;
-  transition: background 0.18s, color 0.18s;
-  border-bottom: 3px solid transparent;
-}
-.meeting-room-ui .tabs button.active {
-  background: #2b2d31;
-  color: #fff;
-  border-bottom: 3px solid #5865f2;
-}
-
-.meeting-room-ui .tab-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-  background: #2b2d31;
-}
-
-.meeting-room-ui .chat-list,
-.meeting-room-ui .subtitle-list {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  background: #313338;
-  border-radius: 12px;
-  margin: 12px 12px 0 12px;
-  padding: 14px 12px 8px 12px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08) inset;
-  border: none;
-  font-size: 15px;
-  color: #dbdee1;
-  line-height: 1.6;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.meeting-room-ui .chat-list > div,
-.meeting-room-ui .subtitle-list > div {
-  background: transparent;
-  border-radius: 8px;
-  padding: 6px 8px;
-  color: #dbdee1;
-  transition: background 0.15s;
-}
-.meeting-room-ui .chat-list > div:hover,
-.meeting-room-ui .subtitle-list > div:hover {
-  background: #383a40;
-}
-
-.meeting-room-ui .chat-input-row {
-  display: flex;
-  gap: 8px;
-  margin: 12px;
-  flex-shrink: 0;
-  height: 44px;
-  align-items: center;
-}
-.meeting-room-ui .chat-input-row input {
-  flex: 1;
-  height: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  font-size: 15px;
-  background: #383a40;
-  color: #fff;
-  outline: none;
-  transition: background 0.18s;
-  box-sizing: border-box;
-}
-.meeting-room-ui .chat-input-row input:focus {
-  background: #43444b;
-}
-.meeting-room-ui .chat-input-row button {
-  height: 100%;
-  padding: 8px 14px;
-  background: #5865f2;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.18s;
-}
-.meeting-room-ui .chat-input-row button:hover {
-  background: #4752c4;
-}
-
-.meeting-room-ui .participant-header-tab {
-  width: calc(100% - 24px);
-  margin: 12px 12px 0 12px;
-  background: #232428;
-  color: #fff;
-  border-radius: 10px 10px 0 0;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 8px 0 7px 14px;
-  text-align: left;
-  border-bottom: 2.5px solid #5865f2;
-  flex-shrink: 0;
-}
-.meeting-room-ui .right-participant-list {
-  flex: 0 1 250px;
-  min-height: 100px;
-  overflow-y: auto;
-  background: #313338;
-  border-radius: 0 0 12px 12px;
-  margin: 0 12px 12px 12px;
-  padding: 14px 12px 8px 12px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08) inset;
-  font-size: 15px;
-  color: #dbdee1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.meeting-room-ui .right-participant-list > div {
-  background: transparent;
-  border-radius: 8px;
-  padding: 6px 8px;
-  color: #dbdee1;
-  transition: background 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.meeting-room-ui .right-participant-list > div:hover {
-  background: #383a40;
-}
-
-
-/* 미디어 컨트롤: 상단 중앙에 노출 */
-.meeting-room-ui .media-controls {
-  position: fixed;
-  top: 64px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 12px;
-  background: rgba(49,51,56, 0.95);
-  border-radius: 14px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  width: fit-content;
-}
-.meeting-room-ui .media-controls.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-.meeting-room-ui .media-controls button {
-  background: #383a40;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 15px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-.meeting-room-ui .media-controls button.on {
-  background: #44b700;
-}
-.meeting-room-ui .media-controls button.off {
-  background: #c62828;
-}
-.meeting-room-ui .media-controls button.leave {
-  background: #e53935;
-}
-
-/* 포커스 모드 */
-.meeting-room-ui.focus-mode .zoom-gallery-bar,
-.meeting-room-ui.focus-mode .right-panel {
-  display: none;
-}
-.meeting-room-ui.focus-mode .slide-cam-wrapper {
-  width: 100vw;
-  height: 98vh;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-}
-.meeting-room-ui.focus-mode .zoom-slide-wrapper {
-  flex: 1 1 80%;
-}
-.meeting-room-ui.focus-mode .presenter-cam-box {
-  flex: 0 0 18%;
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-}
-
-/* 방 ID 뱃지 */
-.meeting-room-ui .room-id-badge {
-  position: fixed;
-  top: 30px;
-  left: 24px;
-  z-index: 2000;
-  font-weight: bold;
-  font-size: 17px;
-  color: #fff;
-  background: #222;
-  border-radius: 7px;
-  padding: 6px 22px;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.13);
-  user-select: none;
-  pointer-events: none;
-}
-
-/* 갤러리 뷰 레이아웃 */
+/* 갤러리 뷰 (슬라이드 없을 때) */
 .meeting-room-ui .zoom-video-grid {
   display: flex;
   flex-wrap: wrap;
@@ -562,24 +199,289 @@ html, body {
   overflow-y: auto;
 }
 
-/* 갤러리 뷰 비디오 타일 */
 .meeting-room-ui .zoom-video-grid .zoom-video-tile {
   flex: 1 1 350px;
   max-width: 600px;
   aspect-ratio: 16 / 9;
-  background: #2b2d31;
+  background: var(--background-secondary);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 .meeting-room-ui .zoom-video-grid .zoom-video-tile video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #000;
+}
+
+/* 오른쪽 패널 */
+.meeting-room-ui .right-panel {
+  width: 320px;
+  background: var(--background-secondary);
+  border-left: 1px solid var(--background-tertiary);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-shadow: -2px 0 12px rgba(0,0,0,0.10);
+}
+
+/* [수정] 탭 컨테이너의 하단 실선 제거 */
+.meeting-room-ui .tabs {
+  display: flex;
+  flex-shrink: 0;
+  background: var(--background-tertiary);
+  /* border-bottom: 1px solid var(--border-color); */ /* 하단 실선 제거 */
+}
+
+.meeting-room-ui .tabs button {
+  flex: 1;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-bottom: 3px solid transparent;
+  transition: background 0.18s, color 0.18s;
+}
+
+.meeting-room-ui .tabs button.active {
+  color: #fff;
+  border-bottom-color: var(--primary-accent);
+  background: var(--background-secondary);
+}
+
+.meeting-room-ui .tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--background-secondary);
+  padding: 0 12px 12px 12px;
+}
+
+.meeting-room-ui .chat-list, .meeting-room-ui .subtitle-list {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--background-primary);
+  border-radius: 12px;
+  margin: 12px 0;
+  padding: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08) inset;
+  line-height: 1.6;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.meeting-room-ui .chat-input-row {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.meeting-room-ui .chat-input-row input {
+  flex: 1;
+  background: var(--input-background);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-normal);
+  font-size: 15px;
+  outline: none;
+  transition: background 0.18s;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.meeting-room-ui .chat-input-row input:focus {
+    background: #43444b;
+}
+
+.meeting-room-ui .chat-input-row button {
+  background: var(--primary-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.18s;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.meeting-room-ui .chat-input-row button:hover {
+  background: var(--primary-accent-hover);
+}
+
+.meeting-room-ui .participant-header-tab {
+  padding: 12px 12px 8px 26px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--background-tertiary);
+  border-bottom: 2.5px solid var(--primary-accent);
+}
+
+.meeting-room-ui .right-participant-list {
+  flex: 0 1 250px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meeting-room-ui .right-participant-list > div {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  gap: 8px;
+  transition: background-color 0.15s;
+}
+
+.meeting-room-ui .right-participant-list > div:hover {
+  background-color: var(--input-background);
+}
+
+/* 하단 미디어 컨트롤 */
+.meeting-room-ui .media-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px;
+  background: rgba(49,51,56, 0.95);
+  border-radius: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.meeting-room-ui .media-controls.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.meeting-room-ui .media-controls .MuiIconButton-root {
+  background-color: var(--input-background);
+  color: var(--text-normal);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.meeting-room-ui .media-controls .MuiIconButton-root:hover {
+  background-color: #4a4f58;
+}
+
+.meeting-room-ui .media-controls .MuiIconButton-root.on {
+  background-color: var(--success-color);
+  color: #fff;
+}
+
+.meeting-room-ui .media-controls .MuiIconButton-root.off {
+  background-color: var(--danger-color);
+  color: #fff;
+}
+
+.meeting-room-ui .media-controls .MuiIconButton-root.leave {
+  background-color: #e53935;
+}
+
+/* 기타 UI 요소 */
+.meeting-room-ui .room-id-badge {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  background: rgba(0,0,0,0.3);
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 17px;
+  font-weight: bold;
+  z-index: 1500;
+  color: #fff;
+  pointer-events: none;
+}
+
+/* [수정] 슬라이드 업로드/설정 버튼 위치 상향 조정 */
+.meeting-room-ui .slide-upload-controls {
+  position: absolute;
+  top: 7px; /* 버튼 위로 이동 */
+  right: 330px;
+  z-index: 1500;
+  display: flex;
+  gap: 10px;
+}
+
+.meeting-room-ui .slide-upload-controls .MuiIconButton-root {
+    background-color: var(--primary-accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px;
+    transition: background-color 0.18s;
+}
+
+.meeting-room-ui .slide-upload-controls .MuiIconButton-root:hover {
+    background-color: var(--primary-accent-hover);
+}
+
+.meeting-room-ui .close-slide-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(43, 45, 49, 0.7);
+    color: #fff;
+    z-index: 10;
+}
+.meeting-room-ui .close-slide-btn:hover {
+    background: rgba(20, 21, 23, 0.8);
+}
+
+.meeting-room-ui .tutorial-button-container {
+    padding: 12px;
+    margin-top: auto;
+    border-top: none; /* 실선 제거 확인 */
+    background: var(--background-secondary);
+}
+
+/* 포커스 모드 */
+.meeting-room-ui.focus-mode .right-panel,
+.meeting-room-ui.focus-mode .zoom-gallery-bar,
+.meeting-room-ui.focus-mode .room-id-badge,
+.meeting-room-ui.focus-mode .slide-upload-controls {
+  display: none;
+}
+
+.meeting-room-ui.focus-mode .zoom-center-area {
+  padding: 0;
+}
+
+.meeting-room-ui.focus-mode .zoom-slide-wrapper {
+  border-radius: 0;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #202225;
+  border-radius: 5px;
+  border: 2px solid var(--background-secondary);
+}
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
 }

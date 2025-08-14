@@ -16,8 +16,11 @@ export function getResourceAPI() {
         const response = await fetch(`${baseUrl}/api/token-info`, {
           credentials: 'include', // 쿠키를 포함하여 요청
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        return await response.json();
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(`[Error]:${response.status} : ${data.message}`);
+        }
+        return data;
       } catch(err) {
         throw err;
       }
@@ -30,11 +33,12 @@ export function getResourceAPI() {
           method: 'POST',
           credentials:'include'
         });
+        const data = await response.json();
         if (!response.ok){
-          if(response.status === 401) throw new Error(`[Error]:${response.status} : ${response.message}`);
-          throw new Error(`[Error]:${response.status} : ${response.message}`);
+          if(response.status === 401) throw new Error(`[Error]:${response.status} : ${data.message}`);
+          throw new Error(`[Error]:${response.status} : ${data.message}`);
         }
-        return await response.json();
+        return await data;
       } catch(err) {
         throw err;
       }
@@ -53,8 +57,11 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include', // 쿠키를 포함하여 요청
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+
         const data = await response.json();
+
+
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
         return data.data;
       } catch(err) {
         throw err;
@@ -65,6 +72,7 @@ export function getResourceAPI() {
         const response = await fetch(`${baseUrl}/api/user/profile-image`, {
           credentials: 'include', // 쿠키를 포함하여 요청
         });
+
         if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
         return response; // nickname 은 json이고, profileImageUrl은 blob임...
       } catch(err) {
@@ -80,9 +88,9 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({password}),
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        // returns { success }
         const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        // returns { success }
         return data;
       } catch(err) {
         throw err;
@@ -97,9 +105,9 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({password}),
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        // returns { success }
         const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        // returns { success }
         return data;
       } catch(err) {
         throw err;
@@ -114,9 +122,9 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({name}),
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        // returns { success, message }
         const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        // returns { success, message }
         return data;
       } catch(err) {
         throw err;
@@ -132,7 +140,8 @@ export function getResourceAPI() {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
         
         // returns [{ group_id: 1, group_name: "프로젝트 팀", permission: "editor" },]
         return response; // blob이여야함.
@@ -146,8 +155,8 @@ export function getResourceAPI() {
           method: 'POST',
           credentials: 'include'
         });
-        const result = await response.json();
-        return result;
+        const data = await response.json();
+        return data;
       } catch(err){
         throw err;
       }
@@ -156,8 +165,9 @@ export function getResourceAPI() {
     getGroups: async ()=>{
       try{
         const response = await fetch(`${baseUrl}/api/groups`, { credentials: 'include' });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
         const data = await response.json();
+
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
         console.log(`초기 데이터:`, data);
         return data;
       } catch(err) {
@@ -174,9 +184,9 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        // returns groupData: {notes: {note_id: any;title: any;}[];links: {src_note_id: any;dst_note_id: any;}[];}
         const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        // returns groupData: {notes: {note_id: any;title: any;}[];links: {src_note_id: any;dst_note_id: any;}[];}
         return data.data;
       } catch(err) {
         throw err;
@@ -192,9 +202,9 @@ export function getResourceAPI() {
         const response = await fetch(`${baseUrl}/api/content?note_id=${note_id}`, {
           credentials: 'include'
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        // returns {content: "노트 내용"}
         const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        // returns {content: "노트 내용"}
         return data.data;
       } catch(err) {
         throw err;
@@ -217,9 +227,9 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({group_id, title, content, note_id}),
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        // returns { note_id, content, newtitle, group_id }
         const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        // returns { note_id, content, newtitle, group_id }
         return data;
       } catch(err) {
         throw err;
@@ -238,10 +248,10 @@ export function getResourceAPI() {
           body: JSON.stringify({ note_id, group_id }),
           credentials: 'include', // 쿠키를 포함하여 요청
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
         // returns { success: true } or { error: "Error message" }
-        return result;
+        return data;
       } catch(err) {
         throw err;
       }
@@ -259,8 +269,9 @@ export function getResourceAPI() {
           credentials: 'include',
           body: JSON.stringify({ group_name }),
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-        return await response.json();
+        const data = await response.json();
+        if (!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+        return data;
       } catch(err) {
         throw err;
       }
@@ -278,7 +289,11 @@ export function getResourceAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ group_id }),
         });
-        if (!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
+        if (!response.ok) 
+        {
+          const data = await response.json();
+          throw new Error(`[Error]:${response.status} : ${data.message}`);
+}
         return response.json();
       } catch(err) {
         throw err;
@@ -294,10 +309,10 @@ export function getResourceAPI() {
           credentials:'include', 
           body: JSON.stringify({group_id})
         });
-
-        if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-
+        
         const data = await response.json();
+        if(!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
+
         return data.data;
       } catch(err) {
         throw err;
@@ -312,10 +327,10 @@ export function getResourceAPI() {
           credentials:'include',
           body: JSON.stringify({recipient, group_id, permission})
         });
+        const data = response.json();
+        if(!response.ok) throw new Error(`[Error]:${response.status} : ${data.message}`);
 
-        if(!response.ok) throw new Error(`[Error]:${response.status} : ${response.message}`);
-
-        const data = await response.json();
+        
         return data;
       } catch(err) {
         throw err;
@@ -333,12 +348,9 @@ export function getResourceAPI() {
           body: JSON.stringify({ recipient, group_id })
         });
 
-        if(!response.ok) {
-          const data = await response.json();
-          throw Error(data.error);
-        }
-
         const data = await response.json();
+        if(!response.ok) { throw Error(data.error); }
+
         return data;
       } catch(err) {
         throw err;
@@ -355,11 +367,11 @@ export function getResourceAPI() {
           },
           body: JSON.stringify({ group_id, recipient, permission})
         });
+        
+        const data = await response.json();
         if(!response.ok) {
-          const data = await response.json();
           throw Error(data.error);
         }
-        const data = await response.json();
         return data;  
       } catch(err) {
         throw err;
@@ -379,11 +391,11 @@ export function getResourceAPI() {
           body: formData,
           credentials:'include'
         });
-        const result = await response.json();
-        if (result.success){
-          return result;
+        const data = await response.json();
+        if (data.success){
+          return data;
         } else {
-          throw new Error(`${result.message}`);
+          throw new Error(`${data.message}`);
         }
       } catch(err) {
         throw err;

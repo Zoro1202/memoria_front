@@ -11,16 +11,16 @@ export default function GraphView({ data, onSelect }) {
 
   //#region Graph State들 관련
   //Display
-  const [nodeSize, setNodeSize] = useState(8);//노드 사이즈
+  const [nodeSize, setNodeSize] = useState(5);//노드 사이즈
   const [linkWidth, setLinkWidth] = useState(1); // 링크 두께
   const [zoom, setZoom] = useState(1.0);  // 텍스트 표시 시작점임.
   const [hoverNode, setHoverNode] = useState(null); // 마우스 올려논 노드 표시
   const [w, h] = useWindowSize();
   //Physics
-  const [centerForce, setCenterForce] = useState(0.2); // 중심 장력(중력같은느낌?)
-  const [linkStrength, setLinkStrength] = useState(2); // 링크 거리가 유지되는 힘?
-  const [repulsion, setRepulsion] = useState(-300); // 노드 간 척력
-  const [linkDistance, setLinkDistance] = useState(70); // 링크 거리
+  const [centerForce, setCenterForce] = useState(0.05); // 중심 장력(중력같은느낌?)
+  const [linkStrength, setLinkStrength] = useState(1); // 링크 거리가 유지되는 힘?
+  const [repulsion, setRepulsion] = useState(-500); // 노드 간 척력
+  const [linkDistance, setLinkDistance] = useState(100); // 링크 거리
   const [panelOpen, setPanelOpen] = useState(false); // 판넬 오픈 state
   //#endregion
 
@@ -109,11 +109,15 @@ export default function GraphView({ data, onSelect }) {
 
           return isConnected ? "#f59e0b" : "#52525b";// 연결 노드만 밝게
         }}
+        onNodeRightClick={(node) => {
+          // 우클릭 시 설정창 띄우기
+          toast.success(`${node.id} 우클릭`);
+        }}
         onNodeClick={(node) => { // 노드 클릭 시 해당 노드의 노트를 onSelect(콜백)으로 넘김 -> 부모쪽에서 opentab으로 노트 열기
           // fgRef.current.zoom(1, 300);
           // fgRef.current.centerAt(node.x, node.y, 1000); // center at 으로 노드에 카메라 맞추기 1초
           // fgRef.current.zoom(2, 1000); // // zoom하기 1.5초
-          toast.success(`${node.id} 클릭!`); // 1.5초 후에 노트 열기
+          // toast.success(`${node.id} 클릭!`); // 1.5초 후에 노트 열기
           // fgRef.current.d3ReheatSimulation();
           // setTimeout(() => onSelect(node.id), 1000); // 1.5초 후에 노트 열기(노트 오류..)
           onSelect(node.id); // 노트열기

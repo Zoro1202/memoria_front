@@ -12,7 +12,6 @@ const NoteList = ({ onNoteSelect }) => {
     notes, 
     loading, 
     currentGroupId, 
-    loadNotes_lagacy, 
     deleteNote, 
     upsertNote 
   } = useNotes();

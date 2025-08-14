@@ -22,7 +22,7 @@
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  position: fixed; right: 20px; bottom: 20px; width: 400px;
+  position: fixed; right: 0px; bottom: 0px; width: 400px;
   height: 600px; display: flex; flex-direction: column; overflow: hidden;
   opacity: 0; transform: translateY(15px) scale(0.98); pointer-events: none;
 }
@@ -39,13 +39,16 @@ button, textarea { font-family: inherit; }
 }
 .widget-title { font-weight: 600; color: var(--text-primary); font-size: 15px; }
 .widget-header-right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
-.widget-back-button, .widget-close-button, .widget-minimize-button, .widget-refresh-button {
+.widget-tutorial-button, .widget-back-button, .widget-close-button, .widget-minimize-button, .widget-refresh-button {
   background: none; border: none; color: var(--text-secondary);
-  cursor: pointer; padding: 6px; border-radius: 50%;
+  cursor: pointer; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s ease;
+  width: 36px; /* 명시적 너비 설정 */
+  height: 36px; /* 명시적 높이 설정 */
 }
-.widget-close-button { font-size: 24px; line-height: 0.5; }
+.widget-close-button { font-size: 18px; }
+.widget-minimize-button, .widget-refresh-button { width: 36px; height: 36px; }
 .widget-back-button:hover, .widget-close-button:hover, .widget-minimize-button:hover, .widget-refresh-button:hover {
   color: var(--text-primary); background-color: var(--bg-hover);
 }
@@ -55,7 +58,7 @@ button, textarea { font-family: inherit; }
 /* ===================================== */
 .widget-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
 .main-content-area {
-  flex-grow: 1; overflow-y: auto; padding: 24px;
+  flex-grow: 1; overflow-y: auto; padding: 8px 12px; /* 전체 패딩을 더 줄여 공간 확보 */
   display: flex; flex-direction: column; position: relative;
 }
 .main-content-area::-webkit-scrollbar { width: 6px; }
@@ -95,25 +98,166 @@ button, textarea { font-family: inherit; }
 /* ===================================== */
 /*      [소프트 미니멀리즘] 채팅 화면      */
 /* ===================================== */
+.chat-history-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 12px; /* 좌우 패딩을 더 줄여 공간 확보 */
+}
+
+.chat-message-wrapper {
+  display: flex;
+  align-items: flex-end; /* 메시지 버블과 시간표시를 하단 정렬 */
+  margin-bottom: 4px; /* 메시지 간 간격을 더 줄임 */
+  max-width: 100%; /* 최대 너비를 100%로 설정하여 유연성 확보 */
+  gap: 6px; /* 메시지 버블과 시간표시 사이 간격 줄임 */
+  animation: slide-in-up 0.3s ease-out forwards; /* 새로운 메시지 애니메이션 */
+}
+
+.chat-message-wrapper.user {
+  justify-content: flex-end; /* 사용자 메시지는 오른쪽 정렬 */
+  align-self: flex-end;
+}
+
+.chat-message-wrapper.ai {
+  justify-content: flex-start; /* AI 메시지는 왼쪽 정렬 */
+  align-self: flex-start;
+}
+
+.chat-message {
+  padding: 0px 10px 0px 10px; /* 하단 패딩을 0으로 설정 */
+  line-height: 1.4; /* 줄 간격 조절 */
+  font-size: 13px; /* 폰트 크기 약간 줄임 */
+  word-wrap: break-word;
+  max-width: 85%; /* 내용에 따라 유동적이되 너무 넓어지지 않도록 제한 */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* 은은한 그림자 */
+}
+
 .chat-message.user {
-  background-color: var(--accent-blue); color: white; border-bottom-right-radius: 8px;
+  background-color: var(--accent-blue);
+  color: white;
+  border-radius: 16px 16px 2px 16px; /* Messenger-like bubble (bottom-right sharp) */
 }
+
 .chat-message.ai {
-  background-color: #fff; color: var(--text-primary);
-  border: 1px solid var(--border-primary); border-bottom-left-radius: 8px;
+  background-color: #fff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px 16px 16px 2px; /* Messenger-like bubble (bottom-left sharp) */
+  max-width: 60%; /* AI 말풍선 최대 너비 제한 */
 }
-/* 이하 채팅 관련 스타일은 이전 버전과 동일하게 유지 */
-.chat-history-wrapper { display: flex; flex-direction: column; flex: 1; }
-.chat-message-wrapper { display: flex; align-items: flex-end; margin-bottom: 16px; max-width: 90%; gap: 8px; }
-.chat-message-wrapper.user { justify-content: flex-end; align-self: flex-end; }
-.chat-message-wrapper.ai { justify-content: flex-start; align-self: flex-start; }
-.chat-message { padding: 12px 18px; border-radius: 22px; line-height: 1.6; font-size: 15px; word-wrap: break-word; max-width: 100%; }
-.chat-message.ai pre { background-color: #f0f0f2; padding: 12px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; border: 1px solid #e0e0e2; margin: 10px 0; }
-.chat-message.ai code { font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace; color: #C7254E; font-size: 13px; }
-.chat-message-time { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; margin-bottom: 5px; }
-.chat-date-separator { display: flex; align-items: center; text-align: center; margin: 24px 0; }
-.chat-date-separator::before, .chat-date-separator::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-primary); }
-.chat-date-separator span { padding: 0 12px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+
+.chat-message.ai pre {
+  background-color: #f0f0f2;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  border: 1px solid #e0e0e2;
+  margin: 8px 0;
+}
+
+.chat-message.ai code {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+  color: #C7254E;
+  font-size: 12px;
+}
+
+.chat-message-time {
+  font-size: 10px; /* 시간 폰트 크기 더 줄임 */
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-bottom: 0px; /* 메시지 버블 하단에 맞추기 */
+}
+
+.chat-date-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px 0; /* 날짜 구분선 상하 마진 줄임 */
+}
+
+.chat-date-separator::before, .chat-date-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.chat-date-separator span {
+  padding: 0 8px; /* 날짜 텍스트 좌우 패딩 줄임 */
+  font-size: 10px; /* 날짜 폰트 크기 더 줄임 */
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* New message slide-in animation */
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* AI thinking ellipsis animation */
+.thinking-message {
+  max-width: 50%; /* 너비를 줄여 더 간결하게 */
+}
+
+.thinking-message .thinking-ellipsis {
+  display: inline-block;
+  width: 1em; /* Space for three dots */
+  overflow: hidden;
+  vertical-align: bottom; /* Align with text baseline */
+}
+
+.thinking-message .thinking-ellipsis::after {
+  content: '';
+  animation: ellipsis-dots 1.5s steps(4, end) infinite; /* 4 steps: 0, 1, 2, 3 dots */
+}
+
+@keyframes ellipsis-dots {
+  0%, 100% { content: ''; transform: translateY(0); }
+  25% { content: '.'; transform: translateY(-2px); }
+  50% { content: '..'; transform: translateY(0); }
+  75% { content: '...'; transform: translateY(-2px); }
+}
+
+/* Centered message for empty chat */
+.ai-greeting.centered {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px; /* 패딩을 줄여 공간 확보 */
+}
+.cleared-text-container {
+  margin-top: 20px;
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.cleared-text-line {
+  margin-bottom: 5px;
+}
+
+/* Typing effect for empty chat message */
+.typing-effect {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  animation: fadeIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+
 
 /* ===================================== */
 /*   [소프트 미니멀리즘] 키워드/결과 화면   */
@@ -191,7 +335,8 @@ button, textarea { font-family: inherit; }
 .selection-actions {
   display: flex; align-items: center; justify-content: flex-end;
   gap: 12px;
-  width: 100%; margin-top: auto; border-top: 1px solid var(--border-primary); padding: 16px 8px 8px 8px;
+  width: 100%;
+  border-top: 1px solid var(--border-primary); padding: 16px 8px 8px 8px;
 }
 .regenerate-keywords-button {
   margin-right: auto; background: none; border: 1px solid transparent; border-radius: 50%; width: 36px; height: 36px;
@@ -209,41 +354,116 @@ button, textarea { font-family: inherit; }
 }
 .select-all-button { background-color: #fff; color: var(--text-primary); }
 .select-all-button:hover { background-color: var(--bg-hover); border-color: #ddd; }
-.confirm-button { background-color: var(--success-color); color: white; border: none; }
-.confirm-button:hover { filter: brightness(1.1); }
-.confirm-button:disabled { background-color: #EAEAEA; color: #A0A0A0; cursor: not-allowed; border: 1px solid #E0E0E0; }
-.apply-to-note-button {
-  background-color: var(--accent-blue); color: white; border: none; border-radius: 10px; padding: 12px 20px;
-  font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.25s ease;
-  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.15);
+.confirm-button {
+  background: linear-gradient(145deg, #0dda4b, #0dda4b); /* Gradient from accent-blue to a darker blue */
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 80, 17, 0.25); /* Subtle shadow */
+  transition: all 0.3s ease; /* Smooth transition for all properties */
 }
-.apply-to-note-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 122, 255, 0.2); }
-.apply-to-note-button:disabled { background-color: #EAEAEA; color: #A0A0A0; cursor: not-allowed; transform: none; box-shadow: none; }
+.confirm-button:hover {
+  background: linear-gradient(145deg, #0dda4b, #0dda4b); /* Darker gradient on hover */
+  transform: translateY(-2px); /* Lift effect */
+  box-shadow: 0 6px 16px rgba(1, 85, 8, 0.35); /* Enhanced shadow on hover */
+}
+.confirm-button:disabled {
+  background: #EAEAEA; /* Keep original disabled background */
+  color: #A0A0A0;
+  cursor: not-allowed;
+  border: 1px solid #E0E0E0;
+  box-shadow: none; /* Remove shadow when disabled */
+  transform: none; /* Remove transform when disabled */
+}
+
+.result-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  margin-top: auto;
+  border-top: 1px solid var(--border-primary);
+  padding: 16px 8px 8px 8px;
+}
+
+/* [신규] 미리보기 페이지네이션 스타일 */
+.preview-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 16px 0;
+  border-bottom: 1px solid var(--border-primary);
+  margin-bottom: 16px;
+}
+
+.preview-pagination button {
+  background-color: #fff;
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-pagination button:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: #ccc;
+}
+
+.preview-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.preview-pagination span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  padding: 0 8px;
+  min-width: 100px;
+  text-align: center;
+}
+
 
 /* ===================================== */
 /*      [소프트 미니멀리즘] 하단 입력창     */
 /* ===================================== */
 .chat-input-container-bottom {
-  display: flex; align-items: flex-end; padding: 10px 16px; gap: 10px;
+  display: flex; align-items: flex-end; padding: 8px 12px; /* 패딩 줄임 */
+  gap: 8px; /* 간격 줄임 */
   border-top: 1px solid var(--border-primary); background-color: #F7F7F9; /* [개선] 살짝 다른 배경으로 구분 */
 }
 .history-button {
-  flex-shrink: 0; background: none; border: none; padding: 8px; margin-bottom: 6px;
+  flex-shrink: 0; background: none; border: none; padding: 6px; /* 패딩 줄임 */
+  margin-bottom: 4px; /* 마진 줄임 */
   cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   color: var(--text-secondary); transition: all 0.2s ease;
 }
 .history-button:hover { background-color: var(--bg-hover); color: var(--text-primary); }
 .chat-input-wrapper {
   width: 100%; background-color: #fff; border: 1px solid var(--border-primary);
-  border-radius: 12px; max-height: 350px; overflow-y: auto; display: flex;
+  border-radius: 20px; /* 더 둥글게 */
+  max-height: 100px; /* 최대 높이 줄임 */
+  overflow-y: auto; display: flex;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .chat-input-wrapper:focus-within {
   border-color: var(--accent-blue); box-shadow: 0 0 0 3px var(--accent-glow);
 }
 .chat-input {
-  width: 100%; padding: 12px 14px; color: var(--text-primary);
-  font-size: 15px; line-height: 1.6; resize: none; box-sizing: border-box;
+  width: 100%; padding: 8px 14px; /* 패딩 줄임 */
+  color: var(--text-primary);
+  font-size: 14px; /* 폰트 크기 약간 줄임 */
+  line-height: 1.4; /* 줄 간격 조절 */
+  resize: none; box-sizing: border-box;
   background: none; border: none; outline: none; overflow-y: hidden;
 }
 .chat-input::placeholder { color: var(--text-secondary); font-weight: 400; opacity: 0.8; }
@@ -277,6 +497,8 @@ button, textarea { font-family: inherit; }
     flex-direction: column;
     padding: 8px;
     gap: 16px;
+    flex-grow: 1; /* 추가 */
+    overflow: hidden; /* 추가 */
 }
 
 .note-list {
@@ -285,6 +507,7 @@ button, textarea { font-family: inherit; }
     gap: 8px;
     max-height: 400px;
     overflow-y: auto;
+    flex-grow: 1; /* 추가 */
 }
 
 .note-item {
@@ -309,14 +532,189 @@ button, textarea { font-family: inherit; }
 
 
 /* ===================================== */
+/*      [소프트 미니멀리즘] 번역 화면      */
+/* ===================================== */
+.translate-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+}
+
+.language-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+@keyframes button-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.language-button {
+  background-color: #fff;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 18px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  text-align: center;
+  animation: button-fade-in 0.5s ease-out forwards;
+  opacity: 0; /* Start hidden */
+}
+
+.language-button:nth-child(1) { animation-delay: 0.1s; }
+.language-button:nth-child(2) { animation-delay: 0.2s; }
+.language-button:nth-child(3) { animation-delay: 0.3s; }
+.language-button:nth-child(4) { animation-delay: 0.4s; }
+
+
+.language-button:hover {
+  transform: scale(1.05);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  box-shadow: 0 6px 18px rgba(0, 122, 255, 0.1);
+}
+
+/* [수정] 은은한 Synapse 테마 애니메이션 */
+.title-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.synapse-svg-loader {
+  width: 120px;
+  height: 120px;
+}
+
+.synapse-svg-loader .neuron-dot {
+  fill: var(--border-primary);
+  animation: neuron-fade-in 2s ease-in-out infinite alternate;
+}
+
+.synapse-svg-loader .synapse-line {
+  stroke: var(--accent-blue);
+  stroke-width: 2;
+  opacity: 0;
+  animation: synapse-flash 3s ease-in-out infinite;
+}
+
+/* 각 노드와 선에 다른 딜레이를 주어 무작위적인 느낌을 줌 */
+.synapse-svg-loader .neuron-dot:nth-child(2) { animation-delay: 0.2s; }
+.synapse-svg-loader .neuron-dot:nth-child(3) { animation-delay: 0.4s; }
+.synapse-svg-loader .neuron-dot:nth-child(4) { animation-delay: 0.6s; }
+.synapse-svg-loader .neuron-dot:nth-child(5) { animation-delay: 0.8s; }
+.synapse-svg-loader .neuron-dot:nth-child(6) { animation-delay: 1s; }
+
+.synapse-svg-loader .synapse-line:nth-child(7) { animation-delay: 0s; }
+.synapse-svg-loader .synapse-line:nth-child(8) { animation-delay: 0.5s; }
+.synapse-svg-loader .synapse-line:nth-child(9) { animation-delay: 1s; }
+.synapse-svg-loader .synapse-line:nth-child(10) { animation-delay: 1.5s; }
+.synapse-svg-loader .synapse-line:nth-child(11) { animation-delay: 2s; }
+.synapse-svg-loader .synapse-line:nth-child(12) { animation-delay: 2.5s; }
+
+
+@keyframes neuron-fade-in {
+  from { fill: var(--border-primary); }
+  to { fill: var(--accent-blue); }
+}
+
+@keyframes synapse-flash {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.7; }
+}
+
+/* ===================================== */
 /*     [소프트 미니멀리즘] 로딩 애니메이션   */
 /* ===================================== */
 .loading-view-full { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: rgba(253, 253, 253, 0.7); backdrop-filter: blur(4px); z-index: 10; }
+.summary-loader {
+  text-align: center;
+}
 .loader-text { font-size: 16px; font-weight: 500; color: var(--text-secondary); margin-bottom: 24px; }
 .summary-loader .bar { width: 6px; height: 24px; background-color: var(--accent-blue); border-radius: 3px; margin: 0 4px; animation: summary-bounce 1.2s ease-in-out infinite; display: inline-block; }
 .summary-loader .bar:nth-child(2) { animation-delay: -1.1s; }
 .summary-loader .bar:nth-child(3) { animation-delay: -1.0s; }
 @keyframes summary-bounce { 0%, 40%, 100% { transform: scaleY(0.4); } 20% { transform: scaleY(1.0); } }
+
+/* [수정] 번역 로딩 애니메이션 (모던 크로스페이드) */
+.translate-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.translate-loader {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-top: 16px;
+}
+
+.lang-icon-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.lang-icon {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: white; /* 흰색 배경 */
+  color: var(--accent-blue); /* 옅은 파란색 텍스트 */
+  font-size: 36px;
+  font-weight: bold;
+  font-family: 'Georgia', serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.1); /* Subtle shadow */
+  border: 2px solid var(--accent-blue); /* 파란색 테두리 */
+  opacity: 0; /* Start hidden */
+  animation-duration: 4s; /* 전체 애니메이션 주기 (4초) */
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: forwards;
+}
+
+#lang-icon-left {
+  animation-name: fade-in-then-out-cycle;
+  animation-delay: 0s;
+}
+
+#lang-icon-right {
+  animation-name: fade-in-then-out-cycle;
+  animation-delay: 2s; /* 전체 주기의 절반만큼 딜레이 */
+}
+
+@keyframes fade-in-then-out-cycle {
+  0% { opacity: 0; transform: scale(0.9); } /* 시작: 숨겨진 상태 */
+  10% { opacity: 1; transform: scale(1); } /* 부드럽게 나타남 */
+  40% { opacity: 1; transform: scale(1); } /* 나타난 상태 유지 */
+  50% { opacity: 0; transform: scale(0.9); } /* 부드럽게 사라짐 */
+  90% { opacity: 0; transform: scale(0.9); } /* 숨겨진 상태 유지 */
+  100% { opacity: 0; transform: scale(0.9); } /* 사이클 끝: 숨겨진 상태 유지 */
+}
 
 /* ===================================== */
 /*     [소프트 미니멀리즘] 확인 대화상자      */
@@ -375,6 +773,23 @@ button, textarea { font-family: inherit; }
   border: none;
   transition: all 0.2s ease;
 }
+.confirmation-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.confirmation-button.neutral {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+}
+
+.confirmation-button.neutral:hover {
+  background-color: #E5E5E7;
+  color: var(--text-primary);
+}
+
 .confirmation-button.cancel {
   background-color: var(--bg-hover);
   color: var(--text-secondary);
@@ -462,6 +877,41 @@ details.original-content-collapser {
   overflow: hidden;
 }
 
+.result-only-view {
+    perspective: 1000px; /* 3D 효과를 위한 원근감 설정 */
+}
+
+/* [수정됨] 모던한 슬라이드 & 페이드 애니메이션 */
+@keyframes slide-out-left {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-15px); }
+}
+@keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(15px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-out-right {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(15px); }
+}
+@keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-15px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.page-turn-out-next {
+    animation: slide-out-left 0.3s ease-out forwards;
+}
+.page-turn-in-next {
+    animation: slide-in-right 0.3s ease-out forwards;
+}
+.page-turn-out-prev {
+    animation: slide-out-right 0.3s ease-out forwards;
+}
+.page-turn-in-prev {
+    animation: slide-in-left 0.3s ease-out forwards;
+}
+
 details.original-content-collapser > summary {
   padding: 12px 16px;
   font-weight: 500;
@@ -500,4 +950,30 @@ details[open].original-content-collapser > summary::after {
   /* 내용이 길 경우를 대비 */
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* AI 채팅 답변 복사 버튼 */
+.chat-copy-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* 기본적으로 숨김 */
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  margin-bottom: 2px; /* 시간과 정렬 */
+}
+
+/* AI 메시지 컨테이너에 호버 시 복사 버튼 표시 */
+.chat-message-wrapper.ai:hover .chat-copy-button {
+  opacity: 1;
+}
+
+.chat-copy-button:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }

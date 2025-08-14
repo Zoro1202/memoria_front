@@ -26,16 +26,18 @@ export async function translateText(title, content, target_language, signal) {
             return placeholder;
         });
 
+        console.log(`[translateText] 번역 요청 시작: ${contentWithPlaceholders.length}자`);
         const response = await fetch(`${SERVER_URL}/gemini/translate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, content: contentWithPlaceholders, target_language }),
-            signal: signal
+            signal: signal,
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || '번역 실패');
+            console.error(`[translateText] 서버 응답 오류: ${response.status} ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({ error: '응답 본문 파싱 실패' }));
+            throw new Error(errorData.error || `번역 실패: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -48,9 +50,8 @@ export async function translateText(title, content, target_language, signal) {
 
         return { ...data, translated_content: finalContent };
 
-    } catch (error)
-    {
-        console.error("❌ 번역 오류:", error);
+    } catch (error) {
+        console.error("❌ 번역 오류 (fetch 실패 또는 네트워크 문제):", error);
         throw error;
     }
 }

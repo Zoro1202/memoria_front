@@ -19,14 +19,12 @@ import CloseIcon from '@mui/icons-material/Close';
 import FullMeetingRecorder from "./FullMeetingRecorder";
 import "./MeetingRoom.css";
 
-// [삭제] getCanvasPos 함수는 더 이상 필요하지 않으므로 삭제합니다.
-
 export default function MeetingRoomUI({
   peers = [],
   peerNicknames = {},
   localVideoRef,
   micOn = true,
-  camOn = false, // camOn의 초기 상태를 Hwasang.js와 일치시킵니다.
+  camOn = false, 
   screenOn = false,
   leaveRoom = () => {},
   chatMessages = [],
@@ -37,7 +35,7 @@ export default function MeetingRoomUI({
   liveSubtitle = "",
   tab = "chat",
   setTab = () => {},
-  isPresenter = false,
+  isPresenter = 0,
   slides = [],
   slidesOpen = true,
   closeSlides = () => {},
@@ -50,7 +48,6 @@ export default function MeetingRoomUI({
   isAddingText = false,
   setIsAddingText = () => {},
   canvasRef = { current: null },
-  // [수정] Hwasang.js에서 실제 로직이 담긴 함수들을 props로 받습니다.
   startCamera = () => {},
   stopCamera = () => {},
   handleMicToggle = () => {}, 
@@ -63,8 +60,11 @@ export default function MeetingRoomUI({
   roomId = "",
   presenterId = "",
   presenterNickname = "",
+  onTutorialClick = () => {},
+  tutorialForceShowControls = false,
+  setTutorialForceShowControls = () => {},
 }) {
-  // useEffect 훅으로 body 스타일 제어
+  
   useEffect(() => {
     const originalBodyOverflow = document.body.style.overflow;
     const originalBodyBackground = document.body.style.background;
@@ -79,23 +79,26 @@ export default function MeetingRoomUI({
   }, []);
 
   const fileInputRef = useRef();
-  const [showControls, setShowControls] = useState(false);
+  const [showControls, setShowControls] = useState(true);
   const [imgSize, setImgSize] = useState({ width: 900, height: 675 });
   const wrapperRef = useRef();
   const [focusMode, setFocusMode] = useState(false);
-  
-  // [삭제] 2D 캔버스 드로잉 관련 상태들을 모두 삭제합니다.
-  // const [drawing, setDrawing] = useState(false);
-  // const [lastPos, setLastPos] = useState(null);
+
+  // 튜토리얼에 의해 강제로 컨트롤 패널을 보여줄지 여부
+  const showMediaControls = showControls || tutorialForceShowControls;
 
   const [camPage, setCamPage] = useState(1);
   const camsPerPage = 5;
+
+  const [groupName, setGroupName] = useState("");
 
   const isMePresenter = presenterId === "me" || presenterId === ""; // 본인이 발표자인지 확인
   const presenterMicOn = isPresenter ? micOn : peerMicOn[presenterId];
   const presenterScreenOn = isPresenter ? screenOn : peerScreenOn[presenterId];
 
   const showGalleryView = !slidesOpen || slides.length === 0;
+
+  const SERVER_URL = "https://hwasang.memoriatest.kro.kr";
 
   const allCams = [
     {
@@ -156,6 +159,36 @@ export default function MeetingRoomUI({
     return () => window.removeEventListener("resize", updateCanvasSize);
     // eslint-disable-next-line
   }, [imgSize, slides, currentSlide, focusMode, slidesOpen]);
+  
+const fetchGroupName = async (groupId) => {
+  if (!groupId) return "";
+  try {
+    console.log("요청할 groupId:", groupId); // 요청하는 값 확인
+    const res = await fetch(`${SERVER_URL}/api/group-name?groupId=${encodeURIComponent(groupId)}`);
+    console.log("응답 상태:", res.status, res.statusText); // 응답 상태 확인
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`서버 응답 오류: ${res.status} ${res.statusText} - ${errorText}`);
+    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    console.log("그룹 이름 조회 성공:", data.name);
+    return data.name || "";
+  } catch (err) {
+    console.error("그룹 이름 조회 실패:", err);
+    return "";
+  }
+};
+
+useEffect(() => {
+  async function loadGroupName() {
+    const name = await fetchGroupName(roomId);
+    setGroupName(name);
+  }
+  loadGroupName();
+}, [roomId]);
+
 
   // [삭제] 2D 캔버스 드로잉 이벤트 핸들러들을 모두 삭제합니다. Fabric.js가 처리합니다.
   // handleDraw, handleMouseDown, handleMouseMove, handleMouseUp 등 모두 삭제
@@ -164,7 +197,7 @@ export default function MeetingRoomUI({
     <div className={`meeting-room-ui ${focusMode ? "focus-mode" : ""}`}>
       <div className="meeting-root">
         <div className="room-id-badge">
-          <span role="img" aria-label="room">회의실</span> {roomId || "-"}
+          <span role="img" aria-label="room">회의실</span> { groupName || "-"}
         </div>
         <div className="main-content">
           <div className="zoom-center-area">
@@ -192,7 +225,7 @@ export default function MeetingRoomUI({
               <Tooltip title={showControls ? "설정 닫기" : "설정 열기"}>
                 <IconButton
                   className="media-controls-toggle"
-                  onClick={() => setShowControls((v) => !v)}
+                  onClick={() => { setShowControls((v) => !v); setTutorialForceShowControls(false); }}
                   size="large"
                 >
                   {showControls ? <CloseIcon /> : <TuneIcon />}
@@ -424,7 +457,7 @@ export default function MeetingRoomUI({
               ))}
             </div>
         </aside>
-        <div className={`media-controls${showControls ? " show" : ""}`}>
+        <div className={`media-controls${showMediaControls ? " show" : ""}`}>
           <Tooltip title={micOn ? "마이크 끄기" : "마이크 켜기"}>
             {/* [수정] onClick에 setMicOn 대신 handleMicToggle을 호출합니다. */}
             <IconButton onClick={handleMicToggle} className={micOn ? 'on' : 'off'} size="large">

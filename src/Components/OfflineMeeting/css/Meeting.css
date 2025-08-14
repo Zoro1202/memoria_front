@@ -1,132 +1,67 @@
-/*바꿔야됨*/
-/* body {
+.meeting-bg {
+  min-height: 100vh;
+  max-width: 700px !important;
+  min-width: 320px;
   background: #f6f7fa;
-  font-family: 'Apple SD Gothic Neo', 'Segoe UI', 'Malgun Gothic', sans-serif;
-  color: #222a4a;
-} */
+}
 
-/* 전체 카드 컨테이너 */
 .meeting-card {
+  max-width: 700px !important;
+  min-width: 320px;
+  width: 100% !important;
+  margin: 0 auto !important;
+  box-sizing: border-box;
+
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 3px 24px rgba(44, 59, 95, 0.10);
-  max-width: 440px;
-  margin: 38px auto;
-  padding: 32px 24px 28px 24px;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(44,59,95,0.14);
+  padding: 34px 26px 32px 26px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
 }
+.meeting-title {
+  font-size: 1.33rem;
+  font-weight: 800;
+  color: #2947ed;
+  margin-bottom: 20px;
+  letter-spacing: -0.03em;
+}
 
-/* 탭 바 */
+/* 모드 선택 bar */
 .meeting-mode-bar {
   display: flex;
   gap: 0;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
+
+/* 모드 버튼 - 동일 폭 */
 .meeting-mode-btn {
-  flex: 1;
-  padding: 14px 0;
-  border-radius: 10px 10px 0 0;
-  font-weight: 600;
+  flex: none;          /* flex 비율 무시 */
+  width: 50%;          /* 부모 폭의 절반 */
+  padding: 16px 0;
+  border-radius: 13px 13px 0 0;
+  font-weight: 700;
   border: none;
-  font-size: 1.11rem;
-  background: #f4f6fa;
-  color: #2643e9;
+  font-size: 1.15rem;
+  background: #eceffc;
+  color: #2743e9;
   cursor: pointer;
+  border-bottom: 2px solid #d0defa;
   transition: background 0.1s, color 0.1s;
-  border-bottom: 2px solid #c7d6ff;
+  text-align: center;
+  box-sizing: border-box;
 }
+
 .meeting-mode-btn.selected {
-  background: #2643e9;
+  background: #2947ed;
   color: #fff;
-  border-bottom: 2px solid #2643e9;
+  border-bottom: 2px solid #2947ed;
 }
 
-/* 카드 내 서브 구역(그룹선택/업로드/녹음) */
-.group-select-container,
-.file-upload-stt-box,
-.record-stt-box {
-  background: #fafbfc;
-  border-radius: 13px;
-  box-shadow: 0 1px 8px rgba(90,120,160,.026);
-  width: 100%;
-  margin-bottom: 17px;
-  padding: 17px 16px 15px 16px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-/* 제목 라벨 */
-.group-select-container h4,
-.file-upload-stt-box h4,
-.record-stt-box h4 {
-  font-size: 1.08rem;
-  color: #2b44b8;
-  font-weight: 700;
-  margin: 0 0 11px 0;
-  letter-spacing: -0.01em;
-}
-
-/* 드롭다운, 입력박스, 버튼 공통 스타일 */
-/* select,
-input[type="file"],
-button {
-  font-size: 1.01rem;
-  border-radius: 8px;
-  border: 1px solid #dae2f3;
-  padding: 10px 11px;
-  background: #f4f7fc;
-  margin-bottom: 13px;
-  width: 100%;
-  box-sizing: border-box;
-} */
-
-/* 파란색 버튼 스타일 */
-.file-stt-button,
-.record-stt-mainbtn,
-.record-stt-transcribe-btn {
-  background: #355be7;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1.08rem;
-  padding: 13px 0;
-  width: 100%;
-  cursor: pointer;
-  margin-top: 5px;
-  margin-bottom: 9px;
-  box-shadow: 0 3px 9px rgba(53, 91, 231, 0.09);
-  transition: background 0.14s;
-}
-.file-stt-button:disabled,
-.record-stt-transcribe-btn:disabled {
-  background: #b6cbff;
-  color: #fff;
-  cursor: not-allowed;
-}
-.file-stt-button:hover:enabled,
-.record-stt-mainbtn:hover:enabled,
-.record-stt-transcribe-btn:hover:enabled {
-  background: #2147c9;
-}
-
-/* 라벨 스타일 */
-.group-dropdown,
-.record-stt-label {
-  font-size: 1rem;
-  color: #2a3f8d;
-  font-weight: 600;
-  margin-bottom: 7px;
-}
-
-/* 안내 텍스트, 에러 */
-.error-text,
-.record-stt-error {
-  color: #eb2323;
-  font-size: 0.97rem;
-  font-weight: 700;
-  margin: 7px 0 0 0;
+/* 반응형 - 모바일이면 폭 100% */
+@media (max-width: 600px) {
+  .meeting-mode-btn {
+    width: 100%;
+  }
 }

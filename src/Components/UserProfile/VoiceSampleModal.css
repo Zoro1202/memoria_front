@@ -1,290 +1,401 @@
 /* 전체 오버레이 및 중앙 정렬 */
 .voice-sample-modal-overlay {
-  position: fixed;  
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;  
-  height: 100vh;  
-  background-color: rgba(0, 0, 0, 0.4);
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;  
-  align-items: center;  
+  justify-content: center;
+  align-items: center;
   z-index: 2000;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  overflow-y: auto;
-  padding: 10px; /* 모바일 등 좁은 화면에서 여백 확보 */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  padding: 16px;
   box-sizing: border-box;
 }
 
 /* 모달 콘텐츠 박스 */
 .voice-sample-modal-content {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 24px 32px;
-  width: 90%;
-  max-width: 480px;
-  max-height: 80vh;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  position: relative;
-  z-index: 2100;
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 24px 28px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   display: flex;
   flex-direction: column;
-  align-items: center;
   box-sizing: border-box;
+  animation: slide-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   overflow-y: auto;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* 모달 타이틀 */
 .voice-sample-modal-content h3 {
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   font-size: 22px;
-  font-weight: 600;
-  color: #111827;
-  user-select: none;
+  font-weight: 700;
+  color: #1f2937;
   text-align: center;
   width: 100%;
 }
 
-/* 녹음 버튼 스타일 */
-.voice-sample-modal-content button.record-btn {
+/* 뷰 컨테이너 */
+.view-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  animation: fade-in 0.4s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+/* --- 로딩 뷰 --- */
+.loading-view {
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  gap: 12px;
+}
+.loading-spinner {
+  border: 5px solid rgba(37, 99, 235, 0.2);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+.loading-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 16px;
+}
+.loading-subtext {
+  font-size: 14px;
+  color: #6b7280;
+}
+.cancel-loading-btn {
+  margin-top: 24px;
+  padding: 8px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  transition: background-color 0.2s, color 0.2s;
+}
+.cancel-loading-btn:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- 초기 뷰 --- */
+.initial-view { gap: 20px; }
+.input-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.record-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   background-color: #2563eb;
   color: white;
-  margin-bottom: 20px;
-  width: 160px;
-  border-radius: 9px;
-  padding: 10px 24px;
+  width: 200px;
+  border-radius: 10px;
+  padding: 12px 24px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  user-select: none;
-  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.24);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  outline: none;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+  border: none;
 }
-.voice-sample-modal-content button.record-btn:hover,
-.voice-sample-modal-content button.record-btn:focus {
+.record-btn:hover {
   background-color: #1e4dcc;
-  box-shadow: 0 5px 14px rgba(30, 78, 204, 0.42);
+  box-shadow: 0 6px 16px rgba(30, 78, 204, 0.3);
+  transform: translateY(-2px);
 }
-.voice-sample-modal-content button.record-btn.recording {
+.record-icon-wrapper {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.record-icon {
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+.record-btn.recording {
   background-color: #dc2626;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
-.voice-sample-modal-content button.record-btn.recording:hover,
-.voice-sample-modal-content button.record-btn.recording:focus {
+.record-btn.recording:hover {
   background-color: #b91c1c;
-  box-shadow: 0 5px 14px rgba(185, 28, 28, 0.44);
+  box-shadow: 0 6px 16px rgba(185, 28, 28, 0.4);
 }
-
-/* 파일 선택 버튼 */
+.record-btn.recording .record-icon {
+  border-radius: 3px;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(0.9); }
+}
+.recording-time {
+  font-weight: 500;
+  height: 20px;
+  color: #4b5563;
+  font-size: 14px;
+  min-height: 20px;
+}
+.audio-preview {
+  width: 100%;
+  margin-top: 8px;
+}
+.divider-or {
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 4px 0;
+  font-weight: 500;
+}
+.file-input-group {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  background-color: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 8px;
+}
 .file-select-btn {
   cursor: pointer;
-  display: inline-block;
-  padding: 10px 26px;
-  background-color: #2643e9;
-  color: white;
-  border-radius: 9px;
+  padding: 8px 16px;
+  background-color: #fff;
+  color: #374151;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 1.03rem;
-  box-shadow: 0 3px 10px rgba(38, 67, 233, 0.12);
-  user-select: none;
-  outline: none;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  margin-bottom: 8px;
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
-.file-select-btn:hover,
-.file-select-btn:focus {
-  background-color: #133388;
-  box-shadow: 0 4px 14px rgba(19, 51, 136, 0.3);
+.file-select-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }
-.file-select-btn:disabled {
-  background-color: #a0a0cc;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* 선택된 파일명 표시 */
 .selected-file-name {
-  margin-left: 14px;
-  vertical-align: middle;
-  max-width: 60%;
+  flex-grow: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 1rem;
-  color: #222a4a;
-  user-select: text;
+  font-size: 14px;
+  color: #4b5563;
 }
 
-/* 녹음 시간 표시 */
-.recording-time {
-  margin-top: 8px;
-  margin-bottom: 14px;
-  font-weight: 600;
-  height: 26px;
-  user-select: none;
-  color: #2563eb;
-}
-.recording-time.recording {
-  color: #eb6877;
-}
-
-/* 오디오 플레이어 */
-.voice-sample-modal-content audio {
-  width: 100%;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  outline: none;
-}
-
-/* 대본 예시 영역 */
+/* 대본 예시 */
 .transcript-section {
   width: 100%;
-  text-align: left;
-  margin-top: 8px;
 }
-
 .transcript-section label {
   font-weight: 600;
   color: #374151;
   display: block;
-  margin-bottom: 6px;
-  user-select: none;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+.transcript-section .transcript-text {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 300px;  /* 기존 150px → 300px (2배로 확대) */
+  overflow-y: auto;   /* 내용 길면 스크롤 */
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
 }
 
-.transcript-section .transcript-text p {
-  margin-bottom: 8px;
-  white-space: pre-wrap;
-  line-height: 1.4;
-  color: #1f2937;
-  font-size: 14px;
-}
+.transcript-text p { margin: 0 0 8px 0; }
+.transcript-text p:last-child { margin-bottom: 0; }
 
 /* 에러 메시지 */
-.voice-sample-modal-content p[style*="color: red"] {
-  margin-top: 8px;
-  font-weight: 600;
-  color: #dc2626;
-  user-select: text;
-}
-
-/* 성공/업로드 메시지 */
-.voice-sample-modal-content p[style*="color: green"] {
-  margin-top: 8px;
-  font-weight: 600;
-  color: #16a34a;
-  user-select: text;
-}
-
-/* 저장 버튼 */
-.voice-sample-modal-content button.save-btn {
-  background-color: #2563eb;
-  color: white;
-  border-radius: 9px;
-  padding: 10px 30px;
-  font-weight: 600;
-  font-size: 1.05rem;
-  cursor: pointer;
+.error-message {
+  font-weight: 500;
+  color: #991b1b;
+  font-size: 14px;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 12px 16px;
+  line-height: 1.5;
+  text-align: center;
   width: 100%;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.24);
-  transition: background-color 0.2s ease;
-  user-select: none;
-  outline: none;
-  /* margin-top: 16px; */ /* 제거 */
+  box-sizing: border-box;
 }
 
-/* 검증 버튼 */
-.voice-sample-modal-content button.verify-btn {
-  background-color: #10b981; /* 초록색 계열 */
-  color: white;
-  border-radius: 9px;
-  padding: 10px 30px;
-  font-weight: 600;
-  font-size: 1.05rem;
-  cursor: pointer;
-  width: 100%;
-  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.24);
-  transition: background-color 0.2s ease;
-  user-select: none;
-  outline: none;
+.error-message.initial-error {
+  margin-top: 8px;
+  text-align: left;
 }
 
-.voice-sample-modal-content button.verify-btn:hover,
-.voice-sample-modal-content button.verify-btn:focus {
-  background-color: #059669;
-}
 
-.voice-sample-modal-content button.verify-btn:disabled {
-  background-color: #a7f3d0;
-  cursor: not-allowed;
-  box-shadow: none;
-  color: #6ee7b7;
-}
-
-/* 버튼 그리드 */
+/* 모달 하단 버튼 */
 .modal-actions-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 12px;
   width: 100%;
   margin-top: 16px;
 }
-.voice-sample-modal-content button.save-btn:hover,
-.voice-sample-modal-content button.save-btn:focus {
-  background-color: #1e4dcc;
-  box-shadow: 0 5px 14px rgba(30, 78, 204, 0.42);
-}
-.voice-sample-modal-content button.save-btn:disabled {
-  background-color: #a0a0cc;
-  cursor: not-allowed;
-  box-shadow: none;
-  color: #e0e6f6;
-}
-
-/* 닫기 버튼 */
-.voice-sample-modal-content button.close-btn {
-  background-color: #e5e7eb;
-  color: #374151;
-  border-radius: 9px;
-  padding: 10px 30px;
+.action-btn-primary, .action-btn-secondary {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 16px;
   font-weight: 600;
-  font-size: 1rem;
   cursor: pointer;
-  width: 100%;
-  margin-top: 8px;
-  user-select: none;
-  outline: none;
-  transition: background-color 0.16s ease;
+  border: none;
+  transition: all 0.2s ease;
 }
-.voice-sample-modal-content button.close-btn:hover,
-.voice-sample-modal-content button.close-btn:focus {
+.action-btn-primary {
+  background-color: #10b981;
+  color: white;
+}
+.action-btn-primary:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+}
+.action-btn-primary:disabled {
+  background-color: #d1fae5;
+  color: #a7f3d0;
+  cursor: not-allowed;
+}
+.action-btn-secondary {
+  background-color: #e5e7eb;
+  color: #4b5563;
+}
+.action-btn-secondary:hover {
   background-color: #d1d5db;
 }
-.voice-sample-modal-content button.close-btn:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
 
-/* 반응형 주의 */
-@media (max-width: 480px) {
-  .voice-sample-modal-content {
-    padding: 20px 20px 22px 20px;
-    width: 95%;
-  }
-  .voice-sample-modal-content button.record-btn,
-  .voice-sample-modal-content button.save-btn,
-  .voice-sample-modal-content button.close-btn {
-    width: 100%;
-  }
-  .file-select-btn {
-    width: 100%;
-    text-align: center;
-  }
-  .selected-file-name {
-    display: block;
-    margin-left: 0;
-    margin-top: 6px;
-    max-width: 100%;
-  }
+/* --- 검증 결과 뷰 --- */
+.verification-result-view {
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+.result-icon {
+  width: 56px;
+  height: 56px;
+}
+.result-icon.success {
+  color: #10b981;
+}
+.result-icon.error {
+  color: #ef4444;
+}
+.result-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+.accuracy-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.accuracy-score {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+.accuracy-score.success { color: #10b981; }
+.accuracy-score.error { color: #ef4444; }
+.accuracy-label {
+  font-size: 18px;
+  color: #6b7280;
+  font-weight: 500;
+  transform: translateY(-4px);
+}
+.accuracy-bar-container {
+  width: 100%;
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.accuracy-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.5s ease;
+}
+.result-actions {
+  display: flex;
+  width: 100%;
+  margin-top: 16px;
+}
+.action-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+.save-btn {
+  background-color: #2563eb;
+  color: white;
+}
+.save-btn:hover {
+  background-color: #1e4dcc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+.retry-btn {
+  background-color: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+.retry-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }

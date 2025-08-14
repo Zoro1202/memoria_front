@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import './css/FileUploadSTT.css';
 import { useGroups } from '../../Contexts/GroupContext';
 
+// 모달 컴포넌트
 function Modal({ open, onClose, status, result, loading, inputValue, setInputValue, onSave }) {
   if (!open) return null;
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="modal-overlay" onClick={e => { if (e.target.className === 'modal-overlay') onClose(); }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-status">{status}</div>
         {loading ? (
           <div className="modal-loading-wrapper">
@@ -18,7 +19,7 @@ function Modal({ open, onClose, status, result, loading, inputValue, setInputVal
             <pre className="modal-result">{result}</pre>
             <textarea
               className="modal-textarea"
-              placeholder="여기에 텍스트를 입력하세요..."
+              placeholder="노트로 저장할 제목을 입력해 주세요..."
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
             />
@@ -65,8 +66,9 @@ export default function FileUploadSTT({ selectedSpeakerInfos }) {
     });
   };
 
+  // 파일 업로드 후 STT 변환
   const handleUpload = async () => {
-    if (!file || !selectedSpeakerInfos === 0) {
+    if (!file || selectedSpeakerInfos.length === 0) {
       setError('파일과 화자를 모두 설정해야 합니다.');
       return;
     }
@@ -118,44 +120,44 @@ export default function FileUploadSTT({ selectedSpeakerInfos }) {
     }
   };
 
-    const handleSave = async() => {
-    alert('저장된 내용: ' + modalInput);
-     try {
-
+  // 노트 저장
+  const handleSave = async () => {
+    if (!modalInput || modalInput.trim() === '') {
+      alert('노트 제목을 입력해 주세요.');
+      return;
+    }
+    try {
       const noteId = -2;
-      const res = await fetch('https://stt.memoriatest.kro.kr/api/newUpsert', {
+      const res = await fetch('/api/newUpsert', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify( { note_id: noteId, title: modalInput, content: modalResult, group_id : selectedGroupId}),
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-      }
-        );
-
+        body: JSON.stringify({
+          note_id: noteId,
+          title: modalInput,
+          content: modalResult,
+          group_id: selectedGroupId,
+        }),
+      });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
-
-      setModalLoading(false);
       if (data.success) {
-        setModalStatus('변환 완료');
-        setModalResult(data.transcript || '(결과 없음)');
+        alert('저장 성공');
+        setModalStatus('저장 완료');
+        setModalOpen(false);
       } else {
-        setModalStatus('변환 실패');
+        setModalStatus('저장 실패');
         setModalResult(data.error || '(오류 발생)');
-        setError(data.error || 'STT 변환 실패');
+        setError(data.error || '저장 실패');
+        alert(`저장 실패: ${data.error || '알 수 없는 오류'}`);
       }
     } catch (err) {
-      setModalLoading(false);
-      setModalStatus('변환 실패');
-      const errMsg = err.message || 'STT 변환 실패';
-      setModalResult(errMsg);
-      setError(errMsg);
-    } finally {
-      isLoadingRef.current = false;
+      setModalStatus('저장 실패');
+      setModalResult(err.message || '저장 실패');
+      setError(err.message || '저장 실패');
+      alert(`저장 중 오류가 발생했습니다: ${err.message}`);
     }
   };
-  
 
   return (
     <>

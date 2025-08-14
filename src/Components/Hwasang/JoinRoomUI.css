@@ -60,8 +60,8 @@ body {
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 14px;                         /* 로고-텍스트 간격 */
-  padding-bottom: 18px;
+  gap: 14px;
+  padding-bottom: 0px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border-color);
   padding-left: 8px;

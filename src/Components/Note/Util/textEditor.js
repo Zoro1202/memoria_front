@@ -1,5 +1,6 @@
 // Component/textEditor.jsx
 import isHotkey from 'is-hotkey'
+import { RemoteCursorOverlay } from "./RemoteCursorOverlay";
 import React, { useCallback } from 'react'
 import {
   Editor,
@@ -24,75 +25,78 @@ const HOTKEYS = {
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify']
 
-export const TextEditor = ({ editor, initialValue, decorate, renderLeaf, onchange, onDeleteClick }) => {
+export const TextEditor = ({ value, editor, initialValue, decorate, renderLeaf, onchange, onDeleteClick }) => {
   const renderElement = useCallback(props => <Element {...props} />, [])
 
   return (
-    <Slate editor={editor} initialValue={initialValue} onChange={onchange}>
-      <HToolbar/>
-      <Toolbar>
-        <div style={{ display: 'flex', flexGrow: 1 }}>
-          <MarkButton format="bold" icon="format_bold" />
-          <MarkButton format="italic" icon="format_italic" />
-          <MarkButton format="underline" icon="format_underlined" />
-          <MarkButton format="code" icon="code" />
-          <BlockButton format="heading-one" icon="looks_one" />
-          <BlockButton format="heading-two" icon="looks_two" />
-          <BlockButton format="block-quote" icon="format_quote" />
-          <BlockButton format="numbered-list" icon="format_list_numbered" />
-          <BlockButton format="bulleted-list" icon="format_list_bulleted" />
-          <BlockButton format="left" icon="format_align_left" />
-          <BlockButton format="center" icon="format_align_center" />
-          <BlockButton format="right" icon="format_align_right" />
-          <BlockButton format="justify" icon="format_align_justify" />
-        </div>
-        <div>
-          <DeleteNoteButton onDeleteClick={onDeleteClick}/>
-        </div>
-      </Toolbar>
-      <Editable
-        decorate={decorate}
-        renderLeaf={renderLeaf}
-        renderElement={renderElement}
-        placeholder="Enter some rich text…"
-        spellCheck
-        autoFocus
-        onKeyDown={event => {
-          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
-            event.preventDefault();
-
-            const { selection } = editor;
-            if (selection) {
-              Transforms.select(editor, {
-                anchor: Editor.start(editor, []),
-                focus: Editor.end(editor, []),
-              });
-            }
-            return;
-          }
-          
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            const { selection } = editor;
-            if (selection) {
-              // 현재 위치에서 노드 분리
-              Transforms.splitNodes(editor, { always: true });
-
-              // 새로 생성된 노드를 paragraph 타입으로 설정
-              Transforms.setNodes(editor, { type: 'paragraph' });
-            }
-            return;
-          }
-          for (const hotkey in HOTKEYS) {
-            if (isHotkey(hotkey, event)) {
+    <Slate value={value} editor={editor} initialValue={initialValue} onChange={onchange}>
+      <RemoteCursorOverlay>
+        <HToolbar/>
+        <Toolbar>
+          <div style={{ display: 'flex', flexGrow: 1 }}>
+            <MarkButton format="bold" icon="format_bold" />
+            <MarkButton format="italic" icon="format_italic" />
+            <MarkButton format="underline" icon="format_underlined" />
+            <MarkButton format="code" icon="code" />
+            <BlockButton format="heading-one" icon="looks_one" />
+            <BlockButton format="heading-two" icon="looks_two" />
+            <BlockButton format="block-quote" icon="format_quote" />
+            <BlockButton format="numbered-list" icon="format_list_numbered" />
+            <BlockButton format="bulleted-list" icon="format_list_bulleted" />
+            <BlockButton format="left" icon="format_align_left" />
+            <BlockButton format="center" icon="format_align_center" />
+            <BlockButton format="right" icon="format_align_right" />
+            <BlockButton format="justify" icon="format_align_justify" />
+          </div>
+          <div>
+            <DeleteNoteButton onDeleteClick={onDeleteClick}/>
+          </div>
+        </Toolbar>
+        <Editable
+          value={value}
+          decorate={decorate}
+          renderLeaf={renderLeaf}
+          renderElement={renderElement}
+          placeholder="Enter some rich text…"
+          spellCheck
+          autoFocus
+          onKeyDown={event => {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
               event.preventDefault();
-              const mark = HOTKEYS[hotkey];
-              toggleMark(editor, mark);
+
+              const { selection } = editor;
+              if (selection) {
+                Transforms.select(editor, {
+                  anchor: Editor.start(editor, []),
+                  focus: Editor.end(editor, []),
+                });
+              }
               return;
             }
-          }
-        }}
-      />
+            
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              const { selection } = editor;
+              if (selection) {
+                // 현재 위치에서 노드 분리
+                Transforms.splitNodes(editor, { always: true });
+
+                // 새로 생성된 노드를 paragraph 타입으로 설정
+                Transforms.setNodes(editor, { type: 'paragraph' });
+              }
+              return;
+            }
+            for (const hotkey in HOTKEYS) {
+              if (isHotkey(hotkey, event)) {
+                event.preventDefault();
+                const mark = HOTKEYS[hotkey];
+                toggleMark(editor, mark);
+                return;
+              }
+            }
+          }}
+          />
+        </RemoteCursorOverlay>
     </Slate>
   )
 }

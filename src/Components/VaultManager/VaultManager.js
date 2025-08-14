@@ -27,29 +27,23 @@ const VaultManager = forwardRef((props, ref) => {
   // }, []);
 
   //tabs (의존성 배열)state가 바뀌면 호출
-  const addTab = useCallback(() => {
+  const addTab = useCallback(async() => {
     if (tabs.length >= 30) {
       setError('탭 한도가 초과되었습니다');
       return;
     }
     const newId = "새 노트 " + (Object.keys(notes).length + 1);
     const newContent = "# " + newId + "\n**새 노트!**";
-    // 여기 upsertnote로 바꾸고 opentab은 안바꿔도 될듯.(upsertnote 현재 작동 X)
-    // setNotes(prev => ({
-    //   ...prev,
-    //   [newId]: {
-    //     content: newContent,
-    //     update_at: new Date().toISOString(),
-    //   },
-    // }));
+    
     try {
       if(!selectedGroupId) { toast.error('그룹을 선택하세요'); return;}
-      upsertNote(selectedGroupId, newId, newContent);
+      const ret = await upsertNote(selectedGroupId, newId, newContent);
+      
+      openTab({ title: newId, type: "note", noteId: ret.response.insertId });
     } catch (err){
       console.log(`[AddTab] ${err}`);
       toast.error('새 노트 추가 실패!');
     }
-    openTab({ title: newId, type: "note", noteId: newId });
     setError('');
     return newId;
   }, [tabs, notes, setNotes, openTab]); // 의존성 배열에 notes, setNotes, openTab 추가
@@ -92,29 +86,23 @@ const VaultManager = forwardRef((props, ref) => {
   };
   
   const handleOnChangeNote = (md, tab) => {
+    console.log(`[callback]handleOnchange`);
     setActiveNoteContent(String(md));
-    // upsertNote(selectedGroupId, tab.title, md, tab.noteId); // 저장 upsert인데 이거 수정해야함.
-    /**
-     * contentElement.addEventListener('input', (e) => {
-          console.log('[content input] 감지됨, 길이:', e.target.value.length);
-          const oldVal = notes[tab.title].content || '';
-          const newVal = String(md);
-          const ops = generateTextDiffOps(oldVal, newVal, ['content']);
-          console.log('[content input op]', ops);
-          if (ops.length > 0) {
-            doc.submitOp(ops, (err) => {
-              if (err) console.error('[content input] op 전송 실패', err);
-              else console.log('[content input] op 전송 성공');
-            });
-          }
-      });
-     */
+    // setNotes(prev => {
+    //   const newState = {...prev};
+    //   newState[tab.title] = { 
+    //     ...prev[tab.title],
+    //     content : md,
+    //     update_at: new Date().toISOString(),
+    //   };
+    //   return newState;
+    // });
     setNotes((prevNotes) => ({
       ...prevNotes,
       [tab.title]: {
         ...prevNotes[tab.title],
-        content: String(md),
-        update_at: new Date().toISOString(),
+        content: md,
+        // update_at: new Date().toISOString(),
       },
     }));
   };
@@ -155,7 +143,7 @@ const VaultManager = forwardRef((props, ref) => {
                                 }}
                                 aria-label="탭 닫기"
                               >
-                                ×
+                                x
                               </button>
                             </div>
                           )}
@@ -179,11 +167,11 @@ const VaultManager = forwardRef((props, ref) => {
                 style={{ display: tab.id === activeTabId ? 'block' : 'none' }}
               >
                 {tab.type === 'graph' ? (
-                  <GraphView
+                  tab.id === activeTabId && <GraphView
                     data={graphData}
                     onSelect={(id) => {
                       // 그래프 노드 클릭 시 새 탭 열기 로직
-                      openTab({ title: id, type: 'note', noteId: id });
+                      openTab({ title: id, type: 'note', noteId: notes[id].note_id });
                       if(!notes[id])
                       {
                         upsertNote(selectedGroupId, id, id);
@@ -192,7 +180,7 @@ const VaultManager = forwardRef((props, ref) => {
                     }}
                   />
                 ) : (
-                  <NoteView
+                  tab.id === activeTabId && <NoteView
                     id={tab.title}
                     // noteId={notes[tab.title].}
                     groupId={tab.groupId || selectedGroupId}

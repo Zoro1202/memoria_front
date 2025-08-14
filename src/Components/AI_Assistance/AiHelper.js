@@ -1,5 +1,5 @@
 // 파일: src/Components/Util/AiHelper.js
-
+import { useCallback, useEffect } from 'react';
 import React, { useState } from 'react';
 import AiActionsWidget from './AiActionsWidget';
 import './AiHelper.css';
@@ -7,7 +7,6 @@ import { useNotes } from '../../Contexts/NotesContext';
 import { useTabs } from '../../Contexts/TabsContext';
 import memoriaLogo from './Black_Widget.png';
 //import { useGroups } from '../../Contexts/GroupContext';
-
 const AiIcon = () => (
     <img 
         src={memoriaLogo} 
@@ -17,56 +16,42 @@ const AiIcon = () => (
 );
 
 export default function AiHelper() {
-    //const {groups} = useGroups();
-    // [기존] isOpen 상태의 이름을 isWidgetVisible로 변경하여 명확화
     const [isWidgetVisible, setIsWidgetVisible] = useState(false);
-    // [추가] AiActionsWidget의 상태를 완전히 초기화하기 위한 key 상태
     const [widgetKey, setWidgetKey] = useState(0);
 
-    const { activeNoteContent } = useNotes();
+    const { notes } = useNotes();
     const { tabs, activeTabId } = useTabs();
-    const isActionable = activeNoteContent && activeNoteContent.trim() !== '';
 
-    const shouldShowHelper = tabs.find(t => t.id === activeTabId && t.type === "note");
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    const isNoteActive = activeTab && activeTab.type === "note";
+    
+    const currentNoteContent = isNoteActive ? (notes[activeTab.title]?.content || '') : '';
+    
+    const hasContent = currentNoteContent.trim() !== '';
+    const isActionable = isNoteActive && hasContent;
 
-
-    // AI 아이콘을 클릭했을 때 위젯을 여는 함수
-    const handleOpenWidget = () => {
+    const handleOpenWidget = useCallback(() => {
         if (isActionable) {
             setIsWidgetVisible(true);
         }
-    };
+    }, [isActionable]);
 
-    // [추가] 위젯의 '최소화' 버튼을 눌렀을 때 호출될 함수
     const handleMinimizeWidget = () => {
         setIsWidgetVisible(false);
     };
 
-    // [추가] 위젯의 'X' 닫기 버튼을 눌렀을 때 호출될 함수
     const handleCloseAndResetWidget = () => {
         setIsWidgetVisible(false);
-        // key를 변경하여 AiActionsWidget 컴포넌트를 강제 재마운트 -> 모든 상태가 초기화됨
         setWidgetKey(prevKey => prevKey + 1);
     };
 
-    // 현재 활성화된 탭이 'note' 타입일 때만 AI 헬퍼 아이콘을 표시
-    
-
-    
-
     return (
-        // ✅ 핵심 수정: 최상위 div에 display 스타일을 동적으로 적용
-        <div 
-            className="ai-helper-container" 
-            style={{ display: shouldShowHelper ? 'block' : 'none' }}
-        >
+        <div className={`ai-helper-container ${isNoteActive ? 'visible' : ''}`}>
             <AiActionsWidget
                 key={widgetKey}
                 onClose={handleCloseAndResetWidget}
                 onMinimize={handleMinimizeWidget}
-                isVisible={isWidgetVisible} 
-                //groups={groups} // [수정] 받은 groups prop을 그대로 전달
-
+                isVisible={isWidgetVisible}
             />
             
             {!isWidgetVisible && (
@@ -74,7 +59,11 @@ export default function AiHelper() {
                     className="ai-trigger-button"
                     onClick={handleOpenWidget}
                     disabled={!isActionable}
-                    title={isActionable ? "AI 도우미 열기" : "AI 기능을 사용하려면 노트에 내용이 있어야 합니다"}
+                    title={
+                        isNoteActive 
+                            ? (hasContent ? "AI 도우미 열기" : "AI 기능을 사용하려면 노트에 내용이 있어야 합니다")
+                            : "노트 탭에서만 AI 도우미를 사용할 수 있습니다"
+                    }
                 >
                     <AiIcon />
                 </button>

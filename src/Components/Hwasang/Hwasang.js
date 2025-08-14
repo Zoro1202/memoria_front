@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGroups } from "../../Contexts/GroupContext";
 import io from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
 import * as fabric from "fabric";
 import MeetingRoomUI from "./MeetingRoomUI";
-import "./MeetingRoom.css";
 import JoinRoomUI from "./JoinRoomUI";
-import "./JoinRoomUI.css";
 
 import {
   Dialog,
@@ -129,6 +127,7 @@ function Hwasang() {
     audioLevel: null,
   });
   const [slideDrawings, setSlideDrawings] = useState({});
+  const pendingTextObjs = useRef([]);
 
   const roomIdRef = useRef(roomId);
   const nicknameRef = useRef(nickname);
@@ -150,117 +149,157 @@ function Hwasang() {
   }, [currentSlide]);
 
   // Fabric.js 캔버스 초기화 및 모드 관리: 드로잉, 텍스트 추가
-  useEffect(() => {
-    if (!slides.length || !canvasRef.current || !joined) return;
-    if (!fabric?.Canvas) return;
-    if (fabricCanvasRef.current) {
-      fabricCanvasRef.current.dispose();
-      fabricCanvasRef.current = null;
-    }
-    const canvasEl = canvasRef.current;
-    const fabricCanvas = new fabric.Canvas(canvasEl, {
-      backgroundColor: "transparent",
-      width: canvasEl.width,
-      height: canvasEl.height,
-      selection: true,
-    });
-    fabricCanvasRef.current = fabricCanvas;
-    const brush = new fabric.PencilBrush(fabricCanvas);
-    brush.width = 3;
-    brush.color = "#ff3333";
-    fabricCanvas.freeDrawingBrush = brush;
-    fabricCanvas.isDrawingMode = isDrawingModeRef.current;
+ useEffect(() => {
+    if (!slides.length || !canvasRef.current || !joined) return;
+    if (!fabric?.Canvas) return;
 
+    // 기존 캔버스 있으면 정리
+    if (fabricCanvasRef.current) {
+      fabricCanvasRef.current.dispose();
+      fabricCanvasRef.current = null;
+    }
+    const canvasEl = canvasRef.current;
+    const fabricCanvas = new fabric.Canvas(canvasEl, {
+      backgroundColor: "transparent",
+      width: canvasEl.width,
+      height: canvasEl.height,
+      selection: true,
+    });
+    fabricCanvasRef.current = fabricCanvas;
 
+    const brush = new fabric.PencilBrush(fabricCanvas);
+    brush.width = 3;
+    brush.color = "#ff3333";
+    fabricCanvas.freeDrawingBrush = brush;
+    fabricCanvas.isDrawingMode = isDrawingModeRef.current;
 
-    // 슬라이드별 그리기 데이터 복원 (id 중복 방지)
-    const drawingData = slideDrawings[currentSlide];
-    if (drawingData) {
-      fabricCanvas.loadFromJSON(drawingData, () => {
-        // id 중복 방지: 오브젝트마다 id가 없으면 새로 부여
-        fabricCanvas.getObjects().forEach(obj => {
-          if (!obj.id) obj.id = generateUniqueId();
-        });
-        fabricCanvas.renderAll();
-      });
-    }
+    // 슬라이드별 그리기 데이터 복원 (id 중복 방지)
+    const drawingData = slideDrawings[currentSlide];
+    if (drawingData) {
+      fabricCanvas.loadFromJSON(drawingData, () => {
+        // id 중복 방지: 오브젝트마다 id가 없으면 새로 부여
+        fabricCanvas.getObjects().forEach(obj => {
+          if (!obj.id) obj.id = generateUniqueId();
+        });
+        fabricCanvas.renderAll();
+      });
+    } else {
+      // drawingData 없으면 빈 JSON이라도 loadFromJSON 호출하여 최종 초기화 보장
+      fabricCanvas.loadFromJSON({}, () => {
+        fabricCanvas.renderAll();
+      });
+    }
 
+    // ▶ 큐에 쌓인 텍스트 동기화 대기 중인 항목 처리
+    if (pendingTextObjs.current.length > 0) {
+      pendingTextObjs.current.forEach(({ textObj, slideIndex }) => {
+        if (slideIndex === currentSlide) {
+          const allowed = [
+            "left", "top", "width", "height", "fill", "fontSize", "fontWeight", "fontFamily",
+            "fontStyle", "lineHeight", "text", "charSpacing", "textAlign", "styles", "underline",
+            "overline", "linethrough", "textBackgroundColor", "direction", "angle", "scaleX",
+            "scaleY", "flipX", "flipY", "opacity", "shadow", "visible", "backgroundColor",
+            "skewX", "skewY", "id"
+          ];
+          let obj = fabricCanvas.getObjects().find(o => o.id === textObj.id);
+          if (!obj) {
+            const { id, text, type, ...safeProps } = textObj;
+            const uniqueId = id && !fabricCanvas.getObjects().some(o => o.id === id) ? id : generateUniqueId();
+            obj = new fabric.IText(text, { ...safeProps, id: uniqueId });
+            fabricCanvas.add(obj);
+          }
+          fabricCanvas.renderAll();
+          setSlideDrawings(prev => ({
+            ...prev,
+            [currentSlide]: fabricCanvas.toJSON()
+          }));
+        }
+      });
+      // 큐 비우기
+      pendingTextObjs.current = [];
+    }
 
+    // [1] path:created => draw-path emit (펜/그리기)
+    fabricCanvas.on("path:created", (e) => {
+      if (!isDrawingModeRef.current) return;
+      const path = e.path;
+      // 항상 새 id 부여
+      path.id = generateUniqueId();
+      const pathObj = path.toObjectWithId();
+      setTimeout(() => {
+        socket.emit("draw-path", {
+          roomId: roomIdRef.current,
+          path: pathObj,
+          slideIndex: currentSlideRef.current,
+        });
+      }, 300);
+    });
 
-    // [1] path:created => draw-path emit (펜/그리기)
-   fabricCanvas.on("path:created", (e) => {
-      if (!isDrawingModeRef.current) return;
-      const path = e.path;
-      // 항상 새 id 부여
-      path.id = generateUniqueId();
-      const pathObj = path.toObjectWithId();
-      setTimeout(() => {
-        socket.emit("draw-path", {
-          roomId: roomIdRef.current,
-          path: pathObj,
-          slideIndex: currentSlideRef.current,
-        });
-      }, 300);
-    });
+    // [2] 텍스트 관련 이벤트 => draw-text emit
+    const emitText = (obj) => {
+      if (obj && (obj.type === "i-text" || obj.type === "IText")) {
+        // 항상 새 id 부여(새 텍스트일 때만)
+        if (!obj.id) obj.id = generateUniqueId();
+        const textObj = obj.toObjectWithId();
+        socket.emit("draw-text", {
+          roomId: roomIdRef.current,
+          textObj,
+          slideIndex: currentSlideRef.current,
+        });
+      }
+    };
+    fabricCanvas.on("text:changed", (e) => emitText(e.target));
+    fabricCanvas.on("object:modified", (e) => emitText(e.target));
 
+    // 텍스트 삭제 동기화 (remove-path 재활용)
+    fabricCanvas.on("object:removed", (e) => {
+      const obj = e.target;
+      if (obj && (obj.type === "i-text" || obj.type === "IText")) {
+        socket.emit("remove-path", {
+          roomId: roomIdRef.current,
+          objId: obj.id,
+          slideIndex: currentSlideRef.current,
+        });
+      }
+    });
 
+const onKeyDown = (e) => {
+  if (e.key === "Delete") {
+    const fabricCanvas = fabricCanvasRef.current;
+    const activeObjects = fabricCanvas.getActiveObjects();
 
-    // [2] 텍스트 관련 이벤트 => draw-text emit
-    const emitText = (obj) => {
-      if (obj && (obj.type === "i-text" || obj.type === "IText")) {
-        // 항상 새 id 부여(새 텍스트일 때만)
-        if (!obj.id) obj.id = generateUniqueId();
-        const textObj = obj.toObjectWithId();
-        socket.emit("draw-text", {
-          roomId: roomIdRef.current,
-          textObj,
-          slideIndex: currentSlideRef.current,
-        });
-      }
-    };
-    fabricCanvas.on("text:changed", (e) => emitText(e.target));
-    fabricCanvas.on("object:modified", (e) => emitText(e.target));
+    if (activeObjects.length > 0) {
+      activeObjects.forEach((obj) => {
+        // id가 없으면 생성하여 부여
+        if (!obj.id) {
+          obj.id = generateUniqueId();
+          console.warn("자동으로 id 부여:", obj);
+        }
+        socket.emit("remove-path", {
+          roomId: roomIdRef.current,
+          objId: obj.id,
+          slideIndex: currentSlideRef.current,
+        });
+      });
 
+      fabricCanvas.discardActiveObject();
+      fabricCanvas.requestRenderAll();
+    }
+  }
+};
 
+window.addEventListener("keydown", onKeyDown);
 
-    // 텍스트 삭제 동기화 (remove-path 재활용)
-    fabricCanvas.on("object:removed", (e) => {
-      const obj = e.target;
-      if (obj && (obj.type === "i-text" || obj.type === "IText")) {
-        socket.emit("remove-path", {
-          roomId: roomIdRef.current,
-          objId: obj.id,
-          slideIndex: currentSlideRef.current,
-        });
-      }
-    });
-
-
-
-    // Delete 키로 오브젝트 삭제
-    const onKeyDown = (e) => {
-      if (e.key === "Delete") {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (activeObject) {
-          fabricCanvas.remove(activeObject);
-          fabricCanvas.renderAll();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-
-
-    return () => {
-      fabricCanvas.off("path:created");
-      fabricCanvas.off("text:changed");
-      fabricCanvas.off("object:modified");
-      fabricCanvas.off("object:removed");
-      window.removeEventListener("keydown", onKeyDown);
-      fabricCanvas.dispose();
-      fabricCanvasRef.current = null;
-    };
-  }, [slides, currentSlide, joined, roomId, socket, slideDrawings]);
+    return () => {
+      fabricCanvas.off("path:created");
+      fabricCanvas.off("text:changed");
+      fabricCanvas.off("object:modified");
+      fabricCanvas.off("object:removed");
+      window.removeEventListener("keydown", onKeyDown);
+      fabricCanvas.dispose();
+      fabricCanvasRef.current = null;
+    };
+  }, [slides, currentSlide, joined, roomId, socket, slideDrawings]);
 
 
 
@@ -349,62 +388,74 @@ newSocket.on("draw-path", ({ roomId: rId, path, slideIndex }) => {
     });
 
 newSocket.on("draw-text", ({ roomId: rId, textObj, slideIndex }) => {
-      if (rId !== roomIdRef.current) return;
-      if (slideIndex !== currentSlideRef.current) return;
-      if (!fabricCanvasRef.current || !textObj) return;
-      const canvas = fabricCanvasRef.current;
-      const allowed = [
-        "left", "top", "width", "height", "fill", "fontSize", "fontWeight", "fontFamily",
-        "fontStyle", "lineHeight", "text", "charSpacing", "textAlign", "styles", "underline",
-        "overline", "linethrough", "textBackgroundColor", "direction", "angle", "scaleX",
-        "scaleY", "flipX", "flipY", "opacity", "shadow", "visible", "backgroundColor",
-        "skewX", "skewY"
-      ];
-      let obj = canvas.getObjects().find(o => o.id === textObj.id);
-      if (obj) {
-        const safeProps = {};
-        for (const key of allowed) {
-          if (textObj[key] !== undefined) safeProps[key] = textObj[key];
-        }
-        obj.set(safeProps);
-        canvas.renderAll();
-        setSlideDrawings(prev => ({
-          ...prev,
-          [currentSlideRef.current]: canvas.toJSON()
-        }));
-        return;
-      }
-      // 새로 추가 (id 중복 방지)
-      try {
-        const { id, text, type, ...safeProps } = textObj;
-        const uniqueId = id && !canvas.getObjects().some(o => o.id === id) ? id : generateUniqueId();
-        obj = new fabric.IText(text, { ...safeProps, id: uniqueId });
-        canvas.add(obj);
-        canvas.renderAll();
-        setSlideDrawings(prev => ({
-          ...prev,
-          [currentSlideRef.current]: canvas.toJSON()
-        }));
-      } catch (e) {
-        console.error("[디버그] draw-text 처리 실패:", e);
-      }
-    });
+  if (rId !== roomIdRef.current) return;
+  if (slideIndex !== currentSlideRef.current) return;
+  if (!textObj) return;
 
-    newSocket.on("remove-path", ({ roomId: rId, objId, slideIndex }) => {
-      if (
-        rId !== roomIdRef.current ||
-        slideIndex !== currentSlideRef.current ||
-        !fabricCanvasRef.current
-      )
-        return;
-      const canvas = fabricCanvasRef.current;
-      const obj = canvas.getObjects().find((o) => o.id === objId);
-      if (obj) {
-        canvas.remove(obj);
-        canvas.renderAll();
-        setSlideDrawings((prev) => ({ ...prev, [currentSlideRef.current]: canvas.toJSON() }));
-      }
-    });
+  // 캔버스가 준비 전이면 큐에 적재
+  if (!fabricCanvasRef.current) {
+    pendingTextObjs.current.push({ textObj, slideIndex });
+    return;
+  }
+
+  // ※ 아래는 기존의 텍스트 추가 로직 그대로 둠
+  const canvas = fabricCanvasRef.current;
+  const allowed = [
+    "left", "top", "width", "height", "fill", "fontSize", "fontWeight", "fontFamily",
+    "fontStyle", "lineHeight", "text", "charSpacing", "textAlign", "styles", "underline",
+    "overline", "linethrough", "textBackgroundColor", "direction", "angle", "scaleX",
+    "scaleY", "flipX", "flipY", "opacity", "shadow", "visible", "backgroundColor",
+    "skewX", "skewY", "id"
+  ];
+  let obj = canvas.getObjects().find(o => o.id === textObj.id);
+  if (obj) {
+    const safeProps = {};
+    for (const key of allowed) {
+      if (textObj[key] !== undefined) safeProps[key] = textObj[key];
+    }
+    obj.set(safeProps);
+    canvas.renderAll();
+    setSlideDrawings(prev => ({
+      ...prev,
+      [currentSlideRef.current]: canvas.toJSON()
+    }));
+    return;
+  }
+  // 새로 추가 (id 중복 방지)
+  try {
+    const { id, text, type, ...safeProps } = textObj;
+    const uniqueId = id && !canvas.getObjects().some(o => o.id === id) ? id : generateUniqueId();
+    obj = new fabric.IText(text, { ...safeProps, id: uniqueId });
+    canvas.add(obj);
+    canvas.renderAll();
+    setSlideDrawings(prev => ({
+      ...prev,
+      [currentSlideRef.current]: canvas.toJSON()
+    }));
+  } catch (e) {
+    console.error("[디버그] draw-text 처리 실패:", e);
+  }
+});
+
+
+// 소켓 수신부
+newSocket.on("remove-path", ({ roomId: rId, objId, slideIndex }) => {
+  if (!objId) return; // id 없으면 아무 것도 하지 않음
+  if (
+    rId !== roomIdRef.current ||
+    slideIndex !== currentSlideRef.current ||
+    !fabricCanvasRef.current
+  ) return;
+  const canvas = fabricCanvasRef.current;
+  const obj = canvas.getObjects().find((o) => o.id === objId);
+  if (obj) {
+    canvas.remove(obj);
+    canvas.renderAll();
+    setSlideDrawings((prev) => ({ ...prev, [currentSlideRef.current]: canvas.toJSON() }));
+  }
+});
+
+
 
     newSocket.on("new-peer", ({ peerId, nickname }) => {
       setPeers((prev) => [...prev, peerId]);
@@ -486,7 +537,7 @@ newSocket.on("draw-text", ({ roomId: rId, textObj, slideIndex }) => {
     });
 
     return () => newSocket.disconnect();
-  }, [screenOn]);
+  }, []);
 
   useEffect(() => {
     isDrawingModeRef.current = isDrawingMode;
@@ -662,46 +713,94 @@ newSocket.on("draw-text", ({ roomId: rId, textObj, slideIndex }) => {
   };
 
   // 소비 함수
-  const consume = async ({ producerId, kind, type, peerId }) => {
-    const device = deviceRef.current;
-    const transport = recvTransportRef.current;
-    if (!device || !transport) return setTimeout(() => consume({ producerId, kind, type, peerId }), 500);
+const consume = async ({ producerId, kind, type, peerId }) => {
+  const device = deviceRef.current;
+  const transport = recvTransportRef.current;
+  if (!device || !transport) {
+    console.warn("[consume] device 또는 transport 미준비, 재시도 예정", { producerId, kind, peerId });
+    return setTimeout(() => consume({ producerId, kind, type, peerId }), 500);
+  }
 
-    socket.emit(
-      "consume",
-      { transportId: transport.id, producerId, roomId: roomIdRef.current, peerId: socketId, rtpCapabilities: device.rtpCapabilities },
-      async (res) => {
-        if (res.error) return console.error("consume error:", res.error);
+  console.log(`[consume] 요청: producerId=${producerId}, kind=${kind}, peerId=${peerId}`);
 
-        try {
-          const consumer = await transport.consume(res.consumerData);
-          await consumer.resume();
-          const stream = new MediaStream([consumer.track]);
+  socket.emit(
+    "consume",
+    {
+      transportId: transport.id,
+      producerId,
+      roomId: roomIdRef.current,
+      peerId: socketId,
+      rtpCapabilities: device.rtpCapabilities,
+    },
+    async (res) => {
+      if (res.error) return console.error("[consume] 서버 에러:", res.error);
 
-          const container = document.getElementById(`remote-media-${peerId}`);
+      try {
+        const { consumerData } = res;
+        console.log("[consume] 서버 응답 consumerData:", consumerData);
 
-          if (container) {
-            const oldEl = document.getElementById(`${kind}-${producerId}`);
-            if (oldEl) oldEl.remove();
+        const consumer = await transport.consume(consumerData);
+        console.log("[consume] consumer 생성 완료:", consumer);
 
-            const el = document.createElement(kind);
-            el.id = `${kind}-${producerId}`;
-            el.srcObject = stream;
-            el.autoplay = true;
-            el.playsInline = true;
-            if (kind === "video") el.muted = true;
+        await consumer.resume();
+        const stream = new MediaStream([consumer.track]);
+        console.log(
+          `[consume] MediaStream 생성 완료 for ${kind}, producerId=${producerId}`,
+          "track 상태:",
+          consumer.track ? {
+            readyState: consumer.track.readyState,
+            enabled: consumer.track.enabled,
+            muted: consumer.track.muted
+          } : "track 없음"
+        );
 
-            container.appendChild(el);
-            el.play().catch((e) => console.error(`${kind} play error for ${producerId}`, e));
-          } else {
-            console.warn(`[디버그] Peer ID(${peerId})에 해당하는 컨테이너를 찾지 못했습니다.`);
+        const container = document.getElementById(`remote-media-${peerId}`);
+        console.log(`[consume] remote container ${container ? "존재함" : "없음"} for peerId=${peerId}`);
+
+        if (container) {
+          const oldEl = document.getElementById(`${kind}-${producerId}`);
+          if (oldEl) {
+            console.log(`[consume] 기존 ${kind} 엘리먼트 제거: id=${oldEl.id}`);
+            oldEl.remove();
           }
-        } catch (err) {
-          console.error(`[디버그] ${kind} Consumer 생성 또는 DOM 추가 중 에러 발생:`, err);
+          const el = document.createElement(kind);
+          el.id = `${kind}-${producerId}`;
+          el.srcObject = stream;
+          el.autoplay = true;
+          el.playsInline = true;
+          if (kind === "video") el.muted = true;
+
+          container.appendChild(el);
+
+          setTimeout(() => {
+            // 요소의 현재 readyState/트랙 상태 확인
+            const videoTracks = el.srcObject?.getVideoTracks?.();
+            if (kind === "video" && videoTracks && videoTracks[0]) {
+              console.log(
+                `[consume] <video> track 상태(readyState, enabled, muted):`,
+                videoTracks[0].readyState,
+                videoTracks[0].enabled,
+                videoTracks[0].muted
+              );
+            }
+          }, 500);
+
+          console.log(`[consume] 새 ${kind} 엘리먼트 추가: id=${el.id}`);
+
+          el.play()
+            .then(() => console.log(`[consume] ${kind} play 시작: id=${el.id}`))
+            .catch((e) => console.error(`[consume] ${kind} play 에러: id=${el.id}`, e));
+        } else {
+          console.warn(`[consume] remote-media-${peerId} 컨테이너 미발견`);
         }
+      } catch (error) {
+        console.error(`[consume] ${kind} consumer 처리 중 에러:`, error);
       }
-    );
-  };
+    }
+  );
+};
+
+
 
   const safeConsume = async (p) => {
     if (!p || consumedProducerIds.current.has(p.producerId)) return;
@@ -729,25 +828,99 @@ newSocket.on("draw-text", ({ roomId: rId, textObj, slideIndex }) => {
   };
 
   // 카메라 시작
-  const startCamera = async () => {
-    if (!sendTransport) return console.warn("Send transport is not ready.");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoTrack = stream.getVideoTracks()[0];
-      const newStream = new MediaStream([...(localStream?.getAudioTracks() || []), videoTrack]);
-      setLocalStream(newStream);
+// camera start: 영상 프리뷰 + Producer 생성까지 한 번에 완성 예제
+const startCamera = async () => {
+  if (!sendTransport) {
+    console.warn("Send transport is not ready.");
+    setAlertMsg("회의에 먼저 입장해 주세요.");
+    setAlertOpen(true);
+    return;
+  }
 
-      const producer = await sendTransport.produce({ track: videoTrack, appData: { type: "video" } });
-      producer.on("trackended", stopCamera);
-      setVideoProducer(producer);
-      setCamOn(true);
-    } catch (error) {
-      console.error("Failed to get video stream:", error);
-      setAlertMsg("카메라를 시작할 수 없습니다. 권한을 확인해주세요.");
+  try {
+    // ① 캠 stream 얻기
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { max: 640 }, height: { max: 480 } },
+      audio: true,
+    });
+    console.log("[디버그] 카메라 스트림 획득:", stream);
+
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) {
+      console.warn("[디버그] videoTrack 없음", stream);
+      setAlertMsg("카메라 장치를 찾을 수 없습니다.");
       setAlertOpen(true);
       setCamOn(false);
+      return;
     }
-  };
+
+    console.log(
+      "[디버그] videoTrack 상태:",
+      "readyState:", videoTrack.readyState,
+      "enabled:", videoTrack.enabled,
+      "muted:", videoTrack.muted
+    );
+
+    // ② 내 캠 프리뷰
+    const mergedStream = new MediaStream([
+      ...(localStream?.getAudioTracks() || []),
+      videoTrack
+    ]);
+    setLocalStream(mergedStream);
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = mergedStream;
+      console.log("[디버그] localVideoRef 프리뷰 연결됨");
+    }
+
+    // ③ 이미 Producer 있으면 닫기 (중복 방지)
+    if (videoProducer) {
+      await videoProducer.close();
+      setVideoProducer(null);
+      console.log("[디버그] 기존 videoProducer close 완료");
+    }
+
+    // ④ Producer 생성(실제 송출)
+    const producer = await sendTransport.produce({
+      track: videoTrack,
+      appData: { type: "video" }
+    });
+
+    // producer 생성 후 PeerConnection sender 연결 상태 체크
+    const senders = sendTransport._handler?._pc?.getSenders?.();
+    if (senders) {
+      senders
+        .filter(s => s.track && s.track.kind === "video")
+        .forEach((s, idx) => {
+          console.log(
+            `[디버그] sender[${idx}] video track:`,
+            s.track,
+            "readyState:", s.track.readyState,
+            "enabled:", s.track.enabled,
+            "muted:", s.track.muted
+          );
+        });
+    } else {
+      console.log("[디버그] PeerConnection senders 미확인");
+    }
+
+    console.log("[디버그] Video producer 생성됨:", producer);
+
+    producer.on("trackended", () => {
+      console.log("[디버그] video track 종료 이벤트(trackedned)");
+      stopCamera();
+    });
+
+    setVideoProducer(producer);
+    setCamOn(true);
+  } catch (error) {
+    console.error("Failed to get video stream:", error);
+    setAlertMsg("카메라를 시작할 수 없습니다. 권한/장치/환경을 확인해주세요.");
+    setAlertOpen(true);
+    setCamOn(false);
+  }
+};
+
+
 
   // 카메라 중지
   const stopCamera = () => {
@@ -794,10 +967,83 @@ newSocket.on("draw-text", ({ roomId: rId, textObj, slideIndex }) => {
     });
   };
 
+  // 화면 공유 시작
+const startScreenShare = async () => {
+  if (!sendTransport) {
+    console.warn("Send transport is not ready.");
+    return;
+  }
+  try {
+    // 사용자 화면 공유 스트림 획득
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false,
+    });
+    const videoTrack = stream.getVideoTracks()[0];
+
+    // 만약 기존에 화면 공유 프로듀서가 있다면 중지
+    if (screenProducer) {
+      await screenProducer.close();
+      setScreenProducer(null);
+    }
+
+    const producer = await sendTransport.produce({
+      track: videoTrack,
+      appData: { type: "screen" },
+    });
+
+    // 트랙 종료시 화면 공유 종료 처리
+    videoTrack.onended = () => {
+      stopScreenShare();
+    };
+
+    setScreenProducer(producer);
+    setScreenOn(true);
+
+    // 서버에 화면 공유 상태 변경 알림
+    socket?.emit("change-media-state", {
+      roomId: roomIdRef.current,
+      peerId: socketId,
+      micOn,
+      screenOn: true,
+    });
+  } catch (error) {
+    console.error("화면 공유를 시작할 수 없습니다:", error);
+    setAlertMsg("화면 공유를 시작할 수 없습니다.\n권한이나 장치 상태를 확인하세요.");
+    setAlertOpen(true);
+  }
+};
+
+// 화면 공유 중지
+const stopScreenShare = async () => {
+  if (!screenProducer) return;
+  try {
+    await screenProducer.close();
+  } catch (error) {
+    console.error("화면 공유 프로듀서 종료 중 오류:", error);
+  }
+  setScreenProducer(null);
+  setScreenOn(false);
+
+  // 서버에 화면 공유 중지 상태 알림
+  socket?.emit("change-media-state", {
+    roomId: roomIdRef.current,
+    peerId: socketId,
+    micOn,
+    screenOn: false,
+  });
+};
+
+
   // 화면 공유 기능 (빈 함수 예시, 필요시 구현)
-  const handleScreenToggle = () => {
-    // TODO: 구현 시 추가
-  };
+const handleScreenToggle = () => {
+  if (screenOn) {
+    stopScreenShare();
+  } else {
+    startScreenShare();
+  }
+};
+
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
@@ -915,8 +1161,8 @@ newSocket.on("draw-text", ({ roomId: rId, textObj, slideIndex }) => {
           audioStats={audioStats}
           startCamera={startCamera}
           stopCamera={stopCamera}
-          startScreenShare={() => {}}
-          stopScreenShare={() => {}}
+          startScreenShare={startScreenShare}
+          stopScreenShare={stopScreenShare}
           handleMicToggle={handleMicToggle}
           handleScreenToggle={handleScreenToggle}
           handleFileUpload={handleFileUpload}
